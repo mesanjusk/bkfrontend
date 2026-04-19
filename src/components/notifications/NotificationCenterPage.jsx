@@ -108,11 +108,11 @@ export default function NotificationCenterPage() {
       <Grid container spacing={2}>
         <Grid item xs={12} lg={8}>
           <Stack spacing={1.3} sx={{ mb: 1.5 }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
-              <TextField select label="Type" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} useFlexGap flexWrap="wrap">
+              <TextField select label="Type" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} sx={{ minWidth: { sm: 160 } }}>
                 {types.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
               </TextField>
-              <TextField select label="Read status" value={readFilter} onChange={(e) => setReadFilter(e.target.value)}>
+              <TextField select label="Read status" value={readFilter} onChange={(e) => setReadFilter(e.target.value)} sx={{ minWidth: { sm: 160 } }}>
                 <MenuItem value="ALL">All</MenuItem><MenuItem value="UNREAD">Unread</MenuItem><MenuItem value="READ">Read</MenuItem>
               </TextField>
               <Button startIcon={<DoneAllIcon />} variant="contained" onClick={markAllRead} disabled={!unreadCount} fullWidth={isMobile}>Mark all read</Button>
@@ -139,7 +139,7 @@ export default function NotificationCenterPage() {
                 ...(pendingThanks ? [{ label: 'Pending thank-you actions', value: pendingThanks, severity: 'warning' }] : [])
               ]}
             />
-            <Box component="form" onSubmit={createDonation} sx={{ p: 1.5, borderRadius: 2, bgcolor: 'background.paper' }}>
+            <Box component="form" onSubmit={createDonation} sx={{ p: 1.5, borderRadius: 2, bgcolor: 'background.paper', border: (t) => `1px solid ${t.palette.divider}` }}>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>Donation Quick Entry</Typography>
               <Stack spacing={1}>
                 <TextField select label="Donor guest" value={donationForm.donorGuestId} onChange={(e) => setDonationForm({ ...donationForm, donorGuestId: e.target.value })}>
@@ -158,7 +158,7 @@ export default function NotificationCenterPage() {
                 <Button type="submit" variant="contained">Record Donation</Button>
               </Stack>
             </Box>
-            <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'background.paper' }}>
+            <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'background.paper', border: (t) => `1px solid ${t.palette.divider}` }}>
               <Typography variant="subtitle1" sx={{ mb: 1 }}>Thank-you Queue</Typography>
               <Stack spacing={1}>
                 {donations.slice(0, 6).map((d) => (

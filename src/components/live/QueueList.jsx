@@ -1,6 +1,7 @@
 import { Card, CardContent, Divider, List, ListItemButton, ListItemText, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import StatusChip from '../StatusChip';
 import AssignmentMiniCard from './AssignmentMiniCard';
+import EmptyState from '../EmptyState';
 
 export default function QueueList({ items, selectedId, onSelect, filter, onFilterChange, mobile }) {
   return (
@@ -20,12 +21,14 @@ export default function QueueList({ items, selectedId, onSelect, filter, onFilte
             ))}
           </TextField>
         </Stack>
-        {mobile ? (
+        {!items.length ? (
+          <EmptyState title="No queue items" description="Queue will appear when assignments are available for the selected status." />
+        ) : mobile ? (
           <Stack spacing={0.9}>
             {items.map((a) => <AssignmentMiniCard key={a._id} assignment={a} active={selectedId === a._id} onSelect={onSelect} />)}
           </Stack>
         ) : (
-          <List dense disablePadding>
+          <List dense disablePadding sx={{ maxHeight: 520, overflowY: 'auto', pr: 0.4 }}>
             {items.map((a, idx) => (
               <div key={a._id}>
                 <ListItemButton selected={selectedId === a._id} onClick={() => onSelect(a)}>

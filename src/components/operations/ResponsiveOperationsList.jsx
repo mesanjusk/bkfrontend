@@ -13,5 +13,5 @@ export default function ResponsiveOperationsList({ items, mobileRender, desktopR
     );
   }
 
-  return <Grid container spacing={1.5}>{desktopRender(items)}</Grid>;
+  return <Grid container spacing={1.5} sx={{ minWidth: 0 }}>{desktopRender(items)}</Grid>;
 }
