@@ -269,8 +269,8 @@ export default function BudgetPage() {
               <Card variant="outlined">
                 <CardContent>
                   <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} mb={1}>
-                    <TextField size="small" select label="Vendor type" value={vendorTypeFilter} onChange={(e) => setVendorTypeFilter(e.target.value)} sx={{ minWidth: 160 }}>{vendorTypes.map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
-                    <TextField size="small" select label="Payment" value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} sx={{ minWidth: 160 }}>{['ALL', 'PENDING', 'PARTIAL', 'PAID'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
+                    <TextField size="small" select label="Vendor type" value={vendorTypeFilter} onChange={(e) => setVendorTypeFilter(e.target.value)} sx={{ minWidth: { md: 160 } }}>{vendorTypes.map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
+                    <TextField size="small" select label="Payment" value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} sx={{ minWidth: { md: 160 } }}>{['ALL', 'PENDING', 'PARTIAL', 'PAID'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
                   </Stack>
                   {isMobile ? (
                     <ResponsiveOperationsList items={filteredVendors} mobileRender={(v) => <VendorCard key={v._id} vendor={v} onOpen={setSelectedVendor} onMenu={(e) => { setMenuAnchor(e.currentTarget); setMenuContext({ type: 'vendor', value: v }); }} />} desktopRender={() => null} />
@@ -317,7 +317,7 @@ export default function BudgetPage() {
         users={users}
       />
 
-      <Dialog open={Boolean(selectedBudget)} onClose={() => setSelectedBudget(null)} fullWidth maxWidth="sm">
+      <Dialog open={Boolean(selectedBudget)} onClose={() => setSelectedBudget(null)} fullWidth maxWidth="sm" fullScreen={isMobile}>
         <DialogTitle>{selectedBudget?.title}</DialogTitle>
         <DialogContent dividers>
           {selectedBudget ? (
@@ -334,7 +334,7 @@ export default function BudgetPage() {
       </Dialog>
 
       <Drawer anchor="right" open={Boolean(selectedVendor)} onClose={() => setSelectedVendor(null)}>
-        <Box sx={{ width: { xs: 320, sm: 420 }, p: 2 }}>
+        <Box sx={{ width: { xs: '100vw', sm: 420 }, maxWidth: '100vw', p: 2 }}>
           <Typography variant="h6">{selectedVendor?.name}</Typography>
           <Stack spacing={1} sx={{ mt: 1 }}>
             <Typography variant="body2">Quotation: {money(selectedVendor?.quotedAmount)}</Typography>

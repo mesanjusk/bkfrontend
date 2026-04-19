@@ -1,8 +1,11 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, TextField } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Grid, MenuItem, TextField, useMediaQuery, useTheme } from '@mui/material';
 
 export default function DonationQuickDialog({ open, form, users, onChange, onClose, onSave }) {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
       <DialogTitle>Quick Donation Entry</DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={1.2} sx={{ mt: 0.2 }}>

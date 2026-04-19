@@ -11,13 +11,18 @@ import {
   ListItemText,
   Stack,
   TextField,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import StatusChip from '../StatusChip';
 
 export default function GuestChangeDialog({ open, assignment, guests, selectedGuestId, reason, onReasonChange, onSelectGuest, onClose, onConfirm }) {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" fullScreen={fullScreen}>
       <DialogTitle>Change Guest Assignment</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={1.2}>
@@ -25,7 +30,7 @@ export default function GuestChangeDialog({ open, assignment, guests, selectedGu
             Planned: <strong>{assignment?.plannedGuestId?.name || '-'}</strong> · Current: <strong>{assignment?.actualGuestId?.name || assignment?.plannedGuestId?.name || '-'}</strong>
           </Alert>
           <Typography variant="subtitle2">Available Guests</Typography>
-          <List dense sx={{ maxHeight: 260, overflowY: 'auto', border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
+          <List dense sx={{ maxHeight: { xs: '45vh', md: 260 }, overflowY: 'auto', border: (theme) => `1px solid ${theme.palette.divider}`, borderRadius: 1 }}>
             {guests.map((g) => (
               <ListItemButton key={g._id} selected={selectedGuestId === g._id} onClick={() => onSelectGuest(g._id)}>
                 <Avatar src={g.avatarUrl} sx={{ width: 28, height: 28, mr: 1 }}>{g.name?.[0]}</Avatar>

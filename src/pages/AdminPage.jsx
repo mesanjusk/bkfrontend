@@ -16,6 +16,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
+  TableContainer,
   Tabs,
   TextField,
   Typography,
@@ -147,9 +148,11 @@ export default function AdminPage() {
               <Stack spacing={1}>{users.map((u) => <AdminUserCard key={u._id} user={u} />)}</Stack>
             ) : (
               <Paper>
-                <Table size="small"><TableHead><TableRow><TableCell>Name</TableCell><TableCell>Username</TableCell><TableCell>Role</TableCell><TableCell>Duty</TableCell><TableCell>Status</TableCell></TableRow></TableHead>
-                  <TableBody>{users.map((u) => <TableRow key={u._id}><TableCell>{u.name}</TableCell><TableCell>{u.username}</TableCell><TableCell>{u.roleId?.name || '-'}</TableCell><TableCell>{u.eventDutyType || '-'}</TableCell><TableCell>{u.availabilityStatus || (u.isActive === false ? 'INACTIVE' : 'ACTIVE')}</TableCell></TableRow>)}</TableBody>
-                </Table>
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                  <Table size="small"><TableHead><TableRow><TableCell>Name</TableCell><TableCell>Username</TableCell><TableCell>Role</TableCell><TableCell>Duty</TableCell><TableCell>Status</TableCell></TableRow></TableHead>
+                    <TableBody>{users.map((u) => <TableRow key={u._id}><TableCell sx={{ whiteSpace: 'nowrap' }}>{u.name}</TableCell><TableCell>{u.username}</TableCell><TableCell>{u.roleId?.name || '-'}</TableCell><TableCell>{u.eventDutyType || '-'}</TableCell><TableCell>{u.availabilityStatus || (u.isActive === false ? 'INACTIVE' : 'ACTIVE')}</TableCell></TableRow>)}</TableBody>
+                  </Table>
+                </TableContainer>
               </Paper>
             )}
           </Grid>
@@ -192,17 +195,19 @@ export default function AdminPage() {
           ) : (
             <Grid item xs={12}>
               <Paper>
-                <Table size="small">
-                  <TableHead><TableRow><TableCell>Rule</TableCell><TableCell>Trigger</TableCell><TableCell>Recipient</TableCell><TableCell>Template</TableCell><TableCell>Status</TableCell><TableCell>Last Modified</TableCell><TableCell /></TableRow></TableHead>
-                  <TableBody>
-                    {rules.map((r) => (
-                      <TableRow key={r._id} hover>
-                        <TableCell>{r.name}</TableCell><TableCell>{r.triggerKey}</TableCell><TableCell>{r.recipientType}</TableCell><TableCell>{r.templateName}</TableCell><TableCell>{r.isActive ? 'Active' : 'Inactive'}</TableCell><TableCell>{new Date(r.updatedAt || r.createdAt || Date.now()).toLocaleDateString()}</TableCell>
-                        <TableCell><Button size="small" onClick={() => setEditingRule(r)}>Inspect/Edit</Button></TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <TableContainer sx={{ overflowX: 'auto' }}>
+                  <Table size="small">
+                    <TableHead><TableRow><TableCell>Rule</TableCell><TableCell>Trigger</TableCell><TableCell>Recipient</TableCell><TableCell>Template</TableCell><TableCell>Status</TableCell><TableCell>Last Modified</TableCell><TableCell /></TableRow></TableHead>
+                    <TableBody>
+                      {rules.map((r) => (
+                        <TableRow key={r._id} hover>
+                          <TableCell>{r.name}</TableCell><TableCell>{r.triggerKey}</TableCell><TableCell>{r.recipientType}</TableCell><TableCell>{r.templateName}</TableCell><TableCell>{r.isActive ? 'Active' : 'Inactive'}</TableCell><TableCell>{new Date(r.updatedAt || r.createdAt || Date.now()).toLocaleDateString()}</TableCell>
+                          <TableCell><Button size="small" onClick={() => setEditingRule(r)}>Inspect/Edit</Button></TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
               </Paper>
             </Grid>
           )}
@@ -229,7 +234,7 @@ export default function AdminPage() {
         onSubmit={saveRule}
       />
 
-      <Dialog open={Boolean(previewTemplate)} onClose={() => setPreviewTemplate(null)} maxWidth="sm" fullWidth>
+      <Dialog open={Boolean(previewTemplate)} onClose={() => setPreviewTemplate(null)} maxWidth="sm" fullWidth fullScreen={isMobile}>
         <DialogTitle>{previewTemplate?.name}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 1 }}>Type: {previewTemplate?.type}</Typography>

@@ -1,5 +1,5 @@
 import { CenterFocusStrong, KeyboardArrowDown, KeyboardArrowLeft, KeyboardArrowRight, KeyboardArrowUp, RotateRight } from '@mui/icons-material';
-import { Button, ButtonGroup, Card, CardContent, Grid, IconButton, Slider, Stack, Typography } from '@mui/material';
+import { Button, Card, CardContent, Grid, IconButton, Slider, Stack, Typography } from '@mui/material';
 
 export default function PhotoAdjustControls({ value, onChange }) {
   const update = (key, next) => onChange({ ...value, [key]: next });
@@ -20,14 +20,14 @@ export default function PhotoAdjustControls({ value, onChange }) {
             </Grid>
           </Grid>
           <Stack alignItems="center" spacing={0.5}>
-            <IconButton onClick={() => update('photoY', (value.photoY || 0) - 2)} size="small"><KeyboardArrowUp /></IconButton>
-            <ButtonGroup size="small">
-              <IconButton onClick={() => update('photoX', (value.photoX || 0) - 2)}><KeyboardArrowLeft /></IconButton>
-              <IconButton onClick={() => update('photoX', (value.photoX || 0) + 2)}><KeyboardArrowRight /></IconButton>
-            </ButtonGroup>
-            <IconButton onClick={() => update('photoY', (value.photoY || 0) + 2)} size="small"><KeyboardArrowDown /></IconButton>
+            <IconButton onClick={() => update('photoY', (value.photoY || 0) - 2)} size="medium"><KeyboardArrowUp /></IconButton>
+            <Stack direction="row" spacing={1}>
+              <IconButton onClick={() => update('photoX', (value.photoX || 0) - 2)} size="medium"><KeyboardArrowLeft /></IconButton>
+              <IconButton onClick={() => update('photoX', (value.photoX || 0) + 2)} size="medium"><KeyboardArrowRight /></IconButton>
+            </Stack>
+            <IconButton onClick={() => update('photoY', (value.photoY || 0) + 2)} size="medium"><KeyboardArrowDown /></IconButton>
           </Stack>
-          <Stack direction="row" spacing={1}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
             <Button fullWidth variant="outlined" startIcon={<CenterFocusStrong />} onClick={() => onChange({ ...value, photoX: 0, photoY: 0, photoScale: 1 })}>Reset fit</Button>
             <Button fullWidth variant="outlined" startIcon={<RotateRight />} onClick={() => update('photoRotation', 0)}>Reset rotation</Button>
           </Stack>

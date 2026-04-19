@@ -19,11 +19,11 @@ export default function ResponsiveDataView({ headers = [], rows = [], mobileRend
       {items.map((row, index) => (
         <Grid item xs={12} key={index}>
           <Card variant="outlined">
-            <CardContent>
+            <CardContent sx={{ p: { xs: 1.2, sm: 1.8 }, '&:last-child': { pb: { xs: 1.2, sm: 1.8 } } }}>
               {mobileRender(row, index) || (
                 <Stack spacing={0.7}>
                   {headers.map((h, i) => (
-                    <Typography variant="body2" key={`${h}-${i}`}>
+                    <Typography variant="body2" key={`${h}-${i}`} sx={{ overflowWrap: 'anywhere' }}>
                       <strong>{h}: </strong>{row[i]}
                     </Typography>
                   ))}

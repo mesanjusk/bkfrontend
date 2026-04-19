@@ -12,6 +12,8 @@ import {
   Typography,
   Divider,
   Alert,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 
 const typeOptions = ['VENDOR', 'DIRECT', 'EMERGENCY', 'TEAM_PURCHASE'];
@@ -19,6 +21,8 @@ const paymentModes = ['CASH', 'UPI', 'BANK', 'CHEQUE', 'OTHER'];
 const statusOptions = ['PENDING', 'APPROVED', 'PAID'];
 
 export default function ExpenseEntryDialog({ open, form, onChange, onClose, onSubmit, vendors, budgetHeads, users }) {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const isVendorExpense = form.expenseType === 'VENDOR';
   const isEmergency = form.expenseType === 'EMERGENCY';
 
@@ -28,7 +32,7 @@ export default function ExpenseEntryDialog({ open, form, onChange, onClose, onSu
   }, [form.proofUrl]);
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" fullScreen={fullScreen}>
       <DialogTitle>Add Expense Entry</DialogTitle>
       <DialogContent dividers>
         <Stack spacing={2} sx={{ mt: 1 }}>
