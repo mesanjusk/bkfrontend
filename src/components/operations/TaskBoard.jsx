@@ -1,9 +1,12 @@
-import { Box, Card, CardContent, Grid, Stack, Typography } from '@mui/material';
+import { Box, Card, CardContent, Grid, Stack, Typography, useMediaQuery, useTheme } from '@mui/material';
 import TaskCard, { taskStatusUi } from './TaskCard';
 
 const statuses = ['PENDING', 'IN_PROGRESS', 'DELAYED', 'BLOCKED', 'COMPLETED'];
 
 export default function TaskBoard({ tasks, onOpenTask }) {
+  const theme = useTheme();
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
+
   const grouped = statuses.map((status) => ({
     status,
     label: taskStatusUi[status]?.label || status,
@@ -18,7 +21,7 @@ export default function TaskBoard({ tasks, onOpenTask }) {
   return (
     <Grid container spacing={1.5} wrap="nowrap" sx={{ overflowX: 'auto', pb: 1 }}>
       {grouped.map((column) => (
-        <Grid item key={column.status} sx={{ minWidth: { xs: 300, md: 260 }, maxWidth: 340 }}>
+        <Grid item key={column.status} sx={{ minWidth: { xs: 260, md: 280 }, maxWidth: isTablet ? 300 : 340 }}>
           <Card variant="outlined" sx={{ height: '100%' }}>
             <CardContent>
               <Stack spacing={1}>

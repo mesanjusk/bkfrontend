@@ -221,7 +221,7 @@ export default function ResponsibilitiesPage() {
         <DialogContent dividers>
           {selectedTask ? (
             <Stack spacing={1.5}>
-              <Stack direction="row" spacing={1}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                 <PriorityChip priority={selectedTask.priority} />
                 <Button size="small" variant="outlined" onClick={() => updateTaskStatus(selectedTask, 'IN_PROGRESS')}>Mark In Progress</Button>
                 <Button size="small" variant="contained" onClick={() => updateTaskStatus(selectedTask, 'DONE')}>Mark Completed</Button>

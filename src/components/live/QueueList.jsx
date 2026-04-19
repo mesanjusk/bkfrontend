@@ -6,13 +6,13 @@ export default function QueueList({ items, selectedId, onSelect, filter, onFilte
   return (
     <Card variant="outlined" sx={{ height: '100%' }}>
       <CardContent sx={{ p: 1.3 }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
+        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', sm: 'center' }} mb={1} spacing={0.8}>
           <Typography variant="subtitle1" fontWeight={700}>Live Queue</Typography>
           <TextField
             select
             size="small"
             value={filter}
-            sx={{ minWidth: 130 }}
+            sx={{ minWidth: { sm: 130 } }}
             onChange={(e) => onFilterChange(e.target.value)}
           >
             {['ALL', 'PENDING', 'CALLED', 'ON_STAGE', 'COMPLETED', 'ISSUES'].map((value) => (
@@ -29,10 +29,12 @@ export default function QueueList({ items, selectedId, onSelect, filter, onFilte
             {items.map((a, idx) => (
               <div key={a._id}>
                 <ListItemButton selected={selectedId === a._id} onClick={() => onSelect(a)}>
-                  <ListItemText
-                    primary={`#${a.sequenceNo} ${a.studentId?.fullName || 'Student TBD'}`}
-                    secondary={`${a.categoryId?.title || '-'} · Anchor: ${a.actualAnchorId?.name || a.plannedAnchorId?.name || '-'} · Guest: ${a.actualGuestId?.name || a.plannedGuestId?.name || '-'}`}
-                  />
+                <ListItemText
+                  primary={`#${a.sequenceNo} ${a.studentId?.fullName || 'Student TBD'}`}
+                  primaryTypographyProps={{ sx: { overflowWrap: 'anywhere' } }}
+                  secondary={`${a.categoryId?.title || '-'} · Anchor: ${a.actualAnchorId?.name || a.plannedAnchorId?.name || '-'} · Guest: ${a.actualGuestId?.name || a.plannedGuestId?.name || '-'}`}
+                  secondaryTypographyProps={{ sx: { overflowWrap: 'anywhere' } }}
+                />
                   <StatusChip label={a.status} />
                 </ListItemButton>
                 {idx < items.length - 1 ? <Divider component="li" /> : null}

@@ -193,7 +193,7 @@ export default function NotificationCenterPage() {
               <Typography variant="body2">{selected.message}</Typography>
               <Typography variant="caption">{new Date(selected.createdAt || Date.now()).toLocaleString()}</Typography>
               <Typography variant="caption">Target roles: {selected.targetRoles?.join(', ') || '-'}</Typography>
-              <Stack direction="row" spacing={1}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                 <Button size="small" variant="contained" disabled={selected.readStatus} onClick={() => markRead(selected)}>Mark as read</Button>
                 <Button size="small" disabled={!selected.routePath} onClick={() => selected.routePath && navigate(selected.routePath)}>Open module</Button>
               </Stack>
