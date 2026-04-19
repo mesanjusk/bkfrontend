@@ -14,8 +14,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import AdminPage from './pages/AdminPage';
 import SystemFlowPage from './pages/SystemFlowPage';
 import WhatsAppPage from './pages/WhatsAppPage';
-import PublicStudentRegistrationPage from './pages/PublicStudentRegistrationPage';
-import PublicStudentEditPage from './pages/PublicStudentEditPage';
+import PublicStudentFormPage from './pages/PublicStudentFormPage';
 
 function Layout({ children }) {
   return <AppShell>{children}</AppShell>;
@@ -28,8 +27,8 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/student-register" element={<PublicStudentRegistrationPage />} />
-            <Route path="/student-edit/:token" element={<PublicStudentEditPage />} />
+            <Route path="/student-register" element={<PublicStudentFormPage />} />
+            <Route path="/student-edit/:token" element={<PublicStudentFormPage />} />
 
             {[
               ['/', <DashboardPage />],
