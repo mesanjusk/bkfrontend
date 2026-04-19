@@ -186,7 +186,7 @@ export default function BudgetPage() {
       <Grid container spacing={2} sx={{ mt: 0.5 }}>
         <Grid item xs={12} md={9}>
           <Paper variant="outlined" sx={{ p: 1, mb: 1.5 }}>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ md: 'center' }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} alignItems={{ md: 'center' }} useFlexGap flexWrap="wrap">
               <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons allowScrollButtonsMobile>
                 <Tab value="budget" label="Budget Heads" />
                 <Tab value="vendor" label="Vendors" />
@@ -268,7 +268,7 @@ export default function BudgetPage() {
 
               <Card variant="outlined">
                 <CardContent>
-                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} mb={1}>
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} mb={1} useFlexGap flexWrap="wrap">
                     <TextField size="small" select label="Vendor type" value={vendorTypeFilter} onChange={(e) => setVendorTypeFilter(e.target.value)} sx={{ minWidth: { md: 160 } }}>{vendorTypes.map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
                     <TextField size="small" select label="Payment" value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} sx={{ minWidth: { md: 160 } }}>{['ALL', 'PENDING', 'PARTIAL', 'PAID'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
                   </Stack>

@@ -63,8 +63,8 @@ export default function ExpenseEntryDialog({ open, form, onChange, onClose, onSu
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={onSubmit} variant="contained">Save Expense</Button>
+        <Button onClick={onClose} fullWidth={fullScreen}>Cancel</Button>
+        <Button onClick={onSubmit} variant="contained" fullWidth={fullScreen}>Save Expense</Button>
       </DialogActions>
     </Dialog>
   );

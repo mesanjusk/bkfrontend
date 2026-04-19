@@ -19,11 +19,11 @@ export default function NotificationCard({ notification, onMarkRead, onOpenRoute
               <ReadStatusChip read={notification.readStatus} />
               {notification.priority ? <Chip size="small" color={notification.priority === 'CRITICAL' ? 'error' : notification.priority === 'HIGH' ? 'warning' : 'default'} label={notification.priority} /> : null}
             </Stack>
-            <Typography variant="subtitle1">{notification.title}</Typography>
-            <Typography variant="body2">{notification.message}</Typography>
+            <Typography variant="subtitle1" sx={{ overflowWrap: 'anywhere' }}>{notification.title}</Typography>
+            <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{notification.message}</Typography>
             <Stack direction="row" spacing={1.2} flexWrap="wrap" useFlexGap>
               <Typography variant="caption">{new Date(notification.createdAt || notification.updatedAt || Date.now()).toLocaleString()}</Typography>
-              {notification.targetRoles?.length ? <Typography variant="caption">Audience: {notification.targetRoles.join(', ')}</Typography> : null}
+              {notification.targetRoles?.length ? <Typography variant="caption" sx={{ overflowWrap: 'anywhere' }}>Audience: {notification.targetRoles.join(', ')}</Typography> : null}
             </Stack>
           </Stack>
           <IconButton size="small" onClick={(e) => setAnchorEl(e.currentTarget)}><MoreVertIcon fontSize="small" /></IconButton>

@@ -81,7 +81,7 @@ export default function DashboardPage() {
                 <Card key={idx} variant="outlined"><CardContent>
                   <Typography variant="subtitle2">{item.name}</Typography>
                   <Typography variant="caption">{new Date(item.at).toLocaleString()}</Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5 }}>{JSON.stringify(item.payload)}</Typography>
+                  <Typography variant="body2" sx={{ mt: 0.5, overflowWrap: 'anywhere' }}>{JSON.stringify(item.payload)}</Typography>
                 </CardContent></Card>
               )) : <Typography variant="body2">No live events received yet.</Typography>}
             </Stack>
