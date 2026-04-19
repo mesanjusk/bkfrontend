@@ -16,7 +16,6 @@ import {
   Drawer,
   Fab,
   Grid,
-  IconButton,
   InputAdornment,
   Menu,
   MenuItem,
@@ -74,6 +73,7 @@ export default function BudgetPage() {
   const [selectedBudget, setSelectedBudget] = useState(null);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [menuAnchor, setMenuAnchor] = useState(null);
+  const [menuContext, setMenuContext] = useState(null);
 
   const load = async () => {
     const [h, v, e, t, k, u] = await Promise.all([
@@ -173,6 +173,11 @@ export default function BudgetPage() {
     setExpenseOpen(true);
   };
 
+  const closeMenu = () => {
+    setMenuAnchor(null);
+    setMenuContext(null);
+  };
+
   return (
     <Box>
       <SectionTitle title="Finance Operations Control Center" subtitle="Budget clarity, vendor dues, emergency spend visibility, and operational alerts for event days." />
@@ -224,11 +229,11 @@ export default function BudgetPage() {
                   {isMobile ? (
                     <ResponsiveOperationsList
                       items={filteredHeads}
-                      mobileRender={(head) => <BudgetHeadCard key={head._id} head={head} onOpen={setSelectedBudget} onMenu={(e) => setMenuAnchor(e.currentTarget)} />}
+                      mobileRender={(head) => <BudgetHeadCard key={head._id} head={head} onOpen={setSelectedBudget} onMenu={(e) => { setMenuAnchor(e.currentTarget); setMenuContext({ type: 'budget', value: head }); }} />}
                       desktopRender={() => null}
                     />
                   ) : (
-                    <BudgetHeadTable heads={filteredHeads} onOpen={setSelectedBudget} onMenu={(e) => setMenuAnchor(e.currentTarget)} />
+                    <BudgetHeadTable heads={filteredHeads} onOpen={setSelectedBudget} onMenu={(e, head) => { setMenuAnchor(e.currentTarget); setMenuContext({ type: 'budget', value: head }); }} />
                   )}
                 </CardContent>
               </Card>
@@ -268,9 +273,9 @@ export default function BudgetPage() {
                     <TextField size="small" select label="Payment" value={paymentFilter} onChange={(e) => setPaymentFilter(e.target.value)} sx={{ minWidth: 160 }}>{['ALL', 'PENDING', 'PARTIAL', 'PAID'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
                   </Stack>
                   {isMobile ? (
-                    <ResponsiveOperationsList items={filteredVendors} mobileRender={(v) => <VendorCard key={v._id} vendor={v} onOpen={setSelectedVendor} onMenu={(e) => setMenuAnchor(e.currentTarget)} />} desktopRender={() => null} />
+                    <ResponsiveOperationsList items={filteredVendors} mobileRender={(v) => <VendorCard key={v._id} vendor={v} onOpen={setSelectedVendor} onMenu={(e) => { setMenuAnchor(e.currentTarget); setMenuContext({ type: 'vendor', value: v }); }} />} desktopRender={() => null} />
                   ) : (
-                    <VendorTable vendors={filteredVendors} onOpen={setSelectedVendor} onMenu={(e) => setMenuAnchor(e.currentTarget)} />
+                    <VendorTable vendors={filteredVendors} onOpen={setSelectedVendor} onMenu={(e, vendor) => { setMenuAnchor(e.currentTarget); setMenuContext({ type: 'vendor', value: vendor }); }} />
                   )}
                 </CardContent>
               </Card>
@@ -343,9 +348,16 @@ export default function BudgetPage() {
         </Box>
       </Drawer>
 
-      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
-        <MenuItem onClick={() => setMenuAnchor(null)}>Edit</MenuItem>
-        <MenuItem onClick={() => setMenuAnchor(null)}>View details</MenuItem>
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu}>
+        <MenuItem onClick={closeMenu}>Edit</MenuItem>
+        <MenuItem onClick={() => {
+          if (menuContext?.type === 'budget') setSelectedBudget(menuContext.value);
+          if (menuContext?.type === 'vendor') setSelectedVendor(menuContext.value);
+          closeMenu();
+        }}
+        >
+          View details
+        </MenuItem>
       </Menu>
 
       <Snackbar open={Boolean(snackbar)} autoHideDuration={2400} onClose={() => setSnackbar('')} message={snackbar} />

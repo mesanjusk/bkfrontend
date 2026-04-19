@@ -37,6 +37,16 @@ const taskInitial = {
   title: '', teamId: '', assignedToUserId: '', backupUserId: '', linkedVendorId: '', priority: 'MEDIUM', status: 'PENDING', notes: '', startTimeLabel: '', deadlineLabel: '',
 };
 
+const taskStatusOptions = [
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'IN_PROGRESS', label: 'In Progress' },
+  { value: 'DELAYED', label: 'Delayed' },
+  { value: 'BLOCKED', label: 'Blocked' },
+  { value: 'DONE', label: 'Completed' },
+];
+
+const normalizeStatusForApi = (status) => (status === 'COMPLETED' ? 'DONE' : status);
+
 export default function ResponsibilitiesPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -78,14 +88,14 @@ export default function ResponsibilitiesPage() {
 
   const createTask = async (e) => {
     e.preventDefault();
-    await api.post('/event-tasks', taskForm);
+    await api.post('/event-tasks', { ...taskForm, status: normalizeStatusForApi(taskForm.status) });
     setTaskForm(taskInitial);
     setSnackbar('Task added to board.');
     load();
   };
 
   const updateTaskStatus = async (task, status) => {
-    await api.put(`/event-tasks/${task._id}`, { ...task, status });
+    await api.put(`/event-tasks/${task._id}`, { ...task, status: normalizeStatusForApi(status) });
     setSnackbar('Task status updated.');
     load();
   };
@@ -95,7 +105,7 @@ export default function ResponsibilitiesPage() {
     const matchesSearch = text.includes(search.toLowerCase());
     const normalizedStatus = (task.status || 'PENDING').toUpperCase();
     const normalizedPriority = (task.priority || 'MEDIUM').toUpperCase();
-    const matchStatus = statusFilter === 'ALL' || normalizedStatus === statusFilter || (statusFilter === 'COMPLETED' && ['DONE', 'COMPLETED'].includes(normalizedStatus));
+    const matchStatus = statusFilter === 'ALL' || normalizedStatus === statusFilter || (statusFilter === 'DONE' && ['DONE', 'COMPLETED'].includes(normalizedStatus));
     const matchPriority = priorityFilter === 'ALL' || normalizedPriority === priorityFilter;
     const matchTeam = teamFilter === 'ALL' || task.teamId?._id === teamFilter || task.teamId === teamFilter;
     const matchOverdue = overdueOnly === 'ALL' || (overdueOnly === 'YES' ? isOverdueTask(task) : !isOverdueTask(task));
@@ -145,7 +155,7 @@ export default function ResponsibilitiesPage() {
                   <Grid item xs={6} md={2}><TextField fullWidth select label="Backup owner" value={taskForm.backupUserId} onChange={(e) => setTaskForm({ ...taskForm, backupUserId: e.target.value })}><MenuItem value="">None</MenuItem>{users.map((u) => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}</TextField></Grid>
                   <Grid item xs={6} md={3}><TextField fullWidth select label="Linked vendor" value={taskForm.linkedVendorId} onChange={(e) => setTaskForm({ ...taskForm, linkedVendorId: e.target.value })}><MenuItem value="">None</MenuItem>{vendors.map((v) => <MenuItem key={v._id} value={v._id}>{v.name}</MenuItem>)}</TextField></Grid>
                   <Grid item xs={6} md={2}><TextField fullWidth select label="Priority" value={taskForm.priority} onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}>{['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField></Grid>
-                  <Grid item xs={6} md={2}><TextField fullWidth select label="Status" value={taskForm.status} onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}>{['PENDING', 'IN_PROGRESS', 'DELAYED', 'BLOCKED', 'COMPLETED'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField></Grid>
+                  <Grid item xs={6} md={2}><TextField fullWidth select label="Status" value={taskForm.status} onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}>{taskStatusOptions.map((x) => <MenuItem key={x.value} value={x.value}>{x.label}</MenuItem>)}</TextField></Grid>
                   <Grid item xs={6} md={2}><TextField fullWidth label="Start" value={taskForm.startTimeLabel} onChange={(e) => setTaskForm({ ...taskForm, startTimeLabel: e.target.value })} /></Grid>
                   <Grid item xs={6} md={2}><TextField fullWidth label="Deadline" value={taskForm.deadlineLabel} onChange={(e) => setTaskForm({ ...taskForm, deadlineLabel: e.target.value })} /></Grid>
                   <Grid item xs={12} md={6}><TextField fullWidth label="Notes" value={taskForm.notes} onChange={(e) => setTaskForm({ ...taskForm, notes: e.target.value })} /></Grid>
@@ -171,7 +181,7 @@ export default function ResponsibilitiesPage() {
               <CardContent>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} mb={1.5}>
                   <TextField size="small" placeholder="Search tasks" value={search} onChange={(e) => setSearch(e.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded fontSize="small" /></InputAdornment> }} sx={{ minWidth: { md: 260 } }} />
-                  <TextField size="small" select label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 140 }}>{['ALL', 'PENDING', 'IN_PROGRESS', 'DELAYED', 'BLOCKED', 'COMPLETED'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
+                  <TextField size="small" select label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 140 }}>{['ALL', 'PENDING', 'IN_PROGRESS', 'DELAYED', 'BLOCKED', 'DONE'].map((x) => <MenuItem key={x} value={x}>{x === 'DONE' ? 'COMPLETED' : x}</MenuItem>)}</TextField>
                   <TextField size="small" select label="Priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} sx={{ minWidth: 140 }}>{['ALL', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
                   <TextField size="small" select label="Team" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} sx={{ minWidth: 140 }}><MenuItem value="ALL">All</MenuItem>{teams.map((x) => <MenuItem key={x._id} value={x._id}>{x.name}</MenuItem>)}</TextField>
                   <TextField size="small" select label="Overdue" value={overdueOnly} onChange={(e) => setOverdueOnly(e.target.value)} sx={{ minWidth: 120 }}><MenuItem value="ALL">All</MenuItem><MenuItem value="YES">Only overdue</MenuItem><MenuItem value="NO">Not overdue</MenuItem></TextField>
@@ -214,7 +224,7 @@ export default function ResponsibilitiesPage() {
               <Stack direction="row" spacing={1}>
                 <PriorityChip priority={selectedTask.priority} />
                 <Button size="small" variant="outlined" onClick={() => updateTaskStatus(selectedTask, 'IN_PROGRESS')}>Mark In Progress</Button>
-                <Button size="small" variant="contained" onClick={() => updateTaskStatus(selectedTask, 'COMPLETED')}>Mark Completed</Button>
+                <Button size="small" variant="contained" onClick={() => updateTaskStatus(selectedTask, 'DONE')}>Mark Completed</Button>
               </Stack>
               <Typography variant="body2">Team: {selectedTask.teamId?.name || '-'}</Typography>
               <Typography variant="body2">Owner: {selectedTask.assignedToUserId?.name || '-'}</Typography>
