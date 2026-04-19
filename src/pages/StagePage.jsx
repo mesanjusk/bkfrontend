@@ -60,6 +60,7 @@ export default function StagePage() {
   const [form, setForm] = useState({ sequenceNo: 1, studentId: '', categoryId: '', plannedGuestId: '', teamMemberId: '', volunteerId: '' });
   const [donationForm, setDonationForm] = useState(donationInitial);
   const [selectedAssignmentId, setSelectedAssignmentId] = useState('');
+  const [nowLabel, setNowLabel] = useState(new Date().toLocaleString());
 
   const load = async () => {
     const [a, s, c, u, d] = await Promise.all([
@@ -75,11 +76,18 @@ export default function StagePage() {
     setUsers(u.data || []);
     setDonations(d.data || []);
     setForm((prev) => ({ ...prev, sequenceNo: (a.data?.length || 0) + 1 }));
-    if (!selectedAssignmentId && a.data?.length) setSelectedAssignmentId(a.data[0]._id);
+    if (!selectedAssignmentId && a.data?.length) {
+      const focus = (a.data || []).find((x) => ['ON_STAGE', 'CALLED', 'PENDING'].includes(x.status)) || a.data[0];
+      setSelectedAssignmentId(focus._id);
+    }
   };
 
   useEffect(() => { load(); }, []);
   useEffect(() => { if (latestPopup?.at) load(); }, [latestPopup?.at]);
+  useEffect(() => {
+    const timer = setInterval(() => setNowLabel(new Date().toLocaleString()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const createAssignment = async (e) => {
     e.preventDefault();
@@ -92,6 +100,12 @@ export default function StagePage() {
   const updateStatus = async (id, status) => {
     await api.post(`/stage-assignments/${id}/status`, { status });
     setSnack({ open: true, msg: `Status updated to ${status.replace('_', ' ')}.`, tone: status === 'ABSENT' || status === 'SKIPPED' ? 'warning' : 'success' });
+    load();
+  };
+
+  const generate = async () => {
+    await api.post('/stage-assignments/generate-from-eligible');
+    setSnack({ open: true, msg: 'Queue regenerated from eligible students.', tone: 'success' });
     load();
   };
 
@@ -131,11 +145,16 @@ export default function StagePage() {
     .filter((a) => {
       if (queueFilter === 'ALL') return true;
       if (queueFilter === 'ISSUES') return ['ABSENT', 'SKIPPED'].includes(a.status);
+      if (queueFilter === 'PENDING') return !a.status || a.status === 'PENDING';
       return a.status === queueFilter;
     })
     .sort((x, y) => (x.sequenceNo || 0) - (y.sequenceNo || 0)), [assignments, queueFilter]);
 
-  const selectedAssignment = assignments.find((x) => x._id === selectedAssignmentId) || filteredQueue[0] || assignments[0] || null;
+  const selectedAssignment = assignments.find((x) => x._id === selectedAssignmentId)
+    || assignments.find((x) => ['ON_STAGE', 'CALLED', 'PENDING'].includes(x.status))
+    || filteredQueue[0]
+    || assignments[0]
+    || null;
 
   const operationalAlerts = useMemo(() => {
     const fromEvents = (events || []).slice(0, 12).map((e, idx) => ({
@@ -168,7 +187,15 @@ export default function StagePage() {
   const volunteerUsers = users.filter((u) => u.eventDutyType === 'VOLUNTEER');
   const teamUsers = users.filter((u) => ['TEAM_MEMBER', 'TEAM'].includes(u.eventDutyType));
   const pendingThankYouCount = donations.filter((d) => d.thankYouStatus !== 'SENT').length;
-  const nowLabel = new Date().toLocaleString();
+  const mobileCurrentStrip = selectedAssignment ? (
+    <Alert
+      severity={selectedAssignment.status === 'ON_STAGE' ? 'warning' : 'info'}
+      action={<Button size="small" onClick={() => setMobileTab('CURRENT')}>Open</Button>}
+      sx={{ mb: 1 }}
+    >
+      <strong>Now:</strong> #{selectedAssignment.sequenceNo} {selectedAssignment.studentId?.fullName || 'Student TBD'}
+    </Alert>
+  ) : null;
 
   const queueSection = (
     <QueueList
@@ -248,6 +275,10 @@ export default function StagePage() {
       />
 
       <Box sx={{ p: { xs: 1.1, md: 1.8 }, pb: { xs: 9, md: 2 } }}>
+        <Stack direction="row" spacing={1} sx={{ mb: 1.1, flexWrap: 'wrap' }}>
+          <Button variant="contained" onClick={generate}>Generate from Eligible</Button>
+          <Button variant="outlined" color="error" onClick={() => setOpenEmergency(true)}>Emergency Action</Button>
+        </Stack>
         {latestPopup ? (
           <Alert severity="warning" onClose={clearPopup} sx={{ mb: 1.2 }}>
             {latestPopup.payload?.title || 'Anchor popup'} - {latestPopup.payload?.message}
@@ -256,6 +287,7 @@ export default function StagePage() {
 
         {isMobile ? (
           <>
+            {mobileCurrentStrip}
             <Tabs
               value={mobileTab}
               variant="scrollable"
