@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Box, Button, Card, CardContent, Chip, Grid, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import api from '../api';
 import DataTable from '../components/DataTable';
 import SectionTitle from '../components/SectionTitle';
@@ -16,16 +17,14 @@ export default function CategoriesPage() {
 
   const load = async () => {
     const [c, u] = await Promise.all([api.get('/categories'), api.get('/users')]);
-    setCategories(c.data);
-    setUsers(u.data);
+    setCategories(c.data); setUsers(u.data);
   };
   useEffect(() => { load(); }, []);
 
   const submit = async (e) => {
     e.preventDefault();
     const payload = { ...form, preferredGuestIds: form.preferredGuestIds.filter(Boolean) };
-    if (selectedId) await api.put(`/categories/${selectedId}`, payload);
-    else await api.post('/categories', payload);
+    if (selectedId) await api.put(`/categories/${selectedId}`, payload); else await api.post('/categories', payload);
     setForm(initialForm); setSelectedId(null); load();
   };
   const edit = (cat) => {
@@ -37,54 +36,24 @@ export default function CategoriesPage() {
   const guestOptions = users.filter((u) => u.eventDutyType === 'GUEST');
 
   return (
-    <div className="page">
-      <SectionTitle title="Categories + Fixed Anchor Mapping" subtitle="Each category can define board/class filters, CBSE Best 5 rule, anchor and preferred guest." />
-      <form className="panel stack gap12" onSubmit={submit}>
-        <div className="form-grid">
-          <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          <input placeholder="Board" value={form.board} onChange={(e) => setForm({ ...form, board: e.target.value })} />
-          <input placeholder="Class" value={form.className} onChange={(e) => setForm({ ...form, className: e.target.value })} />
-          <input type="number" placeholder="Minimum %" value={form.minPercentage} onChange={(e) => setForm({ ...form, minPercentage: Number(e.target.value) })} />
-          <select value={form.calculationMethod} onChange={(e) => setForm({ ...form, calculationMethod: e.target.value })}>
-            <option value="DIRECT_PERCENTAGE">Direct Percentage</option>
-            <option value="BEST_5">CBSE Best 5</option>
-          </select>
-          <input type="number" placeholder="Best of count" value={form.bestOfCount} onChange={(e) => setForm({ ...form, bestOfCount: Number(e.target.value) })} />
-          <input type="number" placeholder="Sequence Priority" value={form.sequencePriority} onChange={(e) => setForm({ ...form, sequencePriority: Number(e.target.value) })} />
-          <select value={form.anchorId} onChange={(e) => setForm({ ...form, anchorId: e.target.value })}>
-            <option value="">Select anchor</option>
-            {anchorOptions.map((u) => <option key={u._id} value={u._id}>{u.name}</option>)}
-          </select>
-        </div>
-        <div className="grid three">
-          {guestOptions.map((guest) => (
-            <label key={guest._id} className="checkrow">
-              <input type="checkbox" checked={form.preferredGuestIds.includes(guest._id)} onChange={(e) => setForm({
-                ...form,
-                preferredGuestIds: e.target.checked ? [...form.preferredGuestIds, guest._id] : form.preferredGuestIds.filter((id) => id !== guest._id)
-              })} />
-              <span>{guest.name}</span>
-            </label>
-          ))}
-        </div>
-        <div className="action-row">
-          <button className="primary" type="submit">{selectedId ? 'Update Category' : 'Create Category'}</button>
-          <button type="button" onClick={() => { setForm(initialForm); setSelectedId(null); }}>Reset</button>
-        </div>
-      </form>
+    <Box>
+      <SectionTitle title="Categories + Fixed Anchor Mapping" subtitle="Define board/class filters, min percentage, CBSE Best 5 logic, fixed anchor, and preferred guests." />
+      <Card component="form" onSubmit={submit}><CardContent>
+        <Grid container spacing={1.3}>
+          {['title', 'board', 'className'].map((key) => <Grid item xs={12} sm={6} md={3} key={key}><TextField label={key} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></Grid>)}
+          <Grid item xs={12} sm={6} md={3}><TextField type="number" label="Minimum %" value={form.minPercentage} onChange={(e) => setForm({ ...form, minPercentage: Number(e.target.value) })} /></Grid>
+          <Grid item xs={12} sm={6} md={3}><TextField select label="Calculation" value={form.calculationMethod} onChange={(e) => setForm({ ...form, calculationMethod: e.target.value })}><MenuItem value="DIRECT_PERCENTAGE">Direct Percentage</MenuItem><MenuItem value="BEST_5">CBSE Best 5</MenuItem></TextField></Grid>
+          <Grid item xs={12} sm={6} md={3}><TextField type="number" label="Best Of Count" value={form.bestOfCount} onChange={(e) => setForm({ ...form, bestOfCount: Number(e.target.value) })} /></Grid>
+          <Grid item xs={12} sm={6} md={3}><TextField type="number" label="Sequence Priority" value={form.sequencePriority} onChange={(e) => setForm({ ...form, sequencePriority: Number(e.target.value) })} /></Grid>
+          <Grid item xs={12} sm={6} md={3}><TextField select label="Fixed Anchor" value={form.anchorId} onChange={(e) => setForm({ ...form, anchorId: e.target.value })}><MenuItem value="">Select anchor</MenuItem>{anchorOptions.map((u) => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}</TextField></Grid>
+          <Grid item xs={12}><Typography variant="subtitle2">Preferred Guests</Typography><Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1 }}>{guestOptions.map((g) => <Chip key={g._id} label={g.name} color={form.preferredGuestIds.includes(g._id) ? 'primary' : 'default'} onClick={() => setForm({ ...form, preferredGuestIds: form.preferredGuestIds.includes(g._id) ? form.preferredGuestIds.filter((id) => id !== g._id) : [...form.preferredGuestIds, g._id] })} />)}</Stack></Grid>
+          <Grid item xs={12}><Stack direction="row" gap={1}><Button variant="contained" type="submit">{selectedId ? 'Update Category' : 'Create Category'}</Button><Button variant="outlined" onClick={() => { setForm(initialForm); setSelectedId(null); }}>Reset</Button></Stack></Grid>
+        </Grid>
+      </CardContent></Card>
 
-      <DataTable
-        headers={['Title', 'Rule', 'Calc', 'Anchor', 'Preferred Guests', 'Priority', 'Actions']}
-        rows={categories.map((cat) => [
-          cat.title,
-          `${cat.board || '-'} / ${cat.className || '-'} / min ${cat.minPercentage || 0}%`,
-          cat.calculationMethod === 'BEST_5' ? `Best ${cat.bestOfCount}` : 'Direct %',
-          cat.anchorId?.name || '-',
-          (cat.preferredGuestIds || []).map((g) => g.name || g).join(', '),
-          cat.sequencePriority || 0,
-          <button onClick={() => edit(cat)}>Edit</button>
-        ])}
-      />
-    </div>
+      <Box sx={{ mt: 2 }}>
+        <DataTable headers={['Title', 'Rule', 'Calculation', 'Anchor', 'Preferred Guests', 'Priority', 'Actions']} rows={categories.map((cat) => [cat.title, `${cat.board || '-'} / ${cat.className || '-'} / min ${cat.minPercentage || 0}%`, cat.calculationMethod === 'BEST_5' ? `Best ${cat.bestOfCount}` : 'Direct %', cat.anchorId?.name || '-', (cat.preferredGuestIds || []).map((g) => g.name || g).join(', '), cat.sequencePriority || 0, <Button size="small" onClick={() => edit(cat)}>Edit</Button>])} />
+      </Box>
+    </Box>
   );
 }

@@ -1,26 +1,21 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { LiveProvider } from './context/LiveContext';
 import ProtectedRoute from './components/ProtectedRoute';
-import Navbar from './components/Navbar';
+import AppShell from './components/AppShell';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import StudentsPage from './pages/StudentsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import StagePage from './pages/StagePage';
+import BudgetPage from './pages/BudgetPage';
+import ResponsibilitiesPage from './pages/ResponsibilitiesPage';
 import NotificationsPage from './pages/NotificationsPage';
 import SystemFlowPage from './pages/SystemFlowPage';
 import AdminPage from './pages/AdminPage';
-import BudgetPage from './pages/BudgetPage';
-import ResponsibilitiesPage from './pages/ResponsibilitiesPage';
 
 function Layout({ children }) {
-  return (
-    <div>
-      <Navbar />
-      {children}
-    </div>
-  );
+  return <AppShell>{children}</AppShell>;
 }
 
 export default function App() {

@@ -1,3 +1,6 @@
+import { Box, Card, CardContent, Typography } from '@mui/material';
+import SectionTitle from '../components/SectionTitle';
+
 const text = `MASTER FLOW AND FEATURES CHART
 
 1. CORE APP FLOW
@@ -17,39 +20,15 @@ const text = `MASTER FLOW AND FEATURES CHART
 - Donation entry can be created instantly
 - WhatsApp thank-you can be triggered instantly
 - Guest / volunteer / team certificates can be sent on or after event
-- Budget vs actual expense, vendors and responsibility tasks remain visible throughout event lifecycle
-
-2. NEW BUDGET AND TASK MODULES
-- Budget heads: Food, Decor, Printing, Trophies, Sound, Misc
-- Vendors: food vendor, decor vendor, printing vendor, sound vendor, etc.
-- Expenses: vendor expense, direct expense, emergency expense, team purchase
-- Teams: guest management, stage management, finance, food & hospitality, certificate team, communication team
-- Event tasks: assign specific responsibility to team members with backup owner, deadline and status
-- Final report includes allowed budget, actual expense, pending dues, vendor summary, task status
-
-3. ROLE-WISE FOCUS
-- Super Admin: full system, roles, reports, settings, audit
-- Host: monitoring and summary
-- Admin: planning, categories, users, stage, budget, vendors, reports
-- Senior Team: live event control, guest change, donation and thank-you actions
-- Team Leader: team execution and task coordination
-- Anchor: category-wise live stage flow only
-- Volunteer: support tasks and readiness
-- Guest: own attendance and schedule view
-- Student: own status and certificate preview
-
-4. LIVE MODE RULE
-- Planning days: manual sync + local cache okay
-- Event day: server truth + sockets + auto refresh
-- Offline fallback can queue limited actions, but live stage state should come from server`;
+- Budget vs actual expense, vendors and responsibility tasks remain visible throughout event lifecycle`;
 
 export default function SystemFlowPage() {
   return (
-    <div className="page">
-      <h2>Complete System Flow</h2>
-      <div className="panel">
-        <pre className="code">{text}</pre>
-      </div>
-    </div>
+    <Box>
+      <SectionTitle title="Complete System Flow" subtitle="Reference map for planning mode, live event mode, and role-wise responsibilities." />
+      <Card><CardContent>
+        <Typography component="pre" sx={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', m: 0, fontSize: 14 }}>{text}</Typography>
+      </CardContent></Card>
+    </Box>
   );
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Box, Button, Card, CardContent, Chip, Grid, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import api from '../api';
 import DataTable from '../components/DataTable';
 import SectionTitle from '../components/SectionTitle';
@@ -7,65 +8,19 @@ const teamInitial = { name: '', code: '', purpose: '', leadUserId: '', memberUse
 const taskInitial = { title: '', teamId: '', assignedToUserId: '', backupUserId: '', linkedVendorId: '', priority: 'MEDIUM', status: 'PENDING', startTimeLabel: '', deadlineLabel: '' };
 
 export default function ResponsibilitiesPage() {
-  const [teams, setTeams] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [vendors, setVendors] = useState([]);
-  const [teamForm, setTeamForm] = useState(teamInitial);
-  const [taskForm, setTaskForm] = useState(taskInitial);
-
-  const load = async () => {
-    const [t, k, u, v] = await Promise.all([api.get('/teams'), api.get('/event-tasks'), api.get('/users'), api.get('/vendors')]);
-    setTeams(t.data); setTasks(k.data); setUsers(u.data); setVendors(v.data);
-  };
+  const [teams, setTeams] = useState([]); const [tasks, setTasks] = useState([]); const [users, setUsers] = useState([]); const [vendors, setVendors] = useState([]);
+  const [teamForm, setTeamForm] = useState(teamInitial); const [taskForm, setTaskForm] = useState(taskInitial);
+  const load = async () => { const [t, k, u, v] = await Promise.all([api.get('/teams'), api.get('/event-tasks'), api.get('/users'), api.get('/vendors')]); setTeams(t.data); setTasks(k.data); setUsers(u.data); setVendors(v.data); };
   useEffect(() => { load(); }, []);
-
   const createTeam = async (e) => { e.preventDefault(); await api.post('/teams', teamForm); setTeamForm(teamInitial); load(); };
   const createTask = async (e) => { e.preventDefault(); await api.post('/event-tasks', taskForm); setTaskForm(taskInitial); load(); };
   const markDone = async (task) => { await api.put(`/event-tasks/${task._id}`, { ...task, status: 'DONE' }); load(); };
 
-  return (
-    <div className="page">
-      <SectionTitle title="Team Responsibilities + Event Tasks" subtitle="Assign responsibility to teams and owners, keep backup owner, deadline and linked vendor visible." />
-      <div className="grid two">
-        <form className="panel stack gap12" onSubmit={createTeam}>
-          <h3>Team</h3>
-          <div className="form-grid">
-            <input placeholder="Team name" value={teamForm.name} onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })} />
-            <input placeholder="Code" value={teamForm.code} onChange={(e) => setTeamForm({ ...teamForm, code: e.target.value })} />
-            <input placeholder="Purpose" value={teamForm.purpose} onChange={(e) => setTeamForm({ ...teamForm, purpose: e.target.value })} />
-            <select value={teamForm.leadUserId} onChange={(e) => setTeamForm({ ...teamForm, leadUserId: e.target.value })}><option value="">Lead user</option>{users.map((u) => <option key={u._id} value={u._id}>{u.name}</option>)}</select>
-          </div>
-          <button className="primary" type="submit">Add Team</button>
-        </form>
+  return <Box>
+    <SectionTitle title="Team Responsibilities & Tasks" subtitle="Kanban-inspired grouped execution cards with owner, backup, deadline, and priority controls." />
+    <Grid container spacing={2}><Grid item xs={12} md={6}><Card component="form" onSubmit={createTeam}><CardContent><Typography variant="h6" gutterBottom>Team Setup</Typography><Grid container spacing={1}><Grid item xs={12} sm={6}><TextField label="Team name" value={teamForm.name} onChange={(e)=>setTeamForm({...teamForm,name:e.target.value})} /></Grid><Grid item xs={12} sm={6}><TextField label="Code" value={teamForm.code} onChange={(e)=>setTeamForm({...teamForm,code:e.target.value})} /></Grid><Grid item xs={12}><TextField label="Purpose" value={teamForm.purpose} onChange={(e)=>setTeamForm({...teamForm,purpose:e.target.value})} /></Grid><Grid item xs={12}><TextField select label="Lead user" value={teamForm.leadUserId} onChange={(e)=>setTeamForm({...teamForm,leadUserId:e.target.value})}><MenuItem value="">None</MenuItem>{users.map((u)=><MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}</TextField></Grid><Grid item xs={12}><Button variant="contained" type="submit">Add Team</Button></Grid></Grid></CardContent></Card></Grid>
+    <Grid item xs={12} md={6}><Card component="form" onSubmit={createTask}><CardContent><Typography variant="h6" gutterBottom>Task Setup</Typography><Grid container spacing={1}><Grid item xs={12}><TextField label="Task title" value={taskForm.title} onChange={(e)=>setTaskForm({...taskForm,title:e.target.value})} /></Grid><Grid item xs={6}><TextField select label="Team" value={taskForm.teamId} onChange={(e)=>setTaskForm({...taskForm,teamId:e.target.value})}><MenuItem value="">None</MenuItem>{teams.map((x)=><MenuItem key={x._id} value={x._id}>{x.name}</MenuItem>)}</TextField></Grid><Grid item xs={6}><TextField select label="Owner" value={taskForm.assignedToUserId} onChange={(e)=>setTaskForm({...taskForm,assignedToUserId:e.target.value})}><MenuItem value="">None</MenuItem>{users.map((u)=><MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}</TextField></Grid><Grid item xs={6}><TextField select label="Backup" value={taskForm.backupUserId} onChange={(e)=>setTaskForm({...taskForm,backupUserId:e.target.value})}><MenuItem value="">None</MenuItem>{users.map((u)=><MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}</TextField></Grid><Grid item xs={6}><TextField select label="Vendor" value={taskForm.linkedVendorId} onChange={(e)=>setTaskForm({...taskForm,linkedVendorId:e.target.value})}><MenuItem value="">None</MenuItem>{vendors.map((v)=><MenuItem key={v._id} value={v._id}>{v.name}</MenuItem>)}</TextField></Grid><Grid item xs={6}><TextField select label="Priority" value={taskForm.priority} onChange={(e)=>setTaskForm({...taskForm,priority:e.target.value})}>{['LOW','MEDIUM','HIGH'].map((x)=><MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField></Grid><Grid item xs={6}><TextField select label="Status" value={taskForm.status} onChange={(e)=>setTaskForm({...taskForm,status:e.target.value})}>{['PENDING','IN_PROGRESS','DONE'].map((x)=><MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField></Grid><Grid item xs={6}><TextField label="Start" value={taskForm.startTimeLabel} onChange={(e)=>setTaskForm({...taskForm,startTimeLabel:e.target.value})} /></Grid><Grid item xs={6}><TextField label="Deadline" value={taskForm.deadlineLabel} onChange={(e)=>setTaskForm({...taskForm,deadlineLabel:e.target.value})} /></Grid><Grid item xs={12}><Button variant="contained" type="submit">Add Task</Button></Grid></Grid></CardContent></Card></Grid></Grid>
 
-        <form className="panel stack gap12" onSubmit={createTask}>
-          <h3>Event Task</h3>
-          <div className="form-grid">
-            <input placeholder="Task title" value={taskForm.title} onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })} />
-            <select value={taskForm.teamId} onChange={(e) => setTaskForm({ ...taskForm, teamId: e.target.value })}><option value="">Team</option>{teams.map((x) => <option key={x._id} value={x._id}>{x.name}</option>)}</select>
-            <select value={taskForm.assignedToUserId} onChange={(e) => setTaskForm({ ...taskForm, assignedToUserId: e.target.value })}><option value="">Owner</option>{users.map((u) => <option key={u._id} value={u._id}>{u.name}</option>)}</select>
-            <select value={taskForm.backupUserId} onChange={(e) => setTaskForm({ ...taskForm, backupUserId: e.target.value })}><option value="">Backup</option>{users.map((u) => <option key={u._id} value={u._id}>{u.name}</option>)}</select>
-            <select value={taskForm.linkedVendorId} onChange={(e) => setTaskForm({ ...taskForm, linkedVendorId: e.target.value })}><option value="">Linked Vendor</option>{vendors.map((v) => <option key={v._id} value={v._id}>{v.name}</option>)}</select>
-            <select value={taskForm.priority} onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value })}><option>LOW</option><option>MEDIUM</option><option>HIGH</option></select>
-            <select value={taskForm.status} onChange={(e) => setTaskForm({ ...taskForm, status: e.target.value })}><option>PENDING</option><option>IN_PROGRESS</option><option>DONE</option></select>
-            <input placeholder="Start time" value={taskForm.startTimeLabel} onChange={(e) => setTaskForm({ ...taskForm, startTimeLabel: e.target.value })} />
-            <input placeholder="Deadline" value={taskForm.deadlineLabel} onChange={(e) => setTaskForm({ ...taskForm, deadlineLabel: e.target.value })} />
-          </div>
-          <button className="primary" type="submit">Add Task</button>
-        </form>
-      </div>
-
-      <div className="grid two mt16">
-        <div className="panel">
-          <h3>Teams</h3>
-          <DataTable headers={['Team', 'Purpose', 'Lead']} rows={teams.map((x) => [x.name, x.purpose, x.leadUserId?.name || '-'])} />
-        </div>
-        <div className="panel">
-          <h3>Tasks</h3>
-          <DataTable headers={['Task', 'Team', 'Owner', 'Backup', 'Deadline', 'Status', 'Action']} rows={tasks.map((x) => [x.title, x.teamId?.name || '-', x.assignedToUserId?.name || '-', x.backupUserId?.name || '-', x.deadlineLabel || '-', x.status, <button onClick={() => markDone(x)}>Mark done</button>])} />
-        </div>
-      </div>
-    </div>
-  );
+    <Grid container spacing={2} sx={{ mt: 0.5 }}><Grid item xs={12} md={5}><DataTable headers={['Team','Purpose','Lead']} rows={teams.map((x)=>[x.name,x.purpose,x.leadUserId?.name||'-'])} /></Grid><Grid item xs={12} md={7}><DataTable headers={['Task','Team','Owner','Priority','Deadline','Status','Action']} rows={tasks.map((x)=>[x.title,x.teamId?.name||'-',x.assignedToUserId?.name||'-',<Chip size="small" label={x.priority} color={x.priority==='HIGH'?'error':'default'} />,x.deadlineLabel||'-',<Chip size="small" label={x.status} color={x.status==='DONE'?'success':x.status==='IN_PROGRESS'?'warning':'default'} />,<Button size="small" onClick={()=>markDone(x)}>Mark Done</Button>])} /></Grid></Grid>
+  </Box>;
 }

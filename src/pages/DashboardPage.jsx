@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import api from '../api';
-import SummaryCard from '../components/SummaryCard';
+import { Alert, Box, Card, CardContent, Chip, Grid, LinearProgress, Stack, Typography } from '@mui/material';
 import SectionTitle from '../components/SectionTitle';
+import SummaryCard from '../components/SummaryCard';
 import DataTable from '../components/DataTable';
+import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useLive } from '../context/LiveContext';
 
@@ -13,10 +14,7 @@ export default function DashboardPage() {
   const [liveBoard, setLiveBoard] = useState({ assignments: [], guests: [], anchors: [], current: null });
 
   const load = async () => {
-    const [s, b] = await Promise.all([
-      api.get('/dashboard/summary'),
-      api.get('/stage-assignments/live-board')
-    ]);
+    const [s, b] = await Promise.all([api.get('/dashboard/summary'), api.get('/stage-assignments/live-board')]);
     setSummary(s.data);
     setLiveBoard(b.data);
   };
@@ -26,14 +24,11 @@ export default function DashboardPage() {
 
   const roleMessage = useMemo(() => {
     const code = user?.roleId?.code;
-    if (code === 'ANCHOR') return 'Anchor dashboard focuses only on category-wise stage flow and live guest changes.';
-    if (code === 'SENIOR_TEAM') return 'Senior team controls live guest replacement, donations and instant thank-you actions.';
-    if (code === 'TEAM_LEADER') return 'Team leader view focuses on team execution, due tasks and stage readiness.';
-    if (code === 'VOLUNTEER') return 'Volunteer view should stay simple: readiness, student support and assigned tasks.';
-    return 'Planning mode is used before event day. Switch to live mode on event day and trust server + sockets.';
-  }, [user]);
+    if (code === 'ANCHOR') return 'Anchor dashboard focuses on category-wise flow and live guest changes.';
+    if (code === 'SENIOR_TEAM') return 'Senior team controls guest replacement, donations, and rapid approvals.';
+    return 'Planning mode for setup, live mode for event-day command center.';
+  }, [user?.roleId?.code]);
 
-  const currentAssignment = liveBoard.current;
   const taskRows = [
     ['Planning Mode Rule', 'Manual sync + local cache okay'],
     ['Event Day Rule', 'Server truth + sockets + auto refresh'],
@@ -42,67 +37,63 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="page">
+    <Box>
       <SectionTitle title="Master Dashboard" subtitle={roleMessage} />
+      {latestPopup ? <Alert severity="warning" onClose={clearPopup} sx={{ mb: 2 }}>{latestPopup.payload?.title || 'Live popup'}: {latestPopup.payload?.message || 'Live event update received.'}</Alert> : null}
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6} lg={4}><SummaryCard title="Students" value={summary?.students || 0} subtitle={`${summary?.eligibleStudents || 0} eligible / ${summary?.reviewStudents || 0} review`} /></Grid>
+        <Grid item xs={12} sm={6} lg={4}><SummaryCard title="Stage Assignments" value={summary?.stageAssignments || 0} subtitle={`${summary?.liveAssignments || 0} currently live`} /></Grid>
+        <Grid item xs={12} sm={6} lg={4}><SummaryCard title="Notifications" value={summary?.notifications || 0} subtitle={`${events.length} live events received`} /></Grid>
+        <Grid item xs={12} sm={6} lg={4}><SummaryCard title="Vendors" value={summary?.vendors || 0} subtitle={`${summary?.pendingTasks || 0} pending tasks`} tone="warning" /></Grid>
+        <Grid item xs={12} sm={6} lg={4}><SummaryCard title="Allowed Budget" value={`₹${summary?.totalAllowedBudget || 0}`} subtitle={`Actual ₹${summary?.totalActualExpense || 0}`} /></Grid>
+        <Grid item xs={12} sm={6} lg={4}><SummaryCard title="Available Guests" value={summary?.availableGuests || 0} subtitle="Expected / available / arrived early" tone="success" /></Grid>
+      </Grid>
 
-      {latestPopup ? (
-        <div className="panel warning-panel">
-          <div className="row between"><strong>{latestPopup.payload?.title || 'Live popup'}</strong><button onClick={clearPopup}>Dismiss</button></div>
-          <div>{latestPopup.payload?.message || 'A live event update was received.'}</div>
-        </div>
-      ) : null}
+      <Grid container spacing={2} sx={{ mt: 0.5 }}>
+        <Grid item xs={12} lg={6}>
+          <Card><CardContent>
+            <Typography variant="h6" gutterBottom>Current Stage Sequence</Typography>
+            {liveBoard.current ? (
+              <Stack spacing={0.8}>
+                <Typography><strong>Student:</strong> {liveBoard.current.studentId?.fullName}</Typography>
+                <Typography><strong>Category:</strong> {liveBoard.current.categoryId?.title}</Typography>
+                <Typography><strong>Anchor:</strong> {liveBoard.current.actualAnchorId?.name || liveBoard.current.plannedAnchorId?.name || '-'}</Typography>
+                <Typography><strong>Guest:</strong> {liveBoard.current.actualGuestId?.name || liveBoard.current.plannedGuestId?.name || '-'}</Typography>
+                <Chip size="small" label={liveBoard.current.status} sx={{ width: 'fit-content' }} color="primary" />
+              </Stack>
+            ) : <Typography variant="body2">No live assignment yet.</Typography>}
+          </CardContent></Card>
+        </Grid>
+        <Grid item xs={12} lg={6}>
+          <Card><CardContent>
+            <Typography variant="h6" gutterBottom>Planning Checklist</Typography>
+            <Typography variant="body2" sx={{ mb: 1 }}>Operations readiness</Typography>
+            <LinearProgress variant="determinate" value={Math.min(100, (summary?.stageAssignments || 0) * 10)} sx={{ mb: 2 }} />
+            <DataTable headers={['Key', 'Value']} rows={taskRows} />
+          </CardContent></Card>
+        </Grid>
 
-      <div className="grid">
-        <SummaryCard title="Students" value={summary?.students || 0} subtitle={`${summary?.eligibleStudents || 0} eligible / ${summary?.reviewStudents || 0} review`} />
-        <SummaryCard title="Stage Assignments" value={summary?.stageAssignments || 0} subtitle={`${summary?.liveAssignments || 0} currently live`} />
-        <SummaryCard title="Notifications" value={summary?.notifications || 0} subtitle={`${events.length} live events received`} />
-        <SummaryCard title="Vendors" value={summary?.vendors || 0} subtitle={`${summary?.pendingTasks || 0} tasks pending`} />
-        <SummaryCard title="Allowed Budget" value={`₹${summary?.totalAllowedBudget || 0}`} subtitle={`Actual ₹${summary?.totalActualExpense || 0}`} />
-        <SummaryCard title="Available Guests" value={summary?.availableGuests || 0} subtitle="Expected / available / early arrived" tone="success" />
-      </div>
-
-      <div className="grid two mt16">
-        <div className="panel">
-          <h3>Current live sequence</h3>
-          {currentAssignment ? (
-            <div className="stack gap8">
-              <div><strong>Student:</strong> {currentAssignment.studentId?.fullName}</div>
-              <div><strong>Category:</strong> {currentAssignment.categoryId?.title}</div>
-              <div><strong>Anchor:</strong> {currentAssignment.actualAnchorId?.name || currentAssignment.plannedAnchorId?.name || '-'}</div>
-              <div><strong>Guest:</strong> {currentAssignment.actualGuestId?.name || currentAssignment.plannedGuestId?.name || '-'}</div>
-              <div><strong>Status:</strong> <span className="pill">{currentAssignment.status}</span></div>
-            </div>
-          ) : <div className="small">No live assignment yet.</div>}
-        </div>
-
-        <div className="panel">
-          <h3>Planning vs live rule</h3>
-          <DataTable headers={['Key', 'Value']} rows={taskRows} />
-        </div>
-      </div>
-
-      <div className="grid two mt16">
-        <div className="panel">
-          <h3>Recent live feed</h3>
-          <div className="feed">
-            {events.length ? events.map((item, idx) => (
-              <div key={idx} className="feed-item">
-                <strong>{item.name}</strong>
-                <div className="small">{new Date(item.at).toLocaleString()}</div>
-                <pre className="code mini">{JSON.stringify(item.payload, null, 2)}</pre>
-              </div>
-            )) : <div className="small">No live events received yet.</div>}
-          </div>
-        </div>
-
-        <div className="panel">
-          <h3>Available guests now</h3>
-          <DataTable
-            headers={['Guest', 'Status', 'Guest Awards']}
-            rows={(liveBoard.guests || []).map((guest) => [guest.name, guest.availabilityStatus, guest.stageCounts?.guestAwards || 0])}
-          />
-        </div>
-      </div>
-    </div>
+        <Grid item xs={12} lg={8}>
+          <Card><CardContent>
+            <Typography variant="h6" gutterBottom>Recent Activity Feed</Typography>
+            <Stack spacing={1.2} sx={{ maxHeight: 420, overflow: 'auto' }}>
+              {events.length ? events.map((item, idx) => (
+                <Card key={idx} variant="outlined"><CardContent>
+                  <Typography variant="subtitle2">{item.name}</Typography>
+                  <Typography variant="caption">{new Date(item.at).toLocaleString()}</Typography>
+                  <Typography variant="body2" sx={{ mt: 0.5 }}>{JSON.stringify(item.payload)}</Typography>
+                </CardContent></Card>
+              )) : <Typography variant="body2">No live events received yet.</Typography>}
+            </Stack>
+          </CardContent></Card>
+        </Grid>
+        <Grid item xs={12} lg={4}>
+          <Card><CardContent>
+            <Typography variant="h6" gutterBottom>Guest Readiness</Typography>
+            <DataTable headers={['Guest', 'Status', 'Awards']} rows={(liveBoard.guests || []).map((g) => [g.name, g.availabilityStatus, g.stageCounts?.guestAwards || 0])} />
+          </CardContent></Card>
+        </Grid>
+      </Grid>
+    </Box>
   );
 }
