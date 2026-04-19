@@ -21,8 +21,17 @@ export function LiveProvider({ children }) {
   const { user } = useAuth();
   const [events, setEvents] = useState([]);
   const [latestPopup, setLatestPopup] = useState(null);
+  const [connectionStatus, setConnectionStatus] = useState(socket.connected ? 'connected' : 'reconnecting');
 
   useEffect(() => {
+    const handleConnect = () => setConnectionStatus('connected');
+    const handleReconnect = () => setConnectionStatus('reconnecting');
+    const handleDisconnect = () => setConnectionStatus('offline');
+
+    socket.on('connect', handleConnect);
+    socket.on('reconnect_attempt', handleReconnect);
+    socket.on('disconnect', handleDisconnect);
+
     const subs = socketEvents.map((name) => {
       const fn = (payload) => {
         const item = { name, payload, at: new Date().toISOString() };
@@ -34,10 +43,25 @@ export function LiveProvider({ children }) {
     });
 
     if (user?.roleId?.code) socket.emit('join-role-room', user.roleId.code);
-    return () => subs.forEach(({ name, fn }) => socket.off(name, fn));
+
+    return () => {
+      socket.off('connect', handleConnect);
+      socket.off('reconnect_attempt', handleReconnect);
+      socket.off('disconnect', handleDisconnect);
+      subs.forEach(({ name, fn }) => socket.off(name, fn));
+    };
   }, [user]);
 
-  const value = useMemo(() => ({ events, latestPopup, clearPopup: () => setLatestPopup(null) }), [events, latestPopup]);
+  const value = useMemo(
+    () => ({
+      events,
+      latestPopup,
+      connectionStatus,
+      clearPopup: () => setLatestPopup(null)
+    }),
+    [events, latestPopup, connectionStatus]
+  );
+
   return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
 }
 
