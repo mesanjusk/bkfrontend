@@ -1,5 +1,4 @@
-const text = `
-MASTER FLOW AND FEATURES CHART
+const text = `MASTER FLOW AND FEATURES CHART
 
 1. CORE APP FLOW
 - PWA opens in planning mode before event day
@@ -42,8 +41,7 @@ MASTER FLOW AND FEATURES CHART
 4. LIVE MODE RULE
 - Planning days: manual sync + local cache okay
 - Event day: server truth + sockets + auto refresh
-- Offline fallback can queue limited actions, but live stage state should come from server
-`;
+- Offline fallback can queue limited actions, but live stage state should come from server`;
 
 export default function SystemFlowPage() {
   return (
