@@ -14,8 +14,12 @@ import NotificationsPage from './pages/NotificationsPage';
 import AdminPage from './pages/AdminPage';
 import SystemFlowPage from './pages/SystemFlowPage';
 import WhatsAppPage from './pages/WhatsAppPage';
+import PublicStudentRegistrationPage from './pages/PublicStudentRegistrationPage';
+import PublicStudentEditPage from './pages/PublicStudentEditPage';
 
-function Layout({ children }) { return <AppShell>{children}</AppShell>; }
+function Layout({ children }) {
+  return <AppShell>{children}</AppShell>;
+}
 
 export default function App() {
   return (
@@ -24,8 +28,30 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            {[['/', <DashboardPage />], ['/students', <StudentsPage />], ['/categories', <CategoriesPage />], ['/stage', <StagePage />], ['/budget', <BudgetPage />], ['/responsibilities', <ResponsibilitiesPage />], ['/notifications', <NotificationsPage />], ['/admin', <AdminPage />], ['/system-flow', <SystemFlowPage />], ['/whatsapp', <WhatsAppPage />]].map(([path, page]) => (
-              <Route key={path} path={path} element={<ProtectedRoute><Layout>{page}</Layout></ProtectedRoute>} />
+            <Route path="/student-register" element={<PublicStudentRegistrationPage />} />
+            <Route path="/student-edit/:token" element={<PublicStudentEditPage />} />
+
+            {[
+              ['/', <DashboardPage />],
+              ['/students', <StudentsPage />],
+              ['/categories', <CategoriesPage />],
+              ['/stage', <StagePage />],
+              ['/budget', <BudgetPage />],
+              ['/responsibilities', <ResponsibilitiesPage />],
+              ['/notifications', <NotificationsPage />],
+              ['/admin', <AdminPage />],
+              ['/system-flow', <SystemFlowPage />],
+              ['/whatsapp', <WhatsAppPage />]
+            ].map(([path, page]) => (
+              <Route
+                key={path}
+                path={path}
+                element={
+                  <ProtectedRoute>
+                    <Layout>{page}</Layout>
+                  </ProtectedRoute>
+                }
+              />
             ))}
           </Routes>
         </BrowserRouter>
