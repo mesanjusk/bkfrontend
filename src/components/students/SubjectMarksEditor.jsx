@@ -51,14 +51,14 @@ export default function SubjectMarksEditor({ value = [], onChange }) {
 
   return (
     <Box>
-      <TableContainer>
+      <TableContainer sx={{ overflowX: 'auto' }}>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Subject</TableCell>
-              <TableCell>Code (optional)</TableCell>
-              <TableCell>Obtained</TableCell>
-              <TableCell>Max</TableCell>
+              <TableCell sx={{ minWidth: 180 }}>Subject</TableCell>
+              <TableCell sx={{ minWidth: 140 }}>Code (optional)</TableCell>
+              <TableCell sx={{ minWidth: 100 }}>Obtained</TableCell>
+              <TableCell sx={{ minWidth: 100 }}>Max</TableCell>
               <TableCell align="right">Action</TableCell>
             </TableRow>
           </TableHead>

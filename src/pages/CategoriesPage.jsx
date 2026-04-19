@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Box, Button, Card, CardContent, Chip, Grid, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
+import { Box, Button, Card, CardContent, Chip, Grid, MenuItem, Stack, TextField, Typography, useMediaQuery } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import api from '../api';
 import DataTable from '../components/DataTable';
 import SectionTitle from '../components/SectionTitle';
+import ResponsiveDataView from '../components/ResponsiveDataView';
 
 const initialForm = {
   title: '', board: '', className: '', minPercentage: 0, calculationMethod: 'DIRECT_PERCENTAGE', bestOfCount: 5,
@@ -10,6 +12,8 @@ const initialForm = {
 };
 
 export default function CategoriesPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [categories, setCategories] = useState([]);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(initialForm);
@@ -34,11 +38,19 @@ export default function CategoriesPage() {
 
   const anchorOptions = users.filter((u) => u.eventDutyType === 'ANCHOR');
   const guestOptions = users.filter((u) => u.eventDutyType === 'GUEST');
+  const categoryRows = useMemo(() => categories.map((cat) => ({
+    ...cat,
+    rule: `${cat.board || '-'} / ${cat.className || '-'} / min ${cat.minPercentage || 0}%`,
+    calculation: cat.calculationMethod === 'BEST_5' ? `Best ${cat.bestOfCount}` : 'Direct %',
+    anchor: cat.anchorId?.name || '-',
+    guests: (cat.preferredGuestIds || []).map((g) => g.name || g).join(', ') || '-',
+    priority: cat.sequencePriority || 0
+  })), [categories]);
 
   return (
     <Box>
       <SectionTitle title="Categories + Fixed Anchor Mapping" subtitle="Define board/class filters, min percentage, CBSE Best 5 logic, fixed anchor, and preferred guests." />
-      <Card component="form" onSubmit={submit}><CardContent>
+      <Card component="form" onSubmit={submit} variant="outlined"><CardContent>
         <Grid container spacing={1.3}>
           {['title', 'board', 'className'].map((key) => <Grid item xs={12} sm={6} md={3} key={key}><TextField label={key} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></Grid>)}
           <Grid item xs={12} sm={6} md={3}><TextField type="number" label="Minimum %" value={form.minPercentage} onChange={(e) => setForm({ ...form, minPercentage: Number(e.target.value) })} /></Grid>
@@ -52,7 +64,26 @@ export default function CategoriesPage() {
       </CardContent></Card>
 
       <Box sx={{ mt: 2 }}>
-        <DataTable headers={['Title', 'Rule', 'Calculation', 'Anchor', 'Preferred Guests', 'Priority', 'Actions']} rows={categories.map((cat) => [cat.title, `${cat.board || '-'} / ${cat.className || '-'} / min ${cat.minPercentage || 0}%`, cat.calculationMethod === 'BEST_5' ? `Best ${cat.bestOfCount}` : 'Direct %', cat.anchorId?.name || '-', (cat.preferredGuestIds || []).map((g) => g.name || g).join(', '), cat.sequencePriority || 0, <Button size="small" onClick={() => edit(cat)}>Edit</Button>])} />
+        {isMobile ? (
+          <ResponsiveDataView
+            rows={categoryRows}
+            mobileRender={(cat) => (
+              <Stack spacing={0.8}>
+                <Typography variant="subtitle2" sx={{ overflowWrap: 'anywhere' }}>{cat.title || 'Untitled category'}</Typography>
+                <Typography variant="body2"><strong>Rule:</strong> {cat.rule}</Typography>
+                <Typography variant="body2"><strong>Calc:</strong> {cat.calculation}</Typography>
+                <Typography variant="body2"><strong>Anchor:</strong> {cat.anchor}</Typography>
+                <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}><strong>Guests:</strong> {cat.guests}</Typography>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body2"><strong>Priority:</strong> {cat.priority}</Typography>
+                  <Button size="small" variant="outlined" onClick={() => edit(cat)}>Edit</Button>
+                </Stack>
+              </Stack>
+            )}
+          />
+        ) : (
+          <DataTable headers={['Title', 'Rule', 'Calculation', 'Anchor', 'Preferred Guests', 'Priority', 'Actions']} rows={categoryRows.map((cat) => [cat.title, cat.rule, cat.calculation, cat.anchor, cat.guests, cat.priority, <Button size="small" onClick={() => edit(cat)}>Edit</Button>])} />
+        )}
       </Box>
     </Box>
   );

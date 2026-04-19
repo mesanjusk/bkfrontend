@@ -179,7 +179,7 @@ export default function ResponsibilitiesPage() {
 
             <Card variant="outlined">
               <CardContent>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} mb={1.5}>
+                <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} mb={1.5} useFlexGap flexWrap="wrap">
                   <TextField size="small" placeholder="Search tasks" value={search} onChange={(e) => setSearch(e.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded fontSize="small" /></InputAdornment> }} sx={{ minWidth: { md: 260 } }} />
                   <TextField size="small" select label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: { md: 140 } }}>{['ALL', 'PENDING', 'IN_PROGRESS', 'DELAYED', 'BLOCKED', 'DONE'].map((x) => <MenuItem key={x} value={x}>{x === 'DONE' ? 'COMPLETED' : x}</MenuItem>)}</TextField>
                   <TextField size="small" select label="Priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} sx={{ minWidth: { md: 140 } }}>{['ALL', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>

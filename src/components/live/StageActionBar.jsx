@@ -8,10 +8,10 @@ import VolunteerActivismRoundedIcon from '@mui/icons-material/VolunteerActivismR
 import { Button, Stack } from '@mui/material';
 
 export default function StageActionBar({ onStatus, onChangeGuest, onAddDonation, onTriggerThanks, compact = false }) {
-  const mobileProps = compact ? { fullWidth: true, size: 'medium' } : { size: 'medium' };
+  const mobileProps = compact ? { fullWidth: true, size: 'small' } : { size: 'small' };
 
   return (
-    <Stack direction={compact ? 'column' : 'row'} gap={0.8} flexWrap="wrap">
+    <Stack direction={compact ? 'column' : 'row'} gap={0.8} flexWrap="wrap" useFlexGap>
       <Button {...mobileProps} startIcon={<CallIcon />} onClick={() => onStatus('CALLED')}>Mark Called</Button>
       <Button {...mobileProps} startIcon={<TheaterComedyRoundedIcon />} onClick={() => onStatus('ON_STAGE')}>Mark On Stage</Button>
       <Button {...mobileProps} variant="contained" color="success" startIcon={<CheckCircleRoundedIcon />} onClick={() => onStatus('COMPLETED')}>Mark Completed</Button>

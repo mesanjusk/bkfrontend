@@ -102,16 +102,16 @@ export default function AppShell({ children }) {
   );
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default' }}>
+    <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default', width: '100%', overflowX: 'clip' }}>
       <AppBar position="fixed" color="inherit" sx={{ zIndex: (t) => t.zIndex.drawer + 1, borderBottom: '1px solid #e2e8f0' }}>
-        <Toolbar sx={{ gap: 1, alignItems: 'center', py: { xs: 0.5, md: 0 } }}>
-          <IconButton edge="start" onClick={() => setMobileOpen(true)} sx={{ display: { lg: 'none' } }}>
+        <Toolbar sx={{ gap: 1, alignItems: 'center', py: { xs: 0.5, md: 0 }, minWidth: 0 }}>
+          <IconButton edge="start" onClick={() => setMobileOpen(true)} sx={{ display: { lg: 'none' }, mr: { xs: 0.2, sm: 0.8 } }}>
             <MenuIcon />
           </IconButton>
           <TextField
             placeholder="Search students, categories, tasks..."
             size="small"
-            sx={{ maxWidth: 420, display: { xs: 'none', sm: 'block' }, flexShrink: 1 }}
+            sx={{ maxWidth: 420, display: { xs: 'none', sm: 'block' }, flexShrink: 1, minWidth: { sm: 220, md: 300 } }}
             InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
           />
           <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap', justifyContent: 'flex-end', minWidth: 0 }}>
@@ -143,7 +143,7 @@ export default function AppShell({ children }) {
         </Drawer>
       </Box>
 
-      <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.25, sm: 2, md: 3 }, mt: { xs: 8, sm: 8 } }}>
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.25, sm: 2, md: 3 }, mt: { xs: 8, sm: 8 }, minWidth: 0 }}>
         {children}
       </Box>
 

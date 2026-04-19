@@ -7,7 +7,7 @@ const money = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
 export default function VendorTable({ vendors, onOpen, onMenu }) {
   return (
     <TableContainer sx={{ overflowX: 'auto' }}>
-      <Table size="small">
+      <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
             <TableCell>Vendor</TableCell>
@@ -22,6 +22,13 @@ export default function VendorTable({ vendors, onOpen, onMenu }) {
           </TableRow>
         </TableHead>
         <TableBody>
+          {!vendors.length ? (
+            <TableRow>
+              <TableCell colSpan={9}>
+                <Typography variant="body2" color="text.secondary">No vendors found for the current filters.</Typography>
+              </TableCell>
+            </TableRow>
+          ) : null}
           {vendors.map((vendor) => (
             <TableRow key={vendor._id} hover onClick={() => onOpen?.(vendor)} sx={{ cursor: 'pointer' }}>
               <TableCell>

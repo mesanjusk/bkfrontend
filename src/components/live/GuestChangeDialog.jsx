@@ -50,8 +50,8 @@ export default function GuestChangeDialog({ open, assignment, guests, selectedGu
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button variant="contained" onClick={onConfirm} disabled={!selectedGuestId}>Confirm Guest Change</Button>
+        <Button onClick={onClose} fullWidth={fullScreen}>Cancel</Button>
+        <Button variant="contained" onClick={onConfirm} disabled={!selectedGuestId} fullWidth={fullScreen}>Confirm Guest Change</Button>
       </DialogActions>
     </Dialog>
   );

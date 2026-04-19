@@ -7,7 +7,7 @@ const money = (v) => `₹${Number(v || 0).toLocaleString('en-IN')}`;
 export default function BudgetHeadTable({ heads, onOpen, onMenu }) {
   return (
     <TableContainer sx={{ overflowX: 'auto' }}>
-      <Table size="small">
+      <Table size="small" stickyHeader>
         <TableHead>
           <TableRow>
             <TableCell>Budget Head</TableCell>
@@ -20,6 +20,13 @@ export default function BudgetHeadTable({ heads, onOpen, onMenu }) {
           </TableRow>
         </TableHead>
         <TableBody>
+          {!heads.length ? (
+            <TableRow>
+              <TableCell colSpan={7}>
+                <Typography variant="body2" color="text.secondary">No budget heads found for this search.</Typography>
+              </TableCell>
+            </TableRow>
+          ) : null}
           {heads.map((head) => {
             const meta = getBudgetMeta(head);
             return (
