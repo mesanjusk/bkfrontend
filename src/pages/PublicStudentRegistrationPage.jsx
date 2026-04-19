@@ -22,14 +22,16 @@ const emptySubject = { subject: '', marksObtained: 0, maxMarks: 100 };
 const initialForm = {
   fullName: '',
   mobile: '',
-  parentMobile: '',
+  
   schoolName: '',
   board: '',
   className: '',
   percentage: 0,
   gender: 'Any',
+  
   city: '',
   state: '',
+  parentMobile: '',
   marksheetFileUrl: '',
   studentPhotoUrl: '',
   subjects: [emptySubject],
@@ -79,8 +81,8 @@ export default function PublicStudentRegistrationPage() {
     <Container maxWidth="md" sx={{ py: 4 }}>
       <Stack spacing={3}>
         <Box textAlign="center">
-          <Typography variant="h4" fontWeight={700}>Student Award Registration</Typography>
-          <Typography color="text.secondary">Fill your details, upload marksheet and photo, then submit.</Typography>
+          <Typography variant="h4" fontWeight={700}>BK Awards 2026</Typography>
+          
         </Box>
 
         {success ? (
@@ -103,9 +105,7 @@ export default function PublicStudentRegistrationPage() {
                 <Grid item xs={12} md={6}>
                   <TextField fullWidth required label="Student mobile number" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
                 </Grid>
-                <Grid item xs={12} md={6}>
-                  <TextField fullWidth required label="Parent mobile number" value={form.parentMobile} onChange={(e) => setForm({ ...form, parentMobile: e.target.value })} />
-                </Grid>
+                
                 <Grid item xs={12} md={6}>
                   <TextField fullWidth required label="School name" value={form.schoolName} onChange={(e) => setForm({ ...form, schoolName: e.target.value })} />
                 </Grid>
@@ -120,7 +120,7 @@ export default function PublicStudentRegistrationPage() {
                 </Grid>
                 <Grid item xs={6} md={3}>
                   <TextField fullWidth select label="Gender" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
-                    <MenuItem value="Any">Any</MenuItem>
+                    
                     <MenuItem value="Male">Male</MenuItem>
                     <MenuItem value="Female">Female</MenuItem>
                   </TextField>
@@ -130,6 +130,10 @@ export default function PublicStudentRegistrationPage() {
                 </Grid>
                 <Grid item xs={6} md={3}>
                   <TextField fullWidth label="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+                </Grid>
+
+                <Grid item xs={12} md={6}>
+                  <TextField fullWidth required label="Parent mobile number" value={form.parentMobile} onChange={(e) => setForm({ ...form, parentMobile: e.target.value })} />
                 </Grid>
               </Grid>
 
@@ -215,15 +219,13 @@ export default function PublicStudentRegistrationPage() {
                 ) : null}
               </Stack>
 
-              <TextField fullWidth multiline minRows={2} label="Remarks (optional)" value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
+              
 
               <Button type="submit" size="large" variant="contained" disabled={saving}>
                 {saving ? 'Submitting...' : 'Submit registration'}
               </Button>
 
-              <Alert severity="warning">
-                Certificate preview is available after successful registration from your personal edit link.
-              </Alert>
+              
             </Stack>
           </CardContent>
         </Card>
