@@ -46,7 +46,6 @@ export default function AdminPage() {
   const [notifications, setNotifications] = useState([]);
   const [userForm, setUserForm] = useState(userInitial);
   const [templateForm, setTemplateForm] = useState(templateInitial);
-  const [ruleForm, setRuleForm] = useState(ruleInitial);
   const [editingRule, setEditingRule] = useState(null);
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [settings, setSettings] = useState({ event: true, users: true, templates: true, automation: true, liveMode: true, notifications: true });
@@ -73,10 +72,10 @@ export default function AdminPage() {
   const addUser = async (e) => { e.preventDefault(); await api.post('/users', userForm); setUserForm(userInitial); load(); };
   const addTemplate = async (e) => { e.preventDefault(); await api.post('/certificate-templates', templateForm); setTemplateForm(templateInitial); load(); };
   const saveRule = async () => {
+    if (!editingRule) return;
     if (editingRule?._id) await api.put(`/automation-rules/${editingRule._id}`, editingRule);
-    else await api.post('/automation-rules', ruleForm);
+    else await api.post('/automation-rules', editingRule);
     setEditingRule(null);
-    setRuleForm(ruleInitial);
     load();
   };
 

@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Box, Button, Chip, Drawer, Grid, MenuItem, Stack, TextField, Typography, useMediaQuery, useTheme } from '@mui/material';
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Drawer,
+  Grid,
+  MenuItem,
+  Snackbar,
+  Stack,
+  TextField,
+  Typography,
+  useMediaQuery,
+  useTheme
+} from '@mui/material';
 import DoneAllIcon from '@mui/icons-material/DoneAll';
 import { useNavigate } from 'react-router-dom';
 import api from '../../api';
@@ -8,19 +22,29 @@ import SectionTitle from '../SectionTitle';
 import NotificationCard from './NotificationCard';
 import ReadStatusChip from './ReadStatusChip';
 import HealthAlertPanel from '../admin/HealthAlertPanel';
+import ConfirmDialog from '../ConfirmDialog';
+
+const donationInitial = { donorGuestId: '', amount: 0, mode: 'cash', note: '', receivedByUserId: '' };
 
 export default function NotificationCenterPage() {
   const [notifications, setNotifications] = useState([]);
+  const [donations, setDonations] = useState([]);
+  const [users, setUsers] = useState([]);
   const [selected, setSelected] = useState(null);
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [readFilter, setReadFilter] = useState('ALL');
+  const [donationForm, setDonationForm] = useState(donationInitial);
+  const [confirmDonation, setConfirmDonation] = useState(null);
+  const [toast, setToast] = useState('');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
 
   const load = async () => {
-    const { data } = await api.get('/notifications');
-    setNotifications(data || []);
+    const [n, d, u] = await Promise.all([api.get('/notifications'), api.get('/donations'), api.get('/users')]);
+    setNotifications(n.data || []);
+    setDonations(d.data || []);
+    setUsers(u.data || []);
   };
 
   useEffect(() => { load(); }, []);
@@ -37,6 +61,29 @@ export default function NotificationCenterPage() {
     load();
   };
 
+  const createDonation = async (e) => {
+    e.preventDefault();
+    await api.post('/donations', donationForm);
+    setDonationForm(donationInitial);
+    setToast('Donation recorded');
+    load();
+  };
+
+  const sendThanks = async () => {
+    if (!confirmDonation) return;
+    await api.put(`/donations/${confirmDonation._id}`, { ...confirmDonation, thankYouStatus: 'SENT' });
+    await api.post('/notifications', {
+      title: 'WhatsApp thank-you sent',
+      message: `Donation thank-you marked sent for ₹${confirmDonation.amount}.`,
+      type: 'WHATSAPP',
+      targetRoles: ['SUPER_ADMIN', 'ADMIN', 'SENIOR_TEAM'],
+      readStatus: false
+    });
+    setConfirmDonation(null);
+    setToast('Thank-you marked sent');
+    load();
+  };
+
   const types = useMemo(() => ['ALL', ...new Set(notifications.map((n) => n.type).filter(Boolean))], [notifications]);
   const filtered = useMemo(() => notifications.filter((n) => {
     const byType = typeFilter === 'ALL' || n.type === typeFilter;
@@ -46,15 +93,16 @@ export default function NotificationCenterPage() {
 
   const unreadCount = notifications.filter((n) => !n.readStatus).length;
   const criticalUnread = notifications.filter((n) => !n.readStatus && n.priority === 'CRITICAL').length;
+  const pendingThanks = donations.filter((d) => d.thankYouStatus !== 'SENT').length;
 
   return (
     <Box>
-      <SectionTitle title="Notification Center" subtitle="Monitor live alerts, mark read status, and navigate quickly to related workflows." />
+      <SectionTitle title="Notification Center" subtitle="Monitor live alerts, manage read status, and run WhatsApp thank-you operations." />
       <Grid container spacing={2} sx={{ mb: 1 }}>
         <Grid item xs={6} md={3}><SummaryCard title="Total Notifications" value={notifications.length} /></Grid>
         <Grid item xs={6} md={3}><SummaryCard title="Unread Alerts" value={unreadCount} tone={unreadCount ? 'warning' : 'success'} /></Grid>
         <Grid item xs={6} md={3}><SummaryCard title="Critical Unread" value={criticalUnread} tone={criticalUnread ? 'warning' : 'success'} /></Grid>
-        <Grid item xs={6} md={3}><SummaryCard title="Filtered Results" value={filtered.length} /></Grid>
+        <Grid item xs={6} md={3}><SummaryCard title="Pending Thank-you" value={pendingThanks} tone={pendingThanks ? 'warning' : 'success'} /></Grid>
       </Grid>
 
       <Grid container spacing={2}>
@@ -83,12 +131,52 @@ export default function NotificationCenterPage() {
         </Grid>
 
         <Grid item xs={12} lg={4}>
-          <HealthAlertPanel
-            items={[
-              ...(criticalUnread ? [{ label: 'Unread critical notifications', value: criticalUnread, severity: 'error' }] : []),
-              ...(unreadCount ? [{ label: 'Pending unread notifications', value: unreadCount, severity: 'warning' }] : [])
-            ]}
-          />
+          <Stack spacing={1.5}>
+            <HealthAlertPanel
+              items={[
+                ...(criticalUnread ? [{ label: 'Unread critical notifications', value: criticalUnread, severity: 'error' }] : []),
+                ...(unreadCount ? [{ label: 'Pending unread notifications', value: unreadCount, severity: 'warning' }] : []),
+                ...(pendingThanks ? [{ label: 'Pending thank-you actions', value: pendingThanks, severity: 'warning' }] : [])
+              ]}
+            />
+            <Box component="form" onSubmit={createDonation} sx={{ p: 1.5, borderRadius: 2, bgcolor: 'background.paper' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>Donation Quick Entry</Typography>
+              <Stack spacing={1}>
+                <TextField select label="Donor guest" value={donationForm.donorGuestId} onChange={(e) => setDonationForm({ ...donationForm, donorGuestId: e.target.value })}>
+                  <MenuItem value="">Select donor</MenuItem>
+                  {users.filter((u) => u.eventDutyType === 'GUEST').map((u) => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}
+                </TextField>
+                <TextField label="Amount" type="number" value={donationForm.amount} onChange={(e) => setDonationForm({ ...donationForm, amount: Number(e.target.value) })} />
+                <TextField select label="Mode" value={donationForm.mode} onChange={(e) => setDonationForm({ ...donationForm, mode: e.target.value })}>
+                  {['cash', 'upi', 'cheque', 'promise'].map((m) => <MenuItem key={m} value={m}>{m.toUpperCase()}</MenuItem>)}
+                </TextField>
+                <TextField label="Note" value={donationForm.note} onChange={(e) => setDonationForm({ ...donationForm, note: e.target.value })} />
+                <TextField select label="Received by" value={donationForm.receivedByUserId} onChange={(e) => setDonationForm({ ...donationForm, receivedByUserId: e.target.value })}>
+                  <MenuItem value="">Select receiver</MenuItem>
+                  {users.map((u) => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}
+                </TextField>
+                <Button type="submit" variant="contained">Record Donation</Button>
+              </Stack>
+            </Box>
+            <Box sx={{ p: 1.5, borderRadius: 2, bgcolor: 'background.paper' }}>
+              <Typography variant="subtitle1" sx={{ mb: 1 }}>Thank-you Queue</Typography>
+              <Stack spacing={1}>
+                {donations.slice(0, 6).map((d) => (
+                  <Stack key={d._id} direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                    <Box>
+                      <Typography variant="body2">{d.donorGuestId?.name || 'Guest'}</Typography>
+                      <Typography variant="caption">₹{d.amount} • {d.mode}</Typography>
+                    </Box>
+                    <Stack direction="row" spacing={0.6} alignItems="center">
+                      <ReadStatusChip read={d.thankYouStatus === 'SENT'} />
+                      <Button size="small" disabled={d.thankYouStatus === 'SENT'} onClick={() => setConfirmDonation(d)}>Mark Sent</Button>
+                    </Stack>
+                  </Stack>
+                ))}
+                {!donations.length ? <Typography variant="body2">No donation records yet.</Typography> : null}
+              </Stack>
+            </Box>
+          </Stack>
         </Grid>
       </Grid>
 
@@ -113,6 +201,17 @@ export default function NotificationCenterPage() {
           ) : null}
         </Box>
       </Drawer>
+
+      <ConfirmDialog
+        open={Boolean(confirmDonation)}
+        onClose={() => setConfirmDonation(null)}
+        onConfirm={sendThanks}
+        title="Mark WhatsApp thank-you as sent?"
+        description={`This will update donation status${confirmDonation ? ` for ₹${confirmDonation.amount}` : ''} and create a WHATSAPP notification.`}
+        confirmText="Mark Sent"
+      />
+
+      <Snackbar open={Boolean(toast)} autoHideDuration={2500} message={toast} onClose={() => setToast('')} />
     </Box>
   );
 }
