@@ -1,5 +1,8 @@
 import { io } from 'socket.io-client';
 
-export const socket = io(import.meta.env.VITE_SOCKET_URL, {
+const SOCKET_URL =
+  import.meta.env.VITE_SOCKET_URL || 'https://bkbackend-fz9j.onrender.com';
+
+export const socket = io(SOCKET_URL, {
   autoConnect: true
 });
