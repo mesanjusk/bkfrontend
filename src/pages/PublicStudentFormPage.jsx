@@ -1,24 +1,85 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Alert, Avatar, Box, Button, Card, CardContent, Chip, Container, Divider, IconButton,
-  MenuItem, Slider, Skeleton, Stack, Tab, Tabs, TextField, Typography, Fade
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Container,
+  Divider,
+  MenuItem,
+  Slider,
+  Skeleton,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
 } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import {
-  Add, AutoAwesome, CheckCircle, Delete, DriveFolderUpload, EmojiEvents,
-  Insights, School
+  Add,
+  AutoAwesome,
+  CheckCircle,
+  Delete,
+  DriveFolderUpload,
+  EmojiEvents,
+  Insights,
+  School,
 } from '@mui/icons-material';
 import api from '../api';
+
+/* ─────────────────────────── constants ─────────────────────────── */
 
 const emptySubject = { subject: '', marksObtained: 0, maxMarks: 100 };
 
 const initialForm = {
-  fullName: '', mobile: '', parentMobile: '', schoolName: '', board: '',
-  className: '', percentage: '', gender: 'Any', city: '', state: '',
-  subjects: [emptySubject], marksheetFileUrl: '', studentPhotoUrl: '', remarks: '',
-  certificateAdjustments: { photoScale: 1, photoRotation: 0, photoX: 0, photoY: 0 }
+  fullName: '',
+  mobile: '',
+  parentMobile: '',
+  schoolName: '',
+  board: '',
+  className: '',
+  percentage: '',
+  gender: 'Any',
+  city: '',
+  state: '',
+  subjects: [emptySubject],
+  marksheetFileUrl: '',
+  studentPhotoUrl: '',
+  remarks: '',
+  certificateAdjustments: { photoScale: 1, photoRotation: 0, photoX: 0, photoY: 0 },
 };
+
+/* ─────────────────────────── tokens ────────────────────────────── */
+
+const T = {
+  navy:   '#0e1f4d',
+  gold:   '#b8892a',
+  goldLt: '#f5e9d3',
+  ivory:  '#faf8f4',
+  ink:    '#1a1a2e',
+  muted:  '#6b6b80',
+  border: '#e6e0d4',
+  white:  '#ffffff',
+};
+
+const inputSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: '10px',
+    backgroundColor: T.white,
+    fontSize: 14,
+    '& fieldset': { borderColor: T.border },
+    '&:hover fieldset': { borderColor: T.gold },
+    '&.Mui-focused fieldset': { borderColor: T.navy, borderWidth: 1.5 },
+  },
+  '& .MuiInputLabel-root.Mui-focused': { color: T.navy },
+};
+
+/* ─────────────────────────── helpers ───────────────────────────── */
 
 const fileToDataUrl = (file) =>
   new Promise((resolve, reject) => {
@@ -28,26 +89,429 @@ const fileToDataUrl = (file) =>
     reader.readAsDataURL(file);
   });
 
-// --- Aesthetic Minimalist Components ---
+/* ─────────────────────────── sub-components ────────────────────── */
 
-const FormSection = ({ title, subtitle, children }) => (
-  <Box sx={{ mb: 4 }}>
-    <Typography variant="overline" sx={{ color: 'text.secondary', fontWeight: 700, display: 'block', mb: 0.5, letterSpacing: 1.2 }}>
-      {title}
-    </Typography>
-    {subtitle && <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 2 }}>{subtitle}</Typography>}
-    <Stack spacing={2}>{children}</Stack>
-  </Box>
-);
+function HeroBanner({ isEditMode }) {
+  return (
+    <Box
+      sx={{
+        borderRadius: '20px',
+        background: `linear-gradient(135deg, ${T.navy} 0%, #1a3472 60%, #2a1a00 100%)`,
+        color: T.white,
+        p: { xs: '28px 22px', md: '40px 44px' },
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          backgroundImage:
+            'radial-gradient(circle at 80% 20%, rgba(184,137,42,0.18) 0%, transparent 55%)',
+          pointerEvents: 'none',
+        },
+      }}
+    >
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+        <Stack spacing={1.2} sx={{ maxWidth: 480 }}>
+          <Typography
+            sx={{
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontSize: { xs: 26, md: 34 },
+              fontWeight: 700,
+              lineHeight: 1.2,
+              letterSpacing: '-0.3px',
+            }}
+          >
+            {isEditMode ? 'Edit Registration' : 'Student Award Registration'}
+          </Typography>
+          <Typography sx={{ fontSize: 14, opacity: 0.78, lineHeight: 1.6 }}>
+            BK Scholar Awards 2026 · A trusted, prestigious recognition platform for meritorious
+            students.
+          </Typography>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+            <Chip
+              icon={<School sx={{ fontSize: 14, color: `${T.gold} !important` }} />}
+              label="Student Registration"
+              size="small"
+              sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: T.white, fontSize: 12, height: 26 }}
+            />
+            <Chip
+              icon={<Insights sx={{ fontSize: 14, color: `${T.gold} !important` }} />}
+              label="CBSE Best 5"
+              size="small"
+              sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: T.white, fontSize: 12, height: 26 }}
+            />
+            {isEditMode && (
+              <Chip
+                icon={<AutoAwesome sx={{ fontSize: 14, color: `${T.gold} !important` }} />}
+                label="Edit Access"
+                size="small"
+                sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: T.white, fontSize: 12, height: 26 }}
+              />
+            )}
+          </Stack>
+        </Stack>
 
-const MinimalTextField = (props) => (
-  <TextField
-    {...props}
-    variant="filled"
-    InputProps={{ disableUnderline: true, sx: { borderRadius: 2, bgcolor: '#f0f2f5' } }}
-    fullWidth
-  />
-);
+        <Avatar
+          sx={{
+            bgcolor: 'rgba(184,137,42,0.22)',
+            border: `1.5px solid rgba(184,137,42,0.4)`,
+            width: 52,
+            height: 52,
+            display: { xs: 'none', sm: 'flex' },
+          }}
+        >
+          <EmojiEvents sx={{ color: T.gold }} />
+        </Avatar>
+      </Stack>
+    </Box>
+  );
+}
+
+function Section({ title, subtitle, children }) {
+  return (
+    <Card
+      elevation={0}
+      sx={{
+        borderRadius: '16px',
+        border: `1px solid ${T.border}`,
+        bgcolor: T.white,
+        overflow: 'visible',
+      }}
+    >
+      <CardContent sx={{ p: { xs: '20px 18px', md: '28px 28px' } }}>
+        <Stack spacing={0.4} sx={{ mb: 2.5 }}>
+          <Typography
+            sx={{
+              fontFamily: '"Playfair Display", Georgia, serif',
+              fontSize: 17,
+              fontWeight: 700,
+              color: T.ink,
+            }}
+          >
+            {title}
+          </Typography>
+          {subtitle && (
+            <Typography sx={{ fontSize: 13, color: T.muted }}>
+              {subtitle}
+            </Typography>
+          )}
+        </Stack>
+        <Divider sx={{ mb: 2.5, borderColor: T.border }} />
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+function UploadCard({ title, helperText, selectedLabel, onSelect, accept, children }) {
+  return (
+    <Box
+      sx={{
+        borderRadius: '12px',
+        border: `1.5px dashed ${T.border}`,
+        bgcolor: T.ivory,
+        p: '18px 16px',
+      }}
+    >
+      <Stack spacing={1.2}>
+        <Typography sx={{ fontWeight: 600, fontSize: 13, color: T.ink }}>{title}</Typography>
+        <Typography sx={{ fontSize: 12, color: T.muted, lineHeight: 1.55 }}>{helperText}</Typography>
+        <Button
+          fullWidth
+          variant="outlined"
+          component="label"
+          startIcon={<DriveFolderUpload sx={{ fontSize: 17 }} />}
+          sx={{
+            borderRadius: '9px',
+            borderColor: T.border,
+            color: T.navy,
+            fontSize: 13,
+            textTransform: 'none',
+            fontWeight: 600,
+            bgcolor: T.white,
+            py: '8px',
+            '&:hover': { borderColor: T.navy, bgcolor: T.white },
+          }}
+        >
+          Select file
+          <input
+            hidden
+            type="file"
+            accept={accept}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const dataUrl = await fileToDataUrl(file);
+              onSelect(dataUrl);
+            }}
+          />
+        </Button>
+        {selectedLabel && (
+          <Stack direction="row" spacing={0.8} alignItems="center">
+            <CheckCircle sx={{ fontSize: 15, color: '#2e7d32' }} />
+            <Typography sx={{ fontSize: 12, color: '#2e7d32', fontWeight: 600 }}>
+              {selectedLabel}
+            </Typography>
+          </Stack>
+        )}
+        {children}
+      </Stack>
+    </Box>
+  );
+}
+
+function Best5SummaryCard({ board, subjects, best5Preview }) {
+  const isCbse = (board || '').trim().toUpperCase() === 'CBSE';
+  if (!isCbse || !(subjects || []).some((s) => s.subject?.trim() && Number(s.marksObtained) > 0))
+    return null;
+
+  return (
+    <Box
+      sx={{
+        borderRadius: '10px',
+        bgcolor: '#eff6ff',
+        border: '1px solid #bfdbfe',
+        p: '12px 16px',
+      }}
+    >
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.3 }}>
+        <Insights sx={{ fontSize: 15, color: '#1d4ed8' }} />
+        <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#1d4ed8' }}>
+          CBSE Best 5 Preview
+        </Typography>
+      </Stack>
+      <Typography sx={{ fontSize: 13, color: '#1e3a8a' }}>
+        Top 5 total:{' '}
+        <b>
+          {best5Preview.total}/{best5Preview.maxTotal}
+        </b>{' '}
+        · Percentage: <b>{best5Preview.percentage.toFixed(2)}%</b>
+      </Typography>
+    </Box>
+  );
+}
+
+function SliderRow({ label, min, max, step, value, onChange }) {
+  return (
+    <Stack spacing={0.6}>
+      <Stack direction="row" justifyContent="space-between">
+        <Typography sx={{ fontSize: 12, color: T.muted, fontWeight: 500 }}>{label}</Typography>
+        <Typography sx={{ fontSize: 12, color: T.navy, fontWeight: 700 }}>{value}</Typography>
+      </Stack>
+      <Slider
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(_, v) => onChange(v)}
+        size="small"
+        sx={{
+          color: T.navy,
+          '& .MuiSlider-thumb': {
+            width: 14,
+            height: 14,
+            '&:hover': { boxShadow: `0 0 0 6px rgba(14,31,77,0.12)` },
+          },
+          '& .MuiSlider-rail': { opacity: 0.18 },
+        }}
+      />
+    </Stack>
+  );
+}
+
+function CertificatePreviewCard({ form, onAdjustmentChange }) {
+  const photo = form.studentPhotoUrl || form.certificatePhotoUrl;
+  const adj = form.certificateAdjustments || {};
+
+  return (
+    <Grid container spacing={2.5}>
+      <Grid item xs={12} lg={7}>
+        <Card
+          elevation={0}
+          sx={{ borderRadius: '16px', border: `1px solid ${T.border}`, bgcolor: T.white }}
+        >
+          <CardContent sx={{ p: { xs: '20px 18px', md: '28px' } }}>
+            <Typography
+              sx={{
+                fontFamily: '"Playfair Display", Georgia, serif',
+                fontSize: 17,
+                fontWeight: 700,
+                mb: 0.5,
+              }}
+            >
+              Certificate Preview
+            </Typography>
+            <Typography sx={{ fontSize: 13, color: T.muted, mb: 2 }}>
+              Live preview for award certificate photo positioning.
+            </Typography>
+
+            <Box
+              sx={{
+                borderRadius: '12px',
+                minHeight: 300,
+                p: { xs: '22px 18px', md: '28px 26px' },
+                position: 'relative',
+                background: `linear-gradient(160deg, #fffdf8 0%, #f7f5f0 100%)`,
+                border: `1px solid ${T.border}`,
+                overflow: 'hidden',
+              }}
+            >
+              {/* decorative corner */}
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  right: 0,
+                  width: 90,
+                  height: 90,
+                  background: `radial-gradient(circle at top right, ${T.goldLt} 0%, transparent 70%)`,
+                  pointerEvents: 'none',
+                }}
+              />
+
+              <Chip
+                label="Scholar Awards Certificate"
+                size="small"
+                sx={{
+                  bgcolor: T.goldLt,
+                  color: T.gold,
+                  fontWeight: 700,
+                  fontSize: 11,
+                  height: 22,
+                  mb: 2.5,
+                }}
+              />
+              <Typography
+                sx={{
+                  fontFamily: '"Playfair Display", Georgia, serif',
+                  fontSize: { xs: 20, md: 24 },
+                  fontWeight: 700,
+                  color: T.ink,
+                  lineHeight: 1.2,
+                  pr: '130px',
+                }}
+              >
+                {form.fullName || 'Student Name'}
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: T.navy, mt: 0.8, fontWeight: 500 }}>
+                {form.board || 'Board'} · Class {form.className || '—'} · {form.percentage || 0}%
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: T.muted, mt: 0.5 }}>
+                {form.schoolName || 'School Name'}
+              </Typography>
+
+              {/* photo box */}
+              <Box
+                sx={{
+                  width: 100,
+                  height: 120,
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  bgcolor: '#eff4ff',
+                  border: `2px solid ${T.border}`,
+                  position: 'absolute',
+                  right: { xs: 16, md: 24 },
+                  top: 56,
+                  transform: `translate(${(adj.photoX || 0) / 4}px, ${(adj.photoY || 0) / 4}px) scale(${adj.photoScale || 1}) rotate(${adj.photoRotation || 0}deg)`,
+                }}
+              >
+                {photo && (
+                  <img
+                    src={photo}
+                    alt="Student"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                )}
+              </Box>
+            </Box>
+          </CardContent>
+        </Card>
+      </Grid>
+
+      <Grid item xs={12} lg={5}>
+        <Section title="Photo Placement" subtitle="Fine-tune certificate photo position.">
+          <Stack spacing={2}>
+            <SliderRow
+              label="Scale"
+              min={0.6} max={2} step={0.1}
+              value={adj.photoScale || 1}
+              onChange={(v) => onAdjustmentChange('photoScale', v)}
+            />
+            <SliderRow
+              label="Rotate"
+              min={-15} max={15} step={1}
+              value={adj.photoRotation || 0}
+              onChange={(v) => onAdjustmentChange('photoRotation', v)}
+            />
+            <SliderRow
+              label="Move X"
+              min={-100} max={100} step={1}
+              value={adj.photoX || 0}
+              onChange={(v) => onAdjustmentChange('photoX', v)}
+            />
+            <SliderRow
+              label="Move Y"
+              min={-100} max={100} step={1}
+              value={adj.photoY || 0}
+              onChange={(v) => onAdjustmentChange('photoY', v)}
+            />
+          </Stack>
+        </Section>
+      </Grid>
+    </Grid>
+  );
+}
+
+function SuccessConfirmationCard({ editLink }) {
+  return (
+    <Box
+      sx={{
+        borderRadius: '14px',
+        bgcolor: '#f0fdf4',
+        border: '1px solid #bbf7d0',
+        p: { xs: '20px 18px', md: '24px 28px' },
+      }}
+    >
+      <Stack direction="row" spacing={1.2} alignItems="center" sx={{ mb: 1 }}>
+        <CheckCircle sx={{ fontSize: 20, color: '#16a34a' }} />
+        <Typography sx={{ fontWeight: 700, fontSize: 15, color: '#15803d' }}>
+          Registration submitted successfully!
+        </Typography>
+      </Stack>
+      <Typography sx={{ fontSize: 13, color: '#166534', mb: 1.5, lineHeight: 1.6 }}>
+        Your award registration is now recorded. Edit details and certificate preview anytime using
+        your secure link.
+      </Typography>
+      <Typography
+        sx={{ fontSize: 12, color: T.muted, wordBreak: 'break-all', mb: 1.5 }}
+      >
+        Edit link:{' '}
+        <Box component="a" href={editLink} sx={{ color: T.navy, fontWeight: 600 }}>
+          {editLink}
+        </Box>
+      </Typography>
+      <Button
+        href={editLink}
+        variant="contained"
+        size="small"
+        sx={{
+          bgcolor: T.navy,
+          borderRadius: '9px',
+          textTransform: 'none',
+          fontWeight: 600,
+          fontSize: 13,
+          px: 2.5,
+          '&:hover': { bgcolor: '#162d6a' },
+        }}
+      >
+        Open my edit page
+      </Button>
+    </Box>
+  );
+}
+
+/* ─────────────────────────── page ──────────────────────────────── */
 
 export default function PublicStudentFormPage() {
   const { token } = useParams();
@@ -59,51 +523,65 @@ export default function PublicStudentFormPage() {
   const [savedMessage, setSavedMessage] = useState('');
   const [successData, setSuccessData] = useState(null);
 
+  /* fetch existing data in edit mode */
   useEffect(() => {
     if (!isEditMode) { setLoading(false); return; }
     let active = true;
     setLoading(true);
-    api.get(`/students/public-edit/${token}`)
+    api
+      .get(`/students/public-edit/${token}`)
       .then((response) => {
         if (!active) return;
         const data = response.data || {};
         setForm({
-          ...initialForm, ...data,
+          ...initialForm,
+          ...data,
           subjects: data.subjects?.length ? data.subjects : [emptySubject],
-          certificateAdjustments: { ...initialForm.certificateAdjustments, ...(data.certificateAdjustments || {}) }
+          certificateAdjustments: {
+            ...initialForm.certificateAdjustments,
+            ...(data.certificateAdjustments || {}),
+          },
         });
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [isEditMode, token]);
 
+  /* CBSE Best 5 */
   const best5Preview = useMemo(() => {
-    const validSubjects = (form.subjects || []).filter((s) => s.subject?.trim() && Number(s.maxMarks || 0) > 0);
-    const topFive = validSubjects
+    const valid = (form.subjects || []).filter(
+      (s) => s.subject?.trim() && Number(s.maxMarks || 0) > 0,
+    );
+    const top5 = valid
       .map((s) => ({ marks: Number(s.marksObtained || 0), max: Number(s.maxMarks || 100) }))
       .sort((a, b) => b.marks - a.marks)
       .slice(0, 5);
-    const total = topFive.reduce((sum, item) => sum + item.marks, 0);
-    const maxTotal = topFive.reduce((sum, item) => sum + item.max, 0);
+    const total    = top5.reduce((sum, i) => sum + i.marks, 0);
+    const maxTotal = top5.reduce((sum, i) => sum + i.max,   0);
     return { total, maxTotal, percentage: maxTotal ? (total / maxTotal) * 100 : 0 };
   }, [form.subjects]);
 
+  /* subject helpers */
   const updateSubject = (idx, key, value) => {
     const subjects = [...(form.subjects || [emptySubject])];
     subjects[idx] = { ...subjects[idx], [key]: value };
     setForm((prev) => ({ ...prev, subjects }));
   };
-
   const removeSubject = (idx) => {
     const filtered = (form.subjects || []).filter((_, i) => i !== idx);
     setForm((prev) => ({ ...prev, subjects: filtered.length ? filtered : [emptySubject] }));
   };
 
+  /* save / submit */
   const handleSave = async (e) => {
     if (e) e.preventDefault();
     setSaving(true);
     setSavedMessage('');
-    const payload = { ...form, resultImageUrl: form.marksheetFileUrl || form.resultImageUrl, certificatePhotoUrl: form.studentPhotoUrl || form.certificatePhotoUrl };
+    const payload = {
+      ...form,
+      resultImageUrl:      form.marksheetFileUrl || form.resultImageUrl,
+      certificatePhotoUrl: form.studentPhotoUrl  || form.certificatePhotoUrl,
+    };
     try {
       if (isEditMode) {
         await api.put(`/students/public-edit/${token}`, payload);
@@ -113,144 +591,421 @@ export default function PublicStudentFormPage() {
         setSuccessData(data);
         setSavedMessage('Registration submitted successfully.');
       }
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   const showCertificateTools = isEditMode || Boolean(successData?.editLink);
 
-  if (loading) return (
-    <Container maxWidth="sm" sx={{ py: 8 }}>
-      <Skeleton variant="rounded" height={60} sx={{ borderRadius: 3, mb: 2 }} />
-      <Skeleton variant="rounded" height={400} sx={{ borderRadius: 4 }} />
-    </Container>
-  );
+  /* shared field sx */
+  const field = { sx: inputSx };
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#ffffff', pb: 10 }}>
-      {/* Header Section */}
-      <Box sx={{ bgcolor: '#1a1a1a', color: '#fff', pt: 6, pb: 8, px: 3, textAlign: 'center', borderRadius: '0 0 32px 32px' }}>
-        <School sx={{ fontSize: 40, mb: 1, color: '#d4af37' }} />
-        <Typography variant="h4" fontWeight={800}>{isEditMode ? 'Edit Profile' : 'Award Registration'}</Typography>
-        <Typography variant="body2" sx={{ opacity: 0.7, mt: 1 }}>BK Scholar Awards 2026</Typography>
-      </Box>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        bgcolor: T.ivory,
+        py: { xs: '18px', md: '40px' },
+        fontFamily: '"DM Sans", "Helvetica Neue", sans-serif',
+      }}
+    >
+      {/* Google Font imports via CSS vars trick — works without <head> access */}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap');`}</style>
 
-      <Container maxWidth="sm" sx={{ mt: -4 }}>
-        <Card sx={{ borderRadius: 4, boxShadow: '0 10px 40px rgba(0,0,0,0.08)', border: '1px solid #f0f0f0' }}>
-          <CardContent sx={{ p: { xs: 3, sm: 4 } }}>
-            
-            {savedMessage && <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>{savedMessage}</Alert>}
-            {!isEditMode && <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>Secure link shared after submission.</Alert>}
-            {successData?.editLink && (
-               <Alert severity="success" sx={{ mb: 3, borderRadius: 2 }}>
-                  Registration successful! <Button href={successData.editLink} size="small" variant="contained" sx={{ mt: 1 }}>Edit via link</Button>
-               </Alert>
-            )}
+      <Container maxWidth="lg" disableGutters sx={{ px: { xs: '14px', sm: '24px', md: '32px' } }}>
+        <Stack spacing={2.5}>
 
-            {isEditMode && (
-              <Tabs value={tab} onChange={(_, v) => setTab(v)} centered sx={{ mb: 4, borderBottom: 1, borderColor: 'divider' }}>
-                <Tab label="Details" />
-                <Tab label="Preview" />
-              </Tabs>
-            )}
+          {/* ── hero ── */}
+          <HeroBanner isEditMode={isEditMode} />
 
-            {(!isEditMode || tab === 0) && (
-              <form onSubmit={handleSave}>
-                <FormSection title="Student Details" subtitle="Accurate info for award consideration.">
-                  <MinimalTextField label="Full Name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} required />
-                  <Stack direction="row" spacing={2}>
-                    <MinimalTextField label="Student Mobile" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} required />
-                    <MinimalTextField label="Parent Mobile" value={form.parentMobile} onChange={(e) => setForm({ ...form, parentMobile: e.target.value })} required />
-                  </Stack>
-                  <MinimalTextField label="School Name" value={form.schoolName} onChange={(e) => setForm({ ...form, schoolName: e.target.value })} required />
-                  <Grid container spacing={2}>
-                    <Grid item xs={6}><MinimalTextField label="Board" value={form.board} onChange={(e) => setForm({ ...form, board: e.target.value })} required /></Grid>
-                    <Grid item xs={6}><MinimalTextField label="Class" value={form.className} onChange={(e) => setForm({ ...form, className: e.target.value })} required /></Grid>
-                    <Grid item xs={6}><MinimalTextField type="number" label="Percentage" value={form.percentage} onChange={(e) => setForm({ ...form, percentage: e.target.value })} /></Grid>
-                    <Grid item xs={6}>
-                      <MinimalTextField select label="Gender" value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })}>
-                        <MenuItem value="Any">Any</MenuItem>
-                        <MenuItem value="Male">Male</MenuItem>
-                        <MenuItem value="Female">Female</MenuItem>
-                      </MinimalTextField>
-                    </Grid>
-                    <Grid item xs={6}><MinimalTextField label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} /></Grid>
-                    <Grid item xs={6}><MinimalTextField label="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} /></Grid>
-                  </Grid>
-                </FormSection>
+          {/* ── info banner (new registration only) ── */}
+          {!isEditMode && (
+            <Box
+              sx={{
+                borderRadius: '10px',
+                bgcolor: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                p: '12px 16px',
+              }}
+            >
+              <Typography sx={{ fontSize: 13, color: '#1d4ed8', lineHeight: 1.6 }}>
+                Please enter student and parent mobile numbers carefully. No login required — your
+                secure edit link is shared after submission.
+              </Typography>
+            </Box>
+          )}
 
-                <FormSection title="Subject Marks" subtitle="Helpful for CBSE Best 5 evaluation.">
-                  {form.subjects.map((s, idx) => (
-                    <Stack key={idx} direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                      <MinimalTextField placeholder="Subject" value={s.subject} onChange={(e) => updateSubject(idx, 'subject', e.target.value)} />
-                      <MinimalTextField placeholder="Marks" type="number" sx={{ width: 100 }} value={s.marksObtained} onChange={(e) => updateSubject(idx, 'marksObtained', e.target.value)} />
-                      <MinimalTextField placeholder="Max" type="number" sx={{ width: 80 }} value={s.maxMarks} onChange={(e) => updateSubject(idx, 'maxMarks', e.target.value)} />
-                      <IconButton color="error" onClick={() => removeSubject(idx)}><Delete fontSize="small" /></IconButton>
+          {/* ── save message ── */}
+          {savedMessage && (
+            <Alert
+              severity="success"
+              sx={{ borderRadius: '10px', fontSize: 13, bgcolor: '#f0fdf4', border: '1px solid #bbf7d0' }}
+            >
+              {savedMessage}
+            </Alert>
+          )}
+
+          {/* ── success confirmation ── */}
+          {successData?.editLink && <SuccessConfirmationCard editLink={successData.editLink} />}
+
+          {/* ── loading skeleton ── */}
+          {loading ? (
+            <Card elevation={0} sx={{ borderRadius: '16px', border: `1px solid ${T.border}` }}>
+              <CardContent sx={{ p: '28px' }}>
+                <Skeleton variant="text" width={200} height={24} />
+                <Skeleton variant="rounded" height={160} sx={{ mt: 2 }} />
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* ── edit-mode tabs ── */}
+              {isEditMode && (
+                <Tabs
+                  value={tab}
+                  onChange={(_, v) => setTab(v)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{
+                    minHeight: 40,
+                    bgcolor: T.white,
+                    borderRadius: '12px',
+                    border: `1px solid ${T.border}`,
+                    px: 1,
+                    '& .MuiTab-root': {
+                      fontSize: 13,
+                      fontWeight: 600,
+                      minHeight: 40,
+                      textTransform: 'none',
+                      color: T.muted,
+                      '&.Mui-selected': { color: T.navy },
+                    },
+                    '& .MuiTabs-indicator': {
+                      height: 2.5,
+                      borderRadius: 10,
+                      backgroundColor: T.navy,
+                    },
+                  }}
+                >
+                  <Tab label="Form Details" />
+                  <Tab label="Certificate Preview" />
+                </Tabs>
+              )}
+
+              {/* ══════════════ FORM TAB ══════════════ */}
+              {(!isEditMode || tab === 0) && (
+                <Grid container spacing={2.5} component="form" onSubmit={handleSave}>
+
+                  {/* left / main column */}
+                  <Grid item xs={12} md={showCertificateTools ? 7 : 12}>
+                    <Stack spacing={2.5}>
+
+                      {/* ── student details ── */}
+                      <Section
+                        title="Student Details"
+                        subtitle="Fill in accurate information for award consideration."
+                      >
+                        <Grid container spacing={1.5}>
+                          <Grid item xs={12} sm={6}>
+                            <TextField fullWidth required label="Full name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} {...field} />
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <TextField fullWidth required label="Student mobile" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} {...field} />
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <TextField fullWidth required label="Parent mobile" value={form.parentMobile} onChange={(e) => setForm({ ...form, parentMobile: e.target.value })} {...field} />
+                          </Grid>
+                          <Grid item xs={12} sm={6}>
+                            <TextField fullWidth required label="School name" value={form.schoolName} onChange={(e) => setForm({ ...form, schoolName: e.target.value })} {...field} />
+                          </Grid>
+                          <Grid item xs={6} sm={4}>
+                            <TextField fullWidth required label="Board" value={form.board} onChange={(e) => setForm({ ...form, board: e.target.value })} {...field} />
+                          </Grid>
+                          <Grid item xs={6} sm={4}>
+                            <TextField fullWidth required label="Class" value={form.className} onChange={(e) => setForm({ ...form, className: e.target.value })} {...field} />
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <TextField fullWidth type="number" label="Percentage (optional)" value={form.percentage} onChange={(e) => setForm({ ...form, percentage: Number(e.target.value) })} {...field} />
+                          </Grid>
+                          <Grid item xs={6} sm={4}>
+                            <TextField fullWidth select label="Gender" value={form.gender || 'Any'} onChange={(e) => setForm({ ...form, gender: e.target.value })} {...field}>
+                              <MenuItem value="Any">Any</MenuItem>
+                              <MenuItem value="Male">Male</MenuItem>
+                              <MenuItem value="Female">Female</MenuItem>
+                            </TextField>
+                          </Grid>
+                          <Grid item xs={6} sm={4}>
+                            <TextField fullWidth label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} {...field} />
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <TextField fullWidth label="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} {...field} />
+                          </Grid>
+                        </Grid>
+                      </Section>
+
+                      {/* ── subject marks ── */}
+                      <Section
+                        title="Subject Marks"
+                        subtitle="Add subject-wise marks. Used for CBSE Best 5 evaluation."
+                      >
+                        <Stack spacing={1.5}>
+                          {(form.subjects || []).map((subject, idx) => (
+                            <Grid key={idx} container spacing={1.2} alignItems="center">
+                              <Grid item xs={12} sm={5}>
+                                <TextField
+                                  fullWidth label="Subject" value={subject.subject || ''}
+                                  onChange={(e) => updateSubject(idx, 'subject', e.target.value)}
+                                  {...field}
+                                />
+                              </Grid>
+                              <Grid item xs={5} sm={3}>
+                                <TextField
+                                  fullWidth type="number" label="Marks"
+                                  value={subject.marksObtained || 0}
+                                  onChange={(e) => updateSubject(idx, 'marksObtained', Number(e.target.value))}
+                                  {...field}
+                                />
+                              </Grid>
+                              <Grid item xs={5} sm={3}>
+                                <TextField
+                                  fullWidth type="number" label="Max"
+                                  value={subject.maxMarks || 100}
+                                  onChange={(e) => updateSubject(idx, 'maxMarks', Number(e.target.value))}
+                                  {...field}
+                                />
+                              </Grid>
+                              <Grid item xs={2} sm={1}>
+                                <Button
+                                  color="error" onClick={() => removeSubject(idx)}
+                                  sx={{ minWidth: 36, p: '6px', borderRadius: '8px' }}
+                                >
+                                  <Delete sx={{ fontSize: 18 }} />
+                                </Button>
+                              </Grid>
+                            </Grid>
+                          ))}
+
+                          <Button
+                            startIcon={<Add sx={{ fontSize: 16 }} />}
+                            variant="outlined"
+                            onClick={() =>
+                              setForm((prev) => ({
+                                ...prev,
+                                subjects: [...(prev.subjects || []), { ...emptySubject }],
+                              }))
+                            }
+                            sx={{
+                              alignSelf: 'flex-start',
+                              borderRadius: '9px',
+                              textTransform: 'none',
+                              fontWeight: 600,
+                              fontSize: 13,
+                              borderColor: T.border,
+                              color: T.navy,
+                              '&:hover': { borderColor: T.navy },
+                            }}
+                          >
+                            Add subject
+                          </Button>
+
+                          <Best5SummaryCard
+                            board={form.board}
+                            subjects={form.subjects}
+                            best5Preview={best5Preview}
+                          />
+                        </Stack>
+                      </Section>
+
+                      {/* ── uploads & remarks ── */}
+                      <Section
+                        title="Uploads & Remarks"
+                        subtitle="Upload clear, readable files for verification."
+                      >
+                        <Grid container spacing={1.5}>
+                          <Grid item xs={12} md={6}>
+                            <UploadCard
+                              title="Marksheet"
+                              helperText="Image or PDF accepted. Ensure all marks are clearly visible."
+                              selectedLabel={
+                                form.marksheetFileUrl || form.resultImageUrl
+                                  ? 'Marksheet selected'
+                                  : ''
+                              }
+                              accept="image/*,.pdf"
+                              onSelect={(dataUrl) =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  marksheetFileUrl: dataUrl,
+                                  resultImageUrl: dataUrl,
+                                }))
+                              }
+                            />
+                          </Grid>
+                          <Grid item xs={12} md={6}>
+                            <UploadCard
+                              title="Student Photo"
+                              helperText="Passport-style photo preferred for certificate quality."
+                              selectedLabel={
+                                form.studentPhotoUrl || form.certificatePhotoUrl
+                                  ? 'Photo selected'
+                                  : ''
+                              }
+                              accept="image/*"
+                              onSelect={(dataUrl) =>
+                                setForm((prev) => ({
+                                  ...prev,
+                                  studentPhotoUrl: dataUrl,
+                                  certificatePhotoUrl: dataUrl,
+                                }))
+                              }
+                            >
+                              {(form.studentPhotoUrl || form.certificatePhotoUrl) && (
+                                <Box
+                                  sx={{
+                                    width: 88,
+                                    height: 104,
+                                    borderRadius: '8px',
+                                    overflow: 'hidden',
+                                    border: `1.5px solid ${T.border}`,
+                                  }}
+                                >
+                                  <img
+                                    src={form.studentPhotoUrl || form.certificatePhotoUrl}
+                                    alt="Student"
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                  />
+                                </Box>
+                              )}
+                            </UploadCard>
+                          </Grid>
+                          <Grid item xs={12}>
+                            <TextField
+                              fullWidth multiline minRows={3} label="Remarks"
+                              value={form.remarks || ''}
+                              onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+                              {...field}
+                            />
+                          </Grid>
+                        </Grid>
+                      </Section>
+
+                      {/* ── submit ── */}
+                      <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={saving}
+                        fullWidth
+                        sx={{
+                          bgcolor: T.navy,
+                          borderRadius: '12px',
+                          py: '13px',
+                          fontWeight: 700,
+                          fontSize: 15,
+                          textTransform: 'none',
+                          letterSpacing: '0.2px',
+                          boxShadow: '0 6px 22px rgba(14,31,77,0.22)',
+                          '&:hover': { bgcolor: '#162d6a', boxShadow: '0 8px 28px rgba(14,31,77,0.3)' },
+                          '&:disabled': { bgcolor: '#c8cfdf', boxShadow: 'none' },
+                        }}
+                      >
+                        {saving
+                          ? 'Please wait…'
+                          : isEditMode
+                          ? 'Save changes'
+                          : 'Submit registration'}
+                      </Button>
                     </Stack>
-                  ))}
-                  <Button startIcon={<Add />} size="small" onClick={() => setForm((p) => ({ ...p, subjects: [...p.subjects, { ...emptySubject }] }))}>Add Subject</Button>
-                  
-                  {form.board.toUpperCase() === 'CBSE' && (
-                    <Alert icon={<Insights />} severity="info" sx={{ borderRadius: 2, mt: 1 }}>
-                      Best 5 Preview: <b>{best5Preview.percentage.toFixed(2)}%</b>
-                    </Alert>
+                  </Grid>
+
+                  {/* right sidebar — certificate access hint */}
+                  {showCertificateTools && (
+                    <Grid item xs={12} md={5}>
+                      <Box
+                        sx={{
+                          borderRadius: '16px',
+                          border: `1px solid ${T.border}`,
+                          bgcolor: T.white,
+                          p: { xs: '20px 18px', md: '24px 22px' },
+                        }}
+                      >
+                        <Stack spacing={1}>
+                          <Typography
+                            sx={{
+                              fontFamily: '"Playfair Display", Georgia, serif',
+                              fontSize: 16,
+                              fontWeight: 700,
+                            }}
+                          >
+                            Certificate Access
+                          </Typography>
+                          <Typography sx={{ fontSize: 13, color: T.muted, lineHeight: 1.6 }}>
+                            Certificate preview and photo placement are available in edit mode for
+                            final polish.
+                          </Typography>
+                          {successData?.editLink && (
+                            <Button
+                              href={successData.editLink}
+                              variant="outlined"
+                              fullWidth
+                              sx={{
+                                borderRadius: '9px',
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                fontSize: 13,
+                                borderColor: T.navy,
+                                color: T.navy,
+                                mt: 0.5,
+                                '&:hover': { bgcolor: '#f0f4ff' },
+                              }}
+                            >
+                              Open Certificate Preview
+                            </Button>
+                          )}
+                        </Stack>
+                      </Box>
+                    </Grid>
                   )}
-                </FormSection>
+                </Grid>
+              )}
 
-                <FormSection title="Uploads & Remarks">
-                   <Stack spacing={2}>
-                      <Button fullWidth variant="outlined" component="label" startIcon={<DriveFolderUpload />} sx={{ py: 1.5, borderRadius: 3, borderStyle: 'dashed' }}>
-                        {form.marksheetFileUrl || form.resultImageUrl ? 'Marksheet Uploaded' : 'Upload Marksheet'}
-                        <input hidden type="file" accept="image/*,.pdf" onChange={async (e) => {
-                           const url = await fileToDataUrl(e.target.files[0]);
-                           setForm(p => ({...p, marksheetFileUrl: url, resultImageUrl: url}))
-                        }} />
-                      </Button>
-                      <Button fullWidth variant="outlined" component="label" startIcon={<DriveFolderUpload />} sx={{ py: 1.5, borderRadius: 3, borderStyle: 'dashed' }}>
-                        {form.studentPhotoUrl || form.certificatePhotoUrl ? 'Photo Uploaded' : 'Upload Photo'}
-                        <input hidden type="file" accept="image/*" onChange={async (e) => {
-                           const url = await fileToDataUrl(e.target.files[0]);
-                           setForm(p => ({...p, studentPhotoUrl: url, certificatePhotoUrl: url}))
-                        }} />
-                      </Button>
-                      <MinimalTextField multiline minRows={2} label="Remarks" value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} />
-                   </Stack>
-                </FormSection>
-
-                <Button fullWidth type="submit" variant="contained" size="large" disabled={saving} sx={{ py: 2, borderRadius: 3, fontWeight: 700 }}>
-                  {saving ? 'Processing...' : isEditMode ? 'Save Changes' : 'Submit Registration'}
-                </Button>
-              </form>
-            )}
-
-            {isEditMode && tab === 1 && (
-              <Stack spacing={3}>
-                <Box sx={{ p: 3, borderRadius: 3, background: 'linear-gradient(165deg, #fffdf8 0%, #f7fbff 100%)', border: '1px solid #e3d6b1', position: 'relative', minHeight: 280 }}>
-                  <Typography variant="h6" fontWeight={800}>{form.fullName || 'Name'}</Typography>
-                  <Typography variant="caption" display="block">{form.board} · Class {form.className} · {form.percentage}%</Typography>
-                  <Box sx={{ 
-                    width: 80, height: 100, bgcolor: '#eff4ff', border: '2px solid #c3d2f6', borderRadius: 2,
-                    position: 'absolute', right: 24, top: 24, overflow: 'hidden',
-                    transform: `translate(${form.certificateAdjustments.photoX / 4}px, ${form.certificateAdjustments.photoY / 4}px) scale(${form.certificateAdjustments.photoScale}) rotate(${form.certificateAdjustments.photoRotation}deg)`
-                  }}>
-                    {(form.studentPhotoUrl || form.certificatePhotoUrl) && <img src={form.studentPhotoUrl || form.certificatePhotoUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                  </Box>
-                </Box>
-                
-                <FormSection title="Adjust Photo Position">
-                  <Stack spacing={1}>
-                    <Typography variant="caption">Scale</Typography>
-                    <Slider size="small" min={0.6} max={2} step={0.1} value={form.certificateAdjustments.photoScale} onChange={(_, v) => setForm(p => ({...p, certificateAdjustments: {...p.certificateAdjustments, photoScale: v}}))} />
-                    <Typography variant="caption">Move X / Y</Typography>
-                    <Slider size="small" min={-100} max={100} value={form.certificateAdjustments.photoX} onChange={(_, v) => setForm(p => ({...p, certificateAdjustments: {...p.certificateAdjustments, photoX: v}}))} />
-                    <Slider size="small" min={-100} max={100} value={form.certificateAdjustments.photoY} onChange={(_, v) => setForm(p => ({...p, certificateAdjustments: {...p.certificateAdjustments, photoY: v}}))} />
-                  </Stack>
-                </FormSection>
-                
-                <Button variant="contained" fullWidth onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save Adjustments'}</Button>
-              </Stack>
-            )}
-          </CardContent>
-        </Card>
+              {/* ══════════════ CERTIFICATE TAB ══════════════ */}
+              {isEditMode && tab === 1 && (
+                <Stack spacing={2.5}>
+                  <CertificatePreviewCard
+                    form={form}
+                    onAdjustmentChange={(key, value) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        certificateAdjustments: {
+                          ...(prev.certificateAdjustments || {}),
+                          [key]: value,
+                        },
+                      }))
+                    }
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleSave}
+                    disabled={saving}
+                    sx={{
+                      alignSelf: 'flex-start',
+                      bgcolor: T.navy,
+                      borderRadius: '10px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: 14,
+                      px: 3,
+                      py: '10px',
+                      '&:hover': { bgcolor: '#162d6a' },
+                    }}
+                  >
+                    {saving ? 'Saving…' : 'Save preview adjustments'}
+                  </Button>
+                </Stack>
+              )}
+            </>
+          )}
+        </Stack>
       </Container>
     </Box>
   );
