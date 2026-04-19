@@ -1,4 +1,4 @@
-import { Card, CardContent, Grid2 as Grid, List, ListItem, ListItemText } from '@mui/material';
+import { Card, CardContent, Grid, List, ListItem, ListItemText } from '@mui/material';
 import PageHeader from '../components/PageHeader';
 
 const sections = {

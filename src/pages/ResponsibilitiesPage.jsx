@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Card, CardContent, Grid2 as Grid, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { Button, Card, CardContent, Grid, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import api from '../api';
 import PageHeader from '../components/PageHeader';
 import ResponsiveTable from '../components/ResponsiveTable';

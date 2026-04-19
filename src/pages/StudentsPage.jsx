@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Add, Delete, AutoFixHigh } from '@mui/icons-material';
-import { Alert, Box, Button, Card, CardContent, Divider, Grid2 as Grid, IconButton, MenuItem, Paper, Slider, Stack, TextField, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, Divider, Grid, IconButton, MenuItem, Paper, Slider, Stack, TextField, Typography } from '@mui/material';
 import api from '../api';
 import PageHeader from '../components/PageHeader';
 import ResponsiveTable from '../components/ResponsiveTable';

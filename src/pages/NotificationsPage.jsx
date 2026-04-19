@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Card, CardContent, Chip, Grid2 as Grid, Stack, Typography } from '@mui/material';
+import { Alert, Card, CardContent, Chip, Grid, Stack, Typography } from '@mui/material';
 import api from '../api';
 import PageHeader from '../components/PageHeader';
 import { useLive } from '../context/LiveContext';
