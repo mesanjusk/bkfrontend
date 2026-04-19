@@ -181,10 +181,10 @@ export default function ResponsibilitiesPage() {
               <CardContent>
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={1} mb={1.5}>
                   <TextField size="small" placeholder="Search tasks" value={search} onChange={(e) => setSearch(e.target.value)} InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded fontSize="small" /></InputAdornment> }} sx={{ minWidth: { md: 260 } }} />
-                  <TextField size="small" select label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: 140 }}>{['ALL', 'PENDING', 'IN_PROGRESS', 'DELAYED', 'BLOCKED', 'DONE'].map((x) => <MenuItem key={x} value={x}>{x === 'DONE' ? 'COMPLETED' : x}</MenuItem>)}</TextField>
-                  <TextField size="small" select label="Priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} sx={{ minWidth: 140 }}>{['ALL', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
-                  <TextField size="small" select label="Team" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} sx={{ minWidth: 140 }}><MenuItem value="ALL">All</MenuItem>{teams.map((x) => <MenuItem key={x._id} value={x._id}>{x.name}</MenuItem>)}</TextField>
-                  <TextField size="small" select label="Overdue" value={overdueOnly} onChange={(e) => setOverdueOnly(e.target.value)} sx={{ minWidth: 120 }}><MenuItem value="ALL">All</MenuItem><MenuItem value="YES">Only overdue</MenuItem><MenuItem value="NO">Not overdue</MenuItem></TextField>
+                  <TextField size="small" select label="Status" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} sx={{ minWidth: { md: 140 } }}>{['ALL', 'PENDING', 'IN_PROGRESS', 'DELAYED', 'BLOCKED', 'DONE'].map((x) => <MenuItem key={x} value={x}>{x === 'DONE' ? 'COMPLETED' : x}</MenuItem>)}</TextField>
+                  <TextField size="small" select label="Priority" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)} sx={{ minWidth: { md: 140 } }}>{['ALL', 'LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((x) => <MenuItem key={x} value={x}>{x}</MenuItem>)}</TextField>
+                  <TextField size="small" select label="Team" value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} sx={{ minWidth: { md: 140 } }}><MenuItem value="ALL">All</MenuItem>{teams.map((x) => <MenuItem key={x._id} value={x._id}>{x.name}</MenuItem>)}</TextField>
+                  <TextField size="small" select label="Overdue" value={overdueOnly} onChange={(e) => setOverdueOnly(e.target.value)} sx={{ minWidth: { md: 120 } }}><MenuItem value="ALL">All</MenuItem><MenuItem value="YES">Only overdue</MenuItem><MenuItem value="NO">Not overdue</MenuItem></TextField>
                 </Stack>
                 {isMobile ? (
                   <ResponsiveOperationsList items={filteredTasks} mobileRender={(task) => <TaskCard key={task._id} task={task} onClick={setSelectedTask} />} desktopRender={() => null} />
@@ -216,12 +216,12 @@ export default function ResponsibilitiesPage() {
 
       {isMobile ? <Fab color="primary" sx={{ position: 'fixed', right: 16, bottom: 16 }} onClick={() => document.getElementById('task-form')?.scrollIntoView({ behavior: 'smooth' })}><AddTaskRounded /></Fab> : null}
 
-      <Dialog open={Boolean(selectedTask)} onClose={() => setSelectedTask(null)} fullWidth maxWidth="sm">
+      <Dialog open={Boolean(selectedTask)} onClose={() => setSelectedTask(null)} fullWidth maxWidth="sm" fullScreen={isMobile}>
         <DialogTitle>{selectedTask?.title}</DialogTitle>
         <DialogContent dividers>
           {selectedTask ? (
             <Stack spacing={1.5}>
-              <Stack direction="row" spacing={1}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                 <PriorityChip priority={selectedTask.priority} />
                 <Button size="small" variant="outlined" onClick={() => updateTaskStatus(selectedTask, 'IN_PROGRESS')}>Mark In Progress</Button>
                 <Button size="small" variant="contained" onClick={() => updateTaskStatus(selectedTask, 'DONE')}>Mark Completed</Button>
@@ -242,7 +242,7 @@ export default function ResponsibilitiesPage() {
       </Dialog>
 
       <Drawer anchor="right" open={Boolean(selectedTeam)} onClose={() => setSelectedTeam(null)}>
-        <Box sx={{ width: { xs: 320, sm: 420 }, p: 2 }}>
+        <Box sx={{ width: { xs: '100vw', sm: 420 }, maxWidth: '100vw', p: 2 }}>
           <Typography variant="h6">{selectedTeam?.name}</Typography>
           <Typography variant="body2" color="text.secondary">{selectedTeam?.purpose || 'No purpose added.'}</Typography>
           <Stack spacing={1.25} sx={{ mt: 1.5 }}>

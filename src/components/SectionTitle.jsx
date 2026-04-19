@@ -2,12 +2,12 @@ import { Box, Typography } from '@mui/material';
 
 export default function SectionTitle({ title, subtitle, actions = null }) {
   return (
-    <Box sx={{ mb: 2.5, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2, flexWrap: 'wrap' }}>
-      <Box>
-        <Typography variant="h5">{title}</Typography>
+    <Box sx={{ mb: 2.2, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: { xs: 1.25, md: 2 }, flexWrap: 'wrap' }}>
+      <Box sx={{ minWidth: 0, flex: '1 1 320px' }}>
+        <Typography variant="h5" sx={{ fontSize: { xs: '1.15rem', sm: '1.3rem', md: '1.45rem' }, overflowWrap: 'anywhere' }}>{title}</Typography>
         {subtitle ? <Typography variant="body2" sx={{ mt: 0.5 }}>{subtitle}</Typography> : null}
       </Box>
-      {actions}
+      {actions ? <Box sx={{ width: { xs: '100%', md: 'auto' } }}>{actions}</Box> : null}
     </Box>
   );
 }

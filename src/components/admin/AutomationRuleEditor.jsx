@@ -1,12 +1,14 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Grid, MenuItem, Stack, Switch, TextField, Typography } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, Grid, MenuItem, Stack, Switch, TextField, Typography, useMediaQuery, useTheme } from '@mui/material';
 
 const triggerOptions = ['form_submitted', 'student_eligible', 'guest_invited', 'donation_received', 'certificate_ready', 'event_completed'];
 
 export default function AutomationRuleEditor({ open, value, onClose, onChange, onSubmit, templates = [] }) {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const form = value || {};
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md" fullScreen={fullScreen}>
       <DialogTitle>Automation Rule Editor</DialogTitle>
       <DialogContent dividers>
         <Grid container spacing={2} sx={{ mt: 0.2 }}>

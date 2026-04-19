@@ -1,2 +1,11 @@
 /* legacy stylesheet intentionally minimized after MUI refactor */
 body { margin: 0; }
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}

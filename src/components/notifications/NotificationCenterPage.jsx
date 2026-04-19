@@ -115,7 +115,7 @@ export default function NotificationCenterPage() {
               <TextField select label="Read status" value={readFilter} onChange={(e) => setReadFilter(e.target.value)}>
                 <MenuItem value="ALL">All</MenuItem><MenuItem value="UNREAD">Unread</MenuItem><MenuItem value="READ">Read</MenuItem>
               </TextField>
-              <Button startIcon={<DoneAllIcon />} variant="contained" onClick={markAllRead} disabled={!unreadCount}>Mark all read</Button>
+              <Button startIcon={<DoneAllIcon />} variant="contained" onClick={markAllRead} disabled={!unreadCount} fullWidth={isMobile}>Mark all read</Button>
             </Stack>
             {criticalUnread > 0 ? <Alert severity="error">Critical notifications pending review: {criticalUnread}</Alert> : null}
           </Stack>
@@ -167,7 +167,7 @@ export default function NotificationCenterPage() {
                       <Typography variant="body2">{d.donorGuestId?.name || 'Guest'}</Typography>
                       <Typography variant="caption">₹{d.amount} • {d.mode}</Typography>
                     </Box>
-                    <Stack direction="row" spacing={0.6} alignItems="center">
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.6} alignItems={{ xs: 'stretch', sm: 'center' }}>
                       <ReadStatusChip read={d.thankYouStatus === 'SENT'} />
                       <Button size="small" disabled={d.thankYouStatus === 'SENT'} onClick={() => setConfirmDonation(d)}>Mark Sent</Button>
                     </Stack>
@@ -181,7 +181,7 @@ export default function NotificationCenterPage() {
       </Grid>
 
       <Drawer anchor="right" open={Boolean(selected)} onClose={() => setSelected(null)}>
-        <Box sx={{ width: isMobile ? '86vw' : 420, p: 2 }}>
+        <Box sx={{ width: isMobile ? '100vw' : 420, maxWidth: '100vw', p: 2 }}>
           {selected ? (
             <Stack spacing={1.2}>
               <Typography variant="h6">{selected.title}</Typography>
@@ -193,7 +193,7 @@ export default function NotificationCenterPage() {
               <Typography variant="body2">{selected.message}</Typography>
               <Typography variant="caption">{new Date(selected.createdAt || Date.now()).toLocaleString()}</Typography>
               <Typography variant="caption">Target roles: {selected.targetRoles?.join(', ') || '-'}</Typography>
-              <Stack direction="row" spacing={1}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
                 <Button size="small" variant="contained" disabled={selected.readStatus} onClick={() => markRead(selected)}>Mark as read</Button>
                 <Button size="small" disabled={!selected.routePath} onClick={() => selected.routePath && navigate(selected.routePath)}>Open module</Button>
               </Stack>

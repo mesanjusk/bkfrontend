@@ -8,16 +8,18 @@ import VolunteerActivismRoundedIcon from '@mui/icons-material/VolunteerActivismR
 import { Button, Stack } from '@mui/material';
 
 export default function StageActionBar({ onStatus, onChangeGuest, onAddDonation, onTriggerThanks, compact = false }) {
+  const mobileProps = compact ? { fullWidth: true, size: 'medium' } : { size: 'medium' };
+
   return (
-    <Stack direction="row" gap={0.8} flexWrap="wrap">
-      <Button size={compact ? 'small' : 'medium'} startIcon={<CallIcon />} onClick={() => onStatus('CALLED')}>Mark Called</Button>
-      <Button size={compact ? 'small' : 'medium'} startIcon={<TheaterComedyRoundedIcon />} onClick={() => onStatus('ON_STAGE')}>Mark On Stage</Button>
-      <Button variant="contained" color="success" size={compact ? 'small' : 'medium'} startIcon={<CheckCircleRoundedIcon />} onClick={() => onStatus('COMPLETED')}>Mark Completed</Button>
-      <Button color="error" size={compact ? 'small' : 'medium'} startIcon={<DoDisturbOnRoundedIcon />} onClick={() => onStatus('ABSENT')}>Mark Absent</Button>
-      <Button color="warning" size={compact ? 'small' : 'medium'} startIcon={<SkipNextRoundedIcon />} onClick={() => onStatus('SKIPPED')}>Skip</Button>
-      <Button variant="outlined" size={compact ? 'small' : 'medium'} onClick={onChangeGuest}>Change Guest</Button>
-      <Button variant="outlined" size={compact ? 'small' : 'medium'} startIcon={<VolunteerActivismRoundedIcon />} onClick={onAddDonation}>Add Donation</Button>
-      <Button variant="outlined" size={compact ? 'small' : 'medium'} startIcon={<CelebrationRoundedIcon />} onClick={onTriggerThanks}>Trigger Thanks</Button>
+    <Stack direction={compact ? 'column' : 'row'} gap={0.8} flexWrap="wrap">
+      <Button {...mobileProps} startIcon={<CallIcon />} onClick={() => onStatus('CALLED')}>Mark Called</Button>
+      <Button {...mobileProps} startIcon={<TheaterComedyRoundedIcon />} onClick={() => onStatus('ON_STAGE')}>Mark On Stage</Button>
+      <Button {...mobileProps} variant="contained" color="success" startIcon={<CheckCircleRoundedIcon />} onClick={() => onStatus('COMPLETED')}>Mark Completed</Button>
+      <Button {...mobileProps} color="error" startIcon={<DoDisturbOnRoundedIcon />} onClick={() => onStatus('ABSENT')}>Mark Absent</Button>
+      <Button {...mobileProps} color="warning" startIcon={<SkipNextRoundedIcon />} onClick={() => onStatus('SKIPPED')}>Skip</Button>
+      <Button {...mobileProps} variant="outlined" onClick={onChangeGuest}>Change Guest</Button>
+      <Button {...mobileProps} variant="outlined" startIcon={<VolunteerActivismRoundedIcon />} onClick={onAddDonation}>Add Donation</Button>
+      <Button {...mobileProps} variant="outlined" startIcon={<CelebrationRoundedIcon />} onClick={onTriggerThanks}>Trigger Thanks</Button>
     </Stack>
   );
 }

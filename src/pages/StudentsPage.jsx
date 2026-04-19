@@ -19,6 +19,8 @@ import {
   ToggleButton,
   ToggleButtonGroup,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Add, AutoAwesome, Refresh, Save } from '@mui/icons-material';
 import api from '../api';
@@ -64,6 +66,8 @@ const initialForm = {
 const steps = ['Basic Details', 'Academic Details', 'Result Details', 'Uploads', 'Certificate Preview', 'Eligibility Summary'];
 
 export default function StudentsPage() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [students, setStudents] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [selectedId, setSelectedId] = useState(null);
@@ -250,11 +254,11 @@ export default function StudentsPage() {
   };
 
   const quickActions = (
-    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-      <Button variant="contained" startIcon={<Add />} onClick={reset}>New Student</Button>
-      <Button variant="outlined" startIcon={<AutoAwesome />} onClick={() => evaluate()}>Evaluate</Button>
-      <Button variant="outlined" startIcon={<Save />} onClick={saveDraft}>Save Draft</Button>
-      <Button variant="text" startIcon={<Refresh />} onClick={reset}>Reset Form</Button>
+    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flexWrap="wrap" useFlexGap>
+      <Button variant="contained" startIcon={<Add />} onClick={reset} fullWidth={isMobile}>New Student</Button>
+      <Button variant="outlined" startIcon={<AutoAwesome />} onClick={() => evaluate()} fullWidth={isMobile}>Evaluate</Button>
+      <Button variant="outlined" startIcon={<Save />} onClick={saveDraft} fullWidth={isMobile}>Save Draft</Button>
+      <Button variant="text" startIcon={<Refresh />} onClick={reset} fullWidth={isMobile}>Reset Form</Button>
     </Stack>
   );
 
@@ -266,7 +270,7 @@ export default function StudentsPage() {
         actions={quickActions}
       />
 
-      <Breadcrumbs aria-label="breadcrumb">
+      <Breadcrumbs aria-label="breadcrumb" sx={{ flexWrap: 'wrap' }}>
         <Link underline="hover" color="inherit">Dashboard</Link>
         <Typography color="text.primary">Students</Typography>
       </Breadcrumbs>
@@ -296,21 +300,22 @@ export default function StudentsPage() {
               <StudentFormSection title="2) School / Academic Details" subtitle="Board/class and metadata used in eligibility checks.">
                 <Grid container spacing={1.2}>
                   <Grid item xs={12}><TextField label="School name" value={form.schoolName} onChange={(e) => setForm({ ...form, schoolName: e.target.value })} fullWidth /></Grid>
-                  <Grid item xs={6}><TextField label="Board" value={form.board} onChange={(e) => setForm({ ...form, board: e.target.value })} fullWidth placeholder="CBSE / ICSE / State" /></Grid>
-                  <Grid item xs={6}><TextField label="Class" value={form.className} onChange={(e) => setForm({ ...form, className: e.target.value })} fullWidth /></Grid>
-                  <Grid item xs={6}><TextField select label="School type" value={form.schoolType} onChange={(e) => setForm({ ...form, schoolType: e.target.value })} fullWidth><MenuItem value="Any">Any</MenuItem><MenuItem value="Private">Private</MenuItem><MenuItem value="Government">Government</MenuItem></TextField></Grid>
-                  <Grid item xs={6}><TextField select label="Result status" value={form.resultStatus} onChange={(e) => setForm({ ...form, resultStatus: e.target.value })} fullWidth><MenuItem value="PENDING">Pending</MenuItem><MenuItem value="DECLARED">Declared</MenuItem><MenuItem value="RECHECK">Recheck</MenuItem></TextField></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Board" value={form.board} onChange={(e) => setForm({ ...form, board: e.target.value })} fullWidth placeholder="CBSE / ICSE / State" /></Grid>
+                  <Grid item xs={12} sm={6}><TextField label="Class" value={form.className} onChange={(e) => setForm({ ...form, className: e.target.value })} fullWidth /></Grid>
+                  <Grid item xs={12} sm={6}><TextField select label="School type" value={form.schoolType} onChange={(e) => setForm({ ...form, schoolType: e.target.value })} fullWidth><MenuItem value="Any">Any</MenuItem><MenuItem value="Private">Private</MenuItem><MenuItem value="Government">Government</MenuItem></TextField></Grid>
+                  <Grid item xs={12} sm={6}><TextField select label="Result status" value={form.resultStatus} onChange={(e) => setForm({ ...form, resultStatus: e.target.value })} fullWidth><MenuItem value="PENDING">Pending</MenuItem><MenuItem value="DECLARED">Declared</MenuItem><MenuItem value="RECHECK">Recheck</MenuItem></TextField></Grid>
                 </Grid>
               </StudentFormSection>
 
               <StudentFormSection title="3) Result Details" subtitle="Choose direct percentage entry or subject-wise marks with CBSE Best 5 support.">
                 <Stack spacing={1.4}>
-                  <FormControl>
+                  <FormControl fullWidth>
                     <ToggleButtonGroup
                       exclusive
                       value={form.resultMethod}
                       onChange={(_, value) => value && setForm({ ...form, resultMethod: value })}
                       size="small"
+                      sx={{ flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}
                     >
                       <ToggleButton value="PERCENTAGE">Direct %</ToggleButton>
                       <ToggleButton value="SUBJECTS">Subject-wise</ToggleButton>
@@ -392,11 +397,11 @@ export default function StudentsPage() {
                 </Stack>
               </StudentFormSection>
 
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                <Button type="submit" variant="contained" disabled={saving}>{selectedId ? 'Update Student' : 'Save Student'}</Button>
-                <Button variant="outlined" onClick={loadDraft}>Load Draft</Button>
-                <Button variant="outlined" onClick={() => selectedId && evaluate(selectedId)} disabled={!selectedId || saving}>Evaluate Selected</Button>
-                <Button variant="text" onClick={reset}>Reset</Button>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} flexWrap="wrap" useFlexGap>
+                <Button type="submit" variant="contained" disabled={saving} fullWidth={isMobile}>{selectedId ? 'Update Student' : 'Save Student'}</Button>
+                <Button variant="outlined" onClick={loadDraft} fullWidth={isMobile}>Load Draft</Button>
+                <Button variant="outlined" onClick={() => selectedId && evaluate(selectedId)} disabled={!selectedId || saving} fullWidth={isMobile}>Evaluate Selected</Button>
+                <Button variant="text" onClick={reset} fullWidth={isMobile}>Reset</Button>
               </Stack>
             </>
           )}

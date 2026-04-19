@@ -16,6 +16,8 @@ import {
   Snackbar,
   TextField,
   Toolbar,
+  useMediaQuery,
+  useTheme,
   Typography
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -49,6 +51,8 @@ const menu = [
 ];
 
 export default function AppShell({ children }) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -100,19 +104,19 @@ export default function AppShell({ children }) {
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', backgroundColor: 'background.default' }}>
       <AppBar position="fixed" color="inherit" sx={{ zIndex: (t) => t.zIndex.drawer + 1, borderBottom: '1px solid #e2e8f0' }}>
-        <Toolbar sx={{ gap: 1.5 }}>
+        <Toolbar sx={{ gap: 1, alignItems: 'center', py: { xs: 0.5, md: 0 } }}>
           <IconButton edge="start" onClick={() => setMobileOpen(true)} sx={{ display: { lg: 'none' } }}>
             <MenuIcon />
           </IconButton>
           <TextField
             placeholder="Search students, categories, tasks..."
             size="small"
-            sx={{ maxWidth: 420, display: { xs: 'none', sm: 'block' } }}
+            sx={{ maxWidth: 420, display: { xs: 'none', sm: 'block' }, flexShrink: 1 }}
             InputProps={{ startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment> }}
           />
-          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Chip size="small" color={mode === 'LIVE' ? 'error' : 'primary'} label={`${mode} MODE`} />
-            <Chip size="small" variant="outlined" label={duty} />
+          <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap', justifyContent: 'flex-end', minWidth: 0 }}>
+            <Chip size="small" color={mode === 'LIVE' ? 'error' : 'primary'} label={isMobile ? mode : `${mode} MODE`} />
+            {!isMobile ? <Chip size="small" variant="outlined" label={duty} /> : null}
             <Chip size="small" label={roleLabel} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
             <RecentNotificationsPopover
               notifications={recentNotifications}
@@ -124,7 +128,7 @@ export default function AppShell({ children }) {
                 navigate(n.routePath || '/notifications');
               }}
             />
-            <Avatar sx={{ width: 30, height: 30 }}>{(user?.name || 'U').charAt(0)}</Avatar>
+            <Avatar sx={{ width: 32, height: 32 }}>{(user?.name || 'U').charAt(0)}</Avatar>
             <IconButton onClick={logout}><LogoutIcon /></IconButton>
           </Box>
         </Toolbar>
@@ -139,7 +143,7 @@ export default function AppShell({ children }) {
         </Drawer>
       </Box>
 
-      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3 }, mt: 8 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.25, sm: 2, md: 3 }, mt: { xs: 8, sm: 8 } }}>
         {children}
       </Box>
 

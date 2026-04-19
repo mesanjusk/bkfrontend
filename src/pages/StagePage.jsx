@@ -275,9 +275,9 @@ export default function StagePage() {
       />
 
       <Box sx={{ p: { xs: 1.1, md: 1.8 }, pb: { xs: 9, md: 2 } }}>
-        <Stack direction="row" spacing={1} sx={{ mb: 1.1, flexWrap: 'wrap' }}>
-          <Button variant="contained" onClick={generate}>Generate from Eligible</Button>
-          <Button variant="outlined" color="error" onClick={() => setOpenEmergency(true)}>Emergency Action</Button>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 1.1, flexWrap: 'wrap' }}>
+          <Button variant="contained" onClick={generate} fullWidth={isMobile}>Generate from Eligible</Button>
+          <Button variant="outlined" color="error" onClick={() => setOpenEmergency(true)} fullWidth={isMobile}>Emergency Action</Button>
         </Stack>
         {latestPopup ? (
           <Alert severity="warning" onClose={clearPopup} sx={{ mb: 1.2 }}>
@@ -293,7 +293,7 @@ export default function StagePage() {
               variant="scrollable"
               scrollButtons="auto"
               onChange={(_, value) => setMobileTab(value)}
-              sx={{ position: 'sticky', top: 74, zIndex: 5, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}
+              sx={{ position: 'sticky', top: 64, zIndex: 5, bgcolor: 'background.paper', borderBottom: 1, borderColor: 'divider' }}
             >
               {['CURRENT', 'QUEUE', 'GUESTS', 'ALERTS', 'ACTIVITY', 'DONATIONS'].map((x) => <Tab key={x} value={x} label={x} />)}
             </Tabs>
