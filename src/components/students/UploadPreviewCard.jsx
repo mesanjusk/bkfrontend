@@ -10,6 +10,7 @@ export default function UploadPreviewCard({
   preview,
   inputId,
   loading = false,
+  fileName = '',
 }) {
   return (
     <Card variant="outlined" sx={{ borderRadius: 3 }}>
@@ -21,6 +22,7 @@ export default function UploadPreviewCard({
             {loading ? 'Uploading...' : 'Click to upload image'}
             <input hidden id={inputId} type="file" accept="image/*" onChange={(e) => onFileSelect(e.target.files?.[0] || null)} />
           </Button>
+          {fileName ? <Typography variant="caption" color="text.secondary">Selected file: {fileName}</Typography> : null}
           <TextField label="or paste image URL" size="small" value={urlValue || ''} onChange={(e) => onUrlChange(e.target.value)} fullWidth />
           {preview ? (
             <Avatar variant="rounded" src={preview} alt={title} sx={{ width: '100%', height: 180, borderRadius: 2 }} />

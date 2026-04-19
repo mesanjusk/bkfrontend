@@ -32,6 +32,7 @@ import PhotoAdjustControls from '../components/students/PhotoAdjustControls';
 import EligibilitySummaryCard from '../components/students/EligibilitySummaryCard';
 import ResponsiveStudentList from '../components/students/ResponsiveStudentList';
 import StudentFormPage from '../components/students/StudentFormPage';
+import EmptyState from '../components/EmptyState';
 
 const blankSubject = { subject: '', marksObtained: 0, maxMarks: 100, code: '' };
 const initialForm = {
@@ -72,6 +73,10 @@ export default function StudentsPage() {
   const [snack, setSnack] = useState('');
   const [localResultPreview, setLocalResultPreview] = useState('');
   const [localPhotoPreview, setLocalPhotoPreview] = useState('');
+  const [resultImageFile, setResultImageFile] = useState(null);
+  const [photoFile, setPhotoFile] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
 
   const computedSummary = useMemo(() => {
     const filled = (form.subjects || []).filter((s) => s.subject && Number(s.maxMarks) > 0);
@@ -111,11 +116,29 @@ export default function StudentsPage() {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => () => {
+    if (localPhotoPreview) URL.revokeObjectURL(localPhotoPreview);
+    if (localResultPreview) URL.revokeObjectURL(localResultPreview);
+  }, [localPhotoPreview, localResultPreview]);
+
+  const filteredStudents = useMemo(() => {
+    return students.filter((student) => {
+      const matchesQuery = [student.fullName, student.schoolName, student.board, student.className]
+        .join(' ')
+        .toLowerCase()
+        .includes(searchQuery.trim().toLowerCase());
+      const matchesStatus = statusFilter === 'ALL' || (student.status || 'PENDING') === statusFilter;
+      return matchesQuery && matchesStatus;
+    });
+  }, [students, searchQuery, statusFilter]);
+
   const reset = () => {
     setForm(initialForm);
     setSelectedId(null);
     setLocalPhotoPreview('');
     setLocalResultPreview('');
+    setPhotoFile(null);
+    setResultImageFile(null);
   };
 
   const toEditableSubjects = (subjects = []) => {
@@ -216,14 +239,14 @@ export default function StudentsPage() {
     if (!file) return;
     const objectUrl = URL.createObjectURL(file);
     setLocalPhotoPreview(objectUrl);
-    setForm((prev) => ({ ...prev, certificatePhotoUrl: objectUrl }));
+    setPhotoFile(file);
   };
 
   const onResultSelect = (file) => {
     if (!file) return;
     const objectUrl = URL.createObjectURL(file);
     setLocalResultPreview(objectUrl);
-    setForm((prev) => ({ ...prev, resultImageUrl: objectUrl }));
+    setResultImageFile(file);
   };
 
   const quickActions = (
@@ -248,8 +271,8 @@ export default function StudentsPage() {
         <Typography color="text.primary">Students</Typography>
       </Breadcrumbs>
 
-      <Stepper alternativeLabel sx={{ display: { xs: 'none', md: 'flex' } }}>
-        {steps.map((label) => <Step key={label} active><StepLabel>{label}</StepLabel></Step>)}
+      <Stepper alternativeLabel activeStep={5} sx={{ display: { xs: 'none', md: 'flex' } }}>
+        {steps.map((label) => <Step key={label}><StepLabel>{label}</StepLabel></Step>)}
       </Stepper>
 
       {saving ? <LinearProgress /> : null}
@@ -309,7 +332,13 @@ export default function StudentsPage() {
               </StudentFormSection>
 
               <StudentFormSection title="4) Uploads" subtitle="Upload result image and student photo with immediate preview.">
-                <Grid container spacing={1.2}>
+                <Stack spacing={1.2}>
+                  {(resultImageFile || photoFile) ? (
+                    <Alert severity="info" variant="outlined">
+                      Local files selected: {resultImageFile ? `Result (${resultImageFile.name})` : 'No result file'} · {photoFile ? `Photo (${photoFile.name})` : 'No photo file'}.
+                    </Alert>
+                  ) : null}
+                  <Grid container spacing={1.2}>
                   <Grid item xs={12} md={6}>
                     <UploadPreviewCard
                       title="Result image"
@@ -320,6 +349,7 @@ export default function StudentsPage() {
                       preview={localResultPreview || form.resultImageUrl}
                       inputId="result-image"
                       loading={saving}
+                      fileName={resultImageFile?.name || ""}
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
@@ -332,9 +362,11 @@ export default function StudentsPage() {
                       preview={localPhotoPreview || form.certificatePhotoUrl}
                       inputId="student-photo"
                       loading={saving}
+                      fileName={photoFile?.name || ""}
                     />
                   </Grid>
-                </Grid>
+                  </Grid>
+                </Stack>
               </StudentFormSection>
 
               <StudentFormSection title="6) Eligibility Summary" subtitle="Quick view of status, review flags, and category match output.">
@@ -394,11 +426,36 @@ export default function StudentsPage() {
       </form>
 
       <StudentFormSection title="Student Records" subtitle="Responsive list/table for admin quick actions and mobile tap-through.">
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 1.5 }}>
+          <TextField
+            size="small"
+            fullWidth
+            label="Search by name, school, board, class"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <TextField
+            size="small"
+            select
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            sx={{ minWidth: { sm: 190 } }}
+          >
+            <MenuItem value="ALL">All statuses</MenuItem>
+            <MenuItem value="PENDING">Pending</MenuItem>
+            <MenuItem value="ELIGIBLE">Eligible</MenuItem>
+            <MenuItem value="INELIGIBLE">Ineligible</MenuItem>
+            <MenuItem value="REVIEW_NEEDED">Review needed</MenuItem>
+          </TextField>
+        </Stack>
         {loading ? (
           <Stack spacing={1}>{Array.from({ length: 4 }).map((_, idx) => <Skeleton key={idx} variant="rounded" height={68} />)}</Stack>
+        ) : !filteredStudents.length ? (
+          <EmptyState title="No students match your filters" description="Adjust search text or status to view records." />
         ) : (
           <ResponsiveStudentList
-            students={students}
+            students={filteredStudents}
             onEdit={edit}
             onParse={parse}
             onEvaluate={evaluate}
