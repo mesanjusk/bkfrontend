@@ -10,7 +10,6 @@ import {
   Chip,
   Container,
   Divider,
-  Grid,
   MenuItem,
   Slider,
   Skeleton,
@@ -20,6 +19,7 @@ import {
   TextField,
   Typography
 } from '@mui/material';
+import Grid from '@mui/material/GridLegacy';
 import {
   Add,
   AutoAwesome,
