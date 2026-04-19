@@ -3,42 +3,31 @@ import { socket } from '../socket';
 import { useAuth } from './AuthContext';
 
 const LiveContext = createContext();
-const socketEvents = [
-  'student_form_submitted',
-  'student_parsed',
-  'student_eligible',
-  'guest_changed',
-  'anchor_popup',
-  'stage_assignment_updated',
-  'stage_sequence_generated',
-  'budget_updated',
-  'donation_added',
-  'donation_thankyou_pending',
-  'notification_created'
-];
+const EVENT_NAMES = ['student_form_submitted','student_eligible','stage_assignment_updated','guest_changed','anchor_popup','donation_added','whatsapp_message_logged','notification_created'];
 
 export function LiveProvider({ children }) {
   const { user } = useAuth();
   const [events, setEvents] = useState([]);
-  const [latestPopup, setLatestPopup] = useState(null);
+  const [connected, setConnected] = useState(socket.connected);
 
   useEffect(() => {
-    const subs = socketEvents.map((name) => {
-      const fn = (payload) => {
-        const item = { name, payload, at: new Date().toISOString() };
-        setEvents((prev) => [item, ...prev].slice(0, 50));
-        if (name === 'anchor_popup') setLatestPopup(item);
-      };
-      socket.on(name, fn);
-      return { name, fn };
-    });
+    const onConnect = () => setConnected(true);
+    const onDisconnect = () => setConnected(false);
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    EVENT_NAMES.forEach((name) => socket.on(name, (payload) => setEvents((prev) => [{ name, payload, at: Date.now() }, ...prev].slice(0, 50))));
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+      EVENT_NAMES.forEach((name) => socket.off(name));
+    };
+  }, []);
 
+  useEffect(() => {
     if (user?.roleId?.code) socket.emit('join-role-room', user.roleId.code);
-    return () => subs.forEach(({ name, fn }) => socket.off(name, fn));
   }, [user]);
 
-  const value = useMemo(() => ({ events, latestPopup, clearPopup: () => setLatestPopup(null) }), [events, latestPopup]);
-  return <LiveContext.Provider value={value}>{children}</LiveContext.Provider>;
+  return <LiveContext.Provider value={useMemo(() => ({ events, connected }), [events, connected])}>{children}</LiveContext.Provider>;
 }
 
 export const useLive = () => useContext(LiveContext);

@@ -1,88 +1,38 @@
 import { useEffect, useState } from 'react';
+import { Button, Card, CardContent, Grid2 as Grid, MenuItem, Stack, Tab, Tabs, TextField, Typography } from '@mui/material';
 import api from '../api';
-import DataTable from '../components/DataTable';
-import SectionTitle from '../components/SectionTitle';
-
-const userInitial = { name: '', username: '', password: '', roleId: '', eventDutyType: 'NONE', availabilityStatus: 'AVAILABLE' };
-const templateInitial = { name: '', type: 'STUDENT_AWARD' };
-const ruleInitial = { name: '', triggerKey: '', templateName: '', recipientType: 'Student', isActive: true };
+import PageHeader from '../components/PageHeader';
+import ResponsiveTable from '../components/ResponsiveTable';
+import StatusChip from '../components/StatusChip';
 
 export default function AdminPage() {
-  const [users, setUsers] = useState([]);
+  const [tab, setTab] = useState(0);
   const [roles, setRoles] = useState([]);
+  const [users, setUsers] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [rules, setRules] = useState([]);
-  const [userForm, setUserForm] = useState(userInitial);
-  const [templateForm, setTemplateForm] = useState(templateInitial);
-  const [ruleForm, setRuleForm] = useState(ruleInitial);
-
+  const [userForm, setUserForm] = useState({ name: '', username: '', password: '', roleId: '', eventDutyType: 'ADMIN' });
+  const [roleForm, setRoleForm] = useState({ name: '', code: '' });
+  const [ruleForm, setRuleForm] = useState({ name: '', triggerKey: '', templateName: '', recipientType: 'Student', isActive: true });
   const load = async () => {
-    const [u, r, t, a] = await Promise.all([api.get('/users'), api.get('/roles'), api.get('/certificate-templates'), api.get('/automation-rules')]);
-    setUsers(u.data); setRoles(r.data); setTemplates(t.data); setRules(a.data);
+    const [r, u, t, a] = await Promise.all([api.get('/roles'), api.get('/users'), api.get('/certificate-templates'), api.get('/automation-rules')]);
+    setRoles(r.data); setUsers(u.data); setTemplates(t.data); setRules(a.data);
   };
   useEffect(() => { load(); }, []);
-
-  const addUser = async (e) => { e.preventDefault(); await api.post('/users', userForm); setUserForm(userInitial); load(); };
-  const addTemplate = async (e) => { e.preventDefault(); await api.post('/certificate-templates', templateForm); setTemplateForm(templateInitial); load(); };
-  const addRule = async (e) => { e.preventDefault(); await api.post('/automation-rules', ruleForm); setRuleForm(ruleInitial); load(); };
+  const saveRole = async (e) => { e.preventDefault(); await api.post('/roles', roleForm); setRoleForm({ name: '', code: '' }); load(); };
+  const saveUser = async (e) => { e.preventDefault(); await api.post('/users', userForm); setUserForm({ name: '', username: '', password: '', roleId: '', eventDutyType: 'ADMIN' }); load(); };
+  const saveRule = async (e) => { e.preventDefault(); await api.post('/automation-rules', ruleForm); setRuleForm({ name: '', triggerKey: '', templateName: '', recipientType: 'Student', isActive: true }); load(); };
 
   return (
-    <div className="page">
-      <SectionTitle title="Admin + Master Data" subtitle="This page controls users, roles, certificate templates and WhatsApp automation rules." />
-      <div className="grid two">
-        <form className="panel stack gap12" onSubmit={addUser}>
-          <h3>Create user</h3>
-          <div className="form-grid">
-            <input placeholder="Name" value={userForm.name} onChange={(e) => setUserForm({ ...userForm, name: e.target.value })} />
-            <input placeholder="Username" value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} />
-            <input placeholder="Password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} />
-            <select value={userForm.roleId} onChange={(e) => setUserForm({ ...userForm, roleId: e.target.value })}><option value="">Role</option>{roles.map((r) => <option key={r._id} value={r._id}>{r.name}</option>)}</select>
-            <input placeholder="Duty type" value={userForm.eventDutyType} onChange={(e) => setUserForm({ ...userForm, eventDutyType: e.target.value })} />
-            <select value={userForm.availabilityStatus} onChange={(e) => setUserForm({ ...userForm, availabilityStatus: e.target.value })}><option>AVAILABLE</option><option>BUSY</option><option>EXPECTED</option><option>ARRIVED_EARLY</option><option>LEFT_VENUE</option></select>
-          </div>
-          <button className="primary" type="submit">Add User</button>
-        </form>
-
-        <div className="panel">
-          <h3>Roles</h3>
-          <DataTable headers={['Role', 'Code', 'Dashboard']} rows={roles.map((r) => [r.name, r.code, r.dashboardKey])} />
-        </div>
-      </div>
-
-      <div className="grid two mt16">
-        <form className="panel stack gap12" onSubmit={addTemplate}>
-          <h3>Certificate template</h3>
-          <div className="form-grid">
-            <input placeholder="Template name" value={templateForm.name} onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })} />
-            <select value={templateForm.type} onChange={(e) => setTemplateForm({ ...templateForm, type: e.target.value })}><option value="STUDENT_AWARD">Student award</option><option value="GUEST_THANK_YOU">Guest thank you</option><option value="VOLUNTEER_APPRECIATION">Volunteer</option><option value="TEAM_APPRECIATION">Team</option></select>
-          </div>
-          <button className="primary" type="submit">Add Template</button>
-        </form>
-
-        <form className="panel stack gap12" onSubmit={addRule}>
-          <h3>Automation rule</h3>
-          <div className="form-grid">
-            <input placeholder="Rule name" value={ruleForm.name} onChange={(e) => setRuleForm({ ...ruleForm, name: e.target.value })} />
-            <input placeholder="Trigger key" value={ruleForm.triggerKey} onChange={(e) => setRuleForm({ ...ruleForm, triggerKey: e.target.value })} />
-            <input placeholder="Template name" value={ruleForm.templateName} onChange={(e) => setRuleForm({ ...ruleForm, templateName: e.target.value })} />
-            <input placeholder="Recipient type" value={ruleForm.recipientType} onChange={(e) => setRuleForm({ ...ruleForm, recipientType: e.target.value })} />
-          </div>
-          <button className="primary" type="submit">Add Rule</button>
-        </form>
-      </div>
-
-      <div className="grid two mt16">
-        <div className="panel">
-          <h3>Users</h3>
-          <DataTable headers={['Name', 'Username', 'Role', 'Duty', 'Status']} rows={users.map((u) => [u.name, u.username, u.roleId?.name || '-', u.eventDutyType, u.availabilityStatus])} />
-        </div>
-        <div className="panel">
-          <h3>Automation + templates</h3>
-          <DataTable headers={['Certificate Template', 'Type']} rows={templates.map((t) => [t.name, t.type])} />
-          <div className="spacer8" />
-          <DataTable headers={['Rule', 'Trigger', 'Template', 'Recipient']} rows={rules.map((r) => [r.name, r.triggerKey, r.templateName, r.recipientType])} />
-        </div>
-      </div>
-    </div>
+    <>
+      <PageHeader title="Admin & settings" subtitle="Users, roles, automation rules and certificate templates." />
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" sx={{ mb: 2 }}>
+        <Tab label="Users" /><Tab label="Roles" /><Tab label="Automation" /><Tab label="Templates" />
+      </Tabs>
+      {tab === 0 && <Grid container spacing={2}><Grid size={{ xs: 12, lg: 4 }}><Card component="form" onSubmit={saveUser}><CardContent><Stack spacing={2}><Typography variant="h6">Add user</Typography><TextField label="Name" value={userForm.name} onChange={(e) => setUserForm({ ...userForm, name: e.target.value })} /><TextField label="Username" value={userForm.username} onChange={(e) => setUserForm({ ...userForm, username: e.target.value })} /><TextField label="Password" type="password" value={userForm.password} onChange={(e) => setUserForm({ ...userForm, password: e.target.value })} /><TextField select label="Role" value={userForm.roleId} onChange={(e) => setUserForm({ ...userForm, roleId: e.target.value })}>{roles.map((r) => <MenuItem key={r._id} value={r._id}>{r.name}</MenuItem>)}</TextField><TextField label="Duty" value={userForm.eventDutyType} onChange={(e) => setUserForm({ ...userForm, eventDutyType: e.target.value })} /><Button variant="contained" type="submit">Save user</Button></Stack></CardContent></Card></Grid><Grid size={{ xs: 12, lg: 8 }}><ResponsiveTable columns={[{ key:'name', label:'Name' },{ key:'username', label:'Username' },{ key:'role', label:'Role' },{ key:'duty', label:'Duty' },{ key:'status', label:'Status' }]} rows={users.map((u)=>({ title:u.name, name:u.name, username:u.username, role:u.roleId?.name||'-', duty:u.eventDutyType||'-', status:()=> <StatusChip label={u.isActive ? 'Selected' : 'Rejected'} /> }))} mobileTitleKey="title" /></Grid></Grid>}
+      {tab === 1 && <Grid container spacing={2}><Grid size={{ xs: 12, lg: 4 }}><Card component="form" onSubmit={saveRole}><CardContent><Stack spacing={2}><Typography variant="h6">Add role</Typography><TextField label="Name" value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} /><TextField label="Code" value={roleForm.code} onChange={(e) => setRoleForm({ ...roleForm, code: e.target.value })} /><Button variant="contained" type="submit">Save role</Button></Stack></CardContent></Card></Grid><Grid size={{ xs: 12, lg: 8 }}><ResponsiveTable columns={[{ key:'name', label:'Role' },{ key:'code', label:'Code' },{ key:'dashboardKey', label:'Dashboard key' }]} rows={roles.map((r)=>({ title:r.name, name:r.name, code:r.code, dashboardKey:r.dashboardKey||'-' }))} mobileTitleKey="title" /></Grid></Grid>}
+      {tab === 2 && <Grid container spacing={2}><Grid size={{ xs: 12, lg: 4 }}><Card component="form" onSubmit={saveRule}><CardContent><Stack spacing={2}><Typography variant="h6">Add automation rule</Typography><TextField label="Name" value={ruleForm.name} onChange={(e) => setRuleForm({ ...ruleForm, name: e.target.value })} /><TextField label="Trigger key" value={ruleForm.triggerKey} onChange={(e) => setRuleForm({ ...ruleForm, triggerKey: e.target.value })} /><TextField label="Template name" value={ruleForm.templateName} onChange={(e) => setRuleForm({ ...ruleForm, templateName: e.target.value })} /><TextField label="Recipient type" value={ruleForm.recipientType} onChange={(e) => setRuleForm({ ...ruleForm, recipientType: e.target.value })} /><Button variant="contained" type="submit">Save rule</Button></Stack></CardContent></Card></Grid><Grid size={{ xs: 12, lg: 8 }}><ResponsiveTable columns={[{ key:'name', label:'Rule' },{ key:'trigger', label:'Trigger' },{ key:'template', label:'Template' },{ key:'recipient', label:'Recipient' }]} rows={rules.map((r)=>({ title:r.name, name:r.name, trigger:r.triggerKey, template:r.templateName, recipient:r.recipientType }))} mobileTitleKey="title" /></Grid></Grid>}
+      {tab === 3 && <ResponsiveTable columns={[{ key:'name', label:'Template' },{ key:'type', label:'Type' }]} rows={templates.map((t)=>({ title:t.name, name:t.name, type:t.type }))} mobileTitleKey="title" />}
+    </>
   );
 }

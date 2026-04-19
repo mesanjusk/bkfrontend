@@ -1,55 +1,35 @@
-const text = `MASTER FLOW AND FEATURES CHART
+import { Card, CardContent, Grid2 as Grid, List, ListItem, ListItemText } from '@mui/material';
+import PageHeader from '../components/PageHeader';
 
-1. CORE APP FLOW
-- PWA opens in planning mode before event day
-- User logs in with role-based access
-- Dashboard loads according to role and event duty
-- Admin/Senior Team configure event, categories, guests, teams, vendors, budgets and tasks
-- Student uploads form, result image, photo and certificate preview adjustments
-- System runs parsing/extraction and board logic like CBSE Best 5
-- Student is marked Eligible / Not Eligible / Review Needed
-- Eligible students enter award stage sequence
-- Category-wise pre-decided anchor is attached automatically
-- Preferred guest is attached, but can be changed live by senior team
-- Team member and volunteer assignments are tracked with counts
-- On event day, app enters live mode with Socket.IO sync
-- Anchor gets instant popup if guest changes
-- Donation entry can be created instantly
-- WhatsApp thank-you can be triggered instantly
-- Guest / volunteer / team certificates can be sent on or after event
-- Budget vs actual expense, vendors and responsibility tasks remain visible throughout event lifecycle
-
-2. NEW BUDGET AND TASK MODULES
-- Budget heads: Food, Decor, Printing, Trophies, Sound, Misc
-- Vendors: food vendor, decor vendor, printing vendor, sound vendor, etc.
-- Expenses: vendor expense, direct expense, emergency expense, team purchase
-- Teams: guest management, stage management, finance, food & hospitality, certificate team, communication team
-- Event tasks: assign specific responsibility to team members with backup owner, deadline and status
-- Final report includes allowed budget, actual expense, pending dues, vendor summary, task status
-
-3. ROLE-WISE FOCUS
-- Super Admin: full system, roles, reports, settings, audit
-- Host: monitoring and summary
-- Admin: planning, categories, users, stage, budget, vendors, reports
-- Senior Team: live event control, guest change, donation and thank-you actions
-- Team Leader: team execution and task coordination
-- Anchor: category-wise live stage flow only
-- Volunteer: support tasks and readiness
-- Guest: own attendance and schedule view
-- Student: own status and certificate preview
-
-4. LIVE MODE RULE
-- Planning days: manual sync + local cache okay
-- Event day: server truth + sockets + auto refresh
-- Offline fallback can queue limited actions, but live stage state should come from server`;
+const sections = {
+  'Core app flow': [
+    'PWA opens in planning mode before event day',
+    'Role-based login loads duty-aware dashboard',
+    'Student intake supports marks, subjects, certificate preview and evaluation',
+    'Eligible students move into stage sequence with category-wise anchor mapping',
+    'Senior team can replace guests live and anchor sees popup instantly',
+    'Donation entry and WhatsApp thank-you can be triggered quickly',
+    'Budget, vendor, expense and task visibility continues across the event lifecycle'
+  ],
+  'Live mode rule': [
+    'Planning days: local/manual sync is acceptable',
+    'Event day: sockets + server truth + auto refresh are primary',
+    'Offline fallback should queue limited actions only',
+    'Current stage, guest change and donations should always reflect server state'
+  ],
+  'WhatsApp addition': [
+    'Merged as dedicated WhatsApp center',
+    'Connections, templates, logs and quick sending live in one module',
+    'Automation rules stay visible in Admin area',
+    'Current implementation is safe placeholder unless real API credentials are configured'
+  ]
+};
 
 export default function SystemFlowPage() {
   return (
-    <div className="page">
-      <h2>Complete System Flow</h2>
-      <div className="panel">
-        <pre className="code">{text}</pre>
-      </div>
-    </div>
+    <>
+      <PageHeader title="Master flow & features chart" subtitle="Single-screen operational summary of the project scope discussed in chat." />
+      <Grid container spacing={2}>{Object.entries(sections).map(([title, items]) => <Grid key={title} size={{ xs: 12, md: 6 }}><Card><CardContent><List><ListItem><ListItemText primary={title} /></ListItem>{items.map((item, idx) => <ListItem key={idx}><ListItemText primary={item} /></ListItem>)}</List></CardContent></Card></Grid>)}</Grid>
+    </>
   );
 }

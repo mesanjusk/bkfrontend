@@ -1,60 +1,20 @@
 import { useEffect, useState } from 'react';
+import { Alert, Card, CardContent, Chip, Grid2 as Grid, Stack, Typography } from '@mui/material';
 import api from '../api';
-import DataTable from '../components/DataTable';
-import SectionTitle from '../components/SectionTitle';
+import PageHeader from '../components/PageHeader';
 import { useLive } from '../context/LiveContext';
 
-const donationInitial = { donorGuestId: '', amount: 0, mode: 'cash', note: '', receivedByUserId: '' };
-
 export default function NotificationsPage() {
+  const [items, setItems] = useState([]);
   const { events } = useLive();
-  const [notifications, setNotifications] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [donations, setDonations] = useState([]);
-  const [donationForm, setDonationForm] = useState(donationInitial);
-
-  const load = async () => {
-    const [n, u, d] = await Promise.all([api.get('/notifications'), api.get('/users'), api.get('/donations')]);
-    setNotifications(n.data); setUsers(u.data); setDonations(d.data);
-  };
-  useEffect(() => { load(); }, []);
-  useEffect(() => { if (events.length) load(); }, [events.length]);
-
-  const createDonation = async (e) => { e.preventDefault(); await api.post('/donations', donationForm); setDonationForm(donationInitial); load(); };
-  const sendThanks = async (donation) => {
-    await api.put(`/donations/${donation._id}`, { ...donation, thankYouStatus: 'SENT' });
-    await api.post('/notifications', {
-      title: 'WhatsApp thank-you sent',
-      message: `Donation thank-you marked sent for ₹${donation.amount}.`,
-      type: 'WHATSAPP',
-      targetRoles: ['SUPER_ADMIN', 'ADMIN', 'SENIOR_TEAM'],
-      readStatus: false
-    });
-    load();
-  };
-
+  useEffect(() => { api.get('/notifications').then((r) => setItems(r.data)); }, []);
   return (
-    <div className="page">
-      <SectionTitle title="Notifications + Donation Thank-you Actions" subtitle="In-app live alerts are stored here. Donation entry can instantly trigger WhatsApp thank-you workflow." />
-      <form className="panel form-grid" onSubmit={createDonation}>
-        <select value={donationForm.donorGuestId} onChange={(e) => setDonationForm({ ...donationForm, donorGuestId: e.target.value })}><option value="">Donor guest</option>{users.filter((u) => u.eventDutyType === 'GUEST').map((u) => <option key={u._id} value={u._id}>{u.name}</option>)}</select>
-        <input type="number" placeholder="Amount" value={donationForm.amount} onChange={(e) => setDonationForm({ ...donationForm, amount: Number(e.target.value) })} />
-        <select value={donationForm.mode} onChange={(e) => setDonationForm({ ...donationForm, mode: e.target.value })}><option value="cash">Cash</option><option value="upi">UPI</option><option value="cheque">Cheque</option><option value="promise">Promise</option></select>
-        <input placeholder="Note" value={donationForm.note} onChange={(e) => setDonationForm({ ...donationForm, note: e.target.value })} />
-        <select value={donationForm.receivedByUserId} onChange={(e) => setDonationForm({ ...donationForm, receivedByUserId: e.target.value })}><option value="">Received by</option>{users.map((u) => <option key={u._id} value={u._id}>{u.name}</option>)}</select>
-        <button className="primary" type="submit">Record donation</button>
-      </form>
-
-      <div className="grid two mt16">
-        <div className="panel">
-          <h3>Notifications</h3>
-          <DataTable headers={['Title', 'Type', 'Message']} rows={notifications.map((n) => [n.title, n.type, n.message])} />
-        </div>
-        <div className="panel">
-          <h3>Donation thank-you queue</h3>
-          <DataTable headers={['Guest', 'Amount', 'Mode', 'Thank-you', 'Action']} rows={donations.map((d) => [d.donorGuestId?.name || '-', d.amount, d.mode, d.thankYouStatus, <button className="primary" onClick={() => sendThanks(d)}>Mark WhatsApp sent</button>])} />
-        </div>
-      </div>
-    </div>
+    <>
+      <PageHeader title="Notifications & live alerts" subtitle="In-app alerts, role-focused updates and socket events." chips={[{ label: `${items.length} stored` }, { label: `${events.length} live events`, color: 'secondary' }]} />
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, lg: 6 }}><Card><CardContent><Typography variant="h6" sx={{ mb: 2 }}>Stored notifications</Typography><Stack spacing={1.5}>{items.length ? items.map((n) => <Alert key={n._id} severity="info"><Stack direction="row" justifyContent="space-between" spacing={1}><span><strong>{n.title || n.type || 'Notification'}</strong><br />{n.message || '—'}</span><Chip label={n.type || 'INFO'} size="small" /></Stack></Alert>) : <Typography color="text.secondary">No notification records yet.</Typography>}</Stack></CardContent></Card></Grid>
+        <Grid size={{ xs: 12, lg: 6 }}><Card><CardContent><Typography variant="h6" sx={{ mb: 2 }}>Live activity feed</Typography><Stack spacing={1.5}>{events.length ? events.map((n, idx) => <Alert key={idx} severity={n.name.includes('guest') ? 'warning' : 'success'}><strong>{n.name}</strong><br />{JSON.stringify(n.payload)}</Alert>) : <Typography color="text.secondary">No live socket events yet.</Typography>}</Stack></CardContent></Card></Grid>
+      </Grid>
+    </>
   );
 }

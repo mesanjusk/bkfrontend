@@ -1,18 +1,14 @@
 import { useEffect, useState } from 'react';
+import { Button, Card, CardContent, Grid2 as Grid, MenuItem, Stack, TextField, Typography } from '@mui/material';
 import api from '../api';
-import DataTable from '../components/DataTable';
-import SectionTitle from '../components/SectionTitle';
-
-const initialForm = {
-  title: '', board: '', className: '', minPercentage: 0, calculationMethod: 'DIRECT_PERCENTAGE', bestOfCount: 5,
-  gender: 'Any', schoolType: 'Any', sequencePriority: 0, anchorId: '', preferredGuestIds: []
-};
+import PageHeader from '../components/PageHeader';
+import ResponsiveTable from '../components/ResponsiveTable';
+import StatusChip from '../components/StatusChip';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [users, setUsers] = useState([]);
-  const [form, setForm] = useState(initialForm);
-  const [selectedId, setSelectedId] = useState(null);
+  const [form, setForm] = useState({ title: '', board: '', className: '', minPercentage: 0, calculationMethod: 'DIRECT_PERCENTAGE', anchorId: '', preferredGuestIds: [] });
 
   const load = async () => {
     const [c, u] = await Promise.all([api.get('/categories'), api.get('/users')]);
@@ -20,71 +16,54 @@ export default function CategoriesPage() {
     setUsers(u.data);
   };
   useEffect(() => { load(); }, []);
+  const save = async (e) => { e.preventDefault(); await api.post('/categories', { ...form, preferredGuestIds: form.preferredGuestIds ? [form.preferredGuestIds].flat().filter(Boolean) : [] }); setForm({ title: '', board: '', className: '', minPercentage: 0, calculationMethod: 'DIRECT_PERCENTAGE', anchorId: '', preferredGuestIds: [] }); load(); };
 
-  const submit = async (e) => {
-    e.preventDefault();
-    const payload = { ...form, preferredGuestIds: form.preferredGuestIds.filter(Boolean) };
-    if (selectedId) await api.put(`/categories/${selectedId}`, payload);
-    else await api.post('/categories', payload);
-    setForm(initialForm); setSelectedId(null); load();
-  };
-  const edit = (cat) => {
-    setSelectedId(cat._id);
-    setForm({ ...initialForm, ...cat, anchorId: cat.anchorId?._id || cat.anchorId || '', preferredGuestIds: (cat.preferredGuestIds || []).map((g) => g._id || g) });
-  };
-
-  const anchorOptions = users.filter((u) => u.eventDutyType === 'ANCHOR');
-  const guestOptions = users.filter((u) => u.eventDutyType === 'GUEST');
+  const anchors = users.filter((u) => u.eventDutyType === 'ANCHOR');
+  const guests = users.filter((u) => u.eventDutyType === 'GUEST');
+  const rows = categories.map((c) => ({
+    title: c.title,
+    board: c.board || '-',
+    className: c.className || '-',
+    minPercentage: c.minPercentage || 0,
+    calculationMethod: c.calculationMethod,
+    anchor: c.anchorId?.name || '-',
+    guest: (c.preferredGuestIds || []).map((g) => g.name).join(', ') || '-',
+    active: () => <StatusChip label={c.isActive ? 'Selected' : 'Pending'} />
+  }));
 
   return (
-    <div className="page">
-      <SectionTitle title="Categories + Fixed Anchor Mapping" subtitle="Each category can define board/class filters, CBSE Best 5 rule, anchor and preferred guest." />
-      <form className="panel stack gap12" onSubmit={submit}>
-        <div className="form-grid">
-          <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          <input placeholder="Board" value={form.board} onChange={(e) => setForm({ ...form, board: e.target.value })} />
-          <input placeholder="Class" value={form.className} onChange={(e) => setForm({ ...form, className: e.target.value })} />
-          <input type="number" placeholder="Minimum %" value={form.minPercentage} onChange={(e) => setForm({ ...form, minPercentage: Number(e.target.value) })} />
-          <select value={form.calculationMethod} onChange={(e) => setForm({ ...form, calculationMethod: e.target.value })}>
-            <option value="DIRECT_PERCENTAGE">Direct Percentage</option>
-            <option value="BEST_5">CBSE Best 5</option>
-          </select>
-          <input type="number" placeholder="Best of count" value={form.bestOfCount} onChange={(e) => setForm({ ...form, bestOfCount: Number(e.target.value) })} />
-          <input type="number" placeholder="Sequence Priority" value={form.sequencePriority} onChange={(e) => setForm({ ...form, sequencePriority: Number(e.target.value) })} />
-          <select value={form.anchorId} onChange={(e) => setForm({ ...form, anchorId: e.target.value })}>
-            <option value="">Select anchor</option>
-            {anchorOptions.map((u) => <option key={u._id} value={u._id}>{u.name}</option>)}
-          </select>
-        </div>
-        <div className="grid three">
-          {guestOptions.map((guest) => (
-            <label key={guest._id} className="checkrow">
-              <input type="checkbox" checked={form.preferredGuestIds.includes(guest._id)} onChange={(e) => setForm({
-                ...form,
-                preferredGuestIds: e.target.checked ? [...form.preferredGuestIds, guest._id] : form.preferredGuestIds.filter((id) => id !== guest._id)
-              })} />
-              <span>{guest.name}</span>
-            </label>
-          ))}
-        </div>
-        <div className="action-row">
-          <button className="primary" type="submit">{selectedId ? 'Update Category' : 'Create Category'}</button>
-          <button type="button" onClick={() => { setForm(initialForm); setSelectedId(null); }}>Reset</button>
-        </div>
-      </form>
-
-      <DataTable
-        headers={['Title', 'Rule', 'Calc', 'Anchor', 'Preferred Guests', 'Priority', 'Actions']}
-        rows={categories.map((cat) => [
-          cat.title,
-          `${cat.board || '-'} / ${cat.className || '-'} / min ${cat.minPercentage || 0}%`,
-          cat.calculationMethod === 'BEST_5' ? `Best ${cat.bestOfCount}` : 'Direct %',
-          cat.anchorId?.name || '-',
-          (cat.preferredGuestIds || []).map((g) => g.name || g).join(', '),
-          cat.sequencePriority || 0,
-          <button onClick={() => edit(cat)}>Edit</button>
-        ])}
-      />
-    </div>
+    <>
+      <PageHeader title="Award categories" subtitle="Database-driven rules with fixed anchor and preferred guest mapping." />
+      <Grid container spacing={2}>
+        <Grid size={{ xs: 12, lg: 5 }}>
+          <Card component="form" onSubmit={save}>
+            <CardContent>
+              <Stack spacing={2}>
+                <Typography variant="h6">Create category</Typography>
+                <TextField label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 6 }}><TextField label="Board" value={form.board} onChange={(e) => setForm({ ...form, board: e.target.value })} /></Grid>
+                  <Grid size={{ xs: 6 }}><TextField label="Class" value={form.className} onChange={(e) => setForm({ ...form, className: e.target.value })} /></Grid>
+                  <Grid size={{ xs: 6 }}><TextField type="number" label="Min %" value={form.minPercentage} onChange={(e) => setForm({ ...form, minPercentage: Number(e.target.value) })} /></Grid>
+                  <Grid size={{ xs: 6 }}><TextField select label="Calculation" value={form.calculationMethod} onChange={(e) => setForm({ ...form, calculationMethod: e.target.value })}><MenuItem value="DIRECT_PERCENTAGE">Direct %</MenuItem><MenuItem value="BEST_5">Best 5</MenuItem></TextField></Grid>
+                </Grid>
+                <TextField select label="Fixed Anchor" value={form.anchorId} onChange={(e) => setForm({ ...form, anchorId: e.target.value })}>{anchors.map((u) => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}</TextField>
+                <TextField select label="Preferred Guest" value={form.preferredGuestIds[0] || ''} onChange={(e) => setForm({ ...form, preferredGuestIds: [e.target.value] })}>{guests.map((u) => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}</TextField>
+                <Button variant="contained" type="submit">Save category</Button>
+              </Stack>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid size={{ xs: 12, lg: 7 }}>
+          <ResponsiveTable
+            columns={[
+              { key: 'title', label: 'Title' }, { key: 'board', label: 'Board' }, { key: 'className', label: 'Class' }, { key: 'minPercentage', label: 'Min %' }, { key: 'calculationMethod', label: 'Method' }, { key: 'anchor', label: 'Anchor' }, { key: 'guest', label: 'Preferred guest' }
+            ]}
+            rows={rows}
+            mobileTitleKey="title"
+          />
+        </Grid>
+      </Grid>
+    </>
   );
 }

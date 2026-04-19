@@ -1,108 +1,57 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Alert, Card, CardContent, Grid2 as Grid, List, ListItem, ListItemText, Stack, Typography } from '@mui/material';
 import api from '../api';
-import SummaryCard from '../components/SummaryCard';
-import SectionTitle from '../components/SectionTitle';
-import DataTable from '../components/DataTable';
 import { useAuth } from '../context/AuthContext';
 import { useLive } from '../context/LiveContext';
+import PageHeader from '../components/PageHeader';
+import StatCard from '../components/StatCard';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { events, latestPopup, clearPopup } = useLive();
-  const [summary, setSummary] = useState(null);
-  const [liveBoard, setLiveBoard] = useState({ assignments: [], guests: [], anchors: [], current: null });
+  const { events, connected } = useLive();
+  const [summary, setSummary] = useState({});
 
-  const load = async () => {
-    const [s, b] = await Promise.all([
-      api.get('/dashboard/summary'),
-      api.get('/stage-assignments/live-board')
-    ]);
-    setSummary(s.data);
-    setLiveBoard(b.data);
-  };
-
-  useEffect(() => { load(); }, []);
-  useEffect(() => { if (events.length) load(); }, [events.length]);
-
-  const roleMessage = useMemo(() => {
-    const code = user?.roleId?.code;
-    if (code === 'ANCHOR') return 'Anchor dashboard focuses only on category-wise stage flow and live guest changes.';
-    if (code === 'SENIOR_TEAM') return 'Senior team controls live guest replacement, donations and instant thank-you actions.';
-    if (code === 'TEAM_LEADER') return 'Team leader view focuses on team execution, due tasks and stage readiness.';
-    if (code === 'VOLUNTEER') return 'Volunteer view should stay simple: readiness, student support and assigned tasks.';
-    return 'Planning mode is used before event day. Switch to live mode on event day and trust server + sockets.';
-  }, [user]);
-
-  const currentAssignment = liveBoard.current;
-  const taskRows = [
-    ['Planning Mode Rule', 'Manual sync + local cache okay'],
-    ['Event Day Rule', 'Server truth + sockets + auto refresh'],
-    ['Current Event Mode', summary?.latestEvent?.mode || 'PLANNING'],
-    ['Current User Role', `${summary?.currentUserRole || '-'} / ${summary?.currentUserDuty || '-'}`]
-  ];
+  useEffect(() => { api.get('/dashboard/summary').then((r) => setSummary(r.data)); }, []);
 
   return (
-    <div className="page">
-      <SectionTitle title="Master Dashboard" subtitle={roleMessage} />
-
-      {latestPopup ? (
-        <div className="panel warning-panel">
-          <div className="row between"><strong>{latestPopup.payload?.title || 'Live popup'}</strong><button onClick={clearPopup}>Dismiss</button></div>
-          <div>{latestPopup.payload?.message || 'A live event update was received.'}</div>
-        </div>
-      ) : null}
-
-      <div className="grid">
-        <SummaryCard title="Students" value={summary?.students || 0} subtitle={`${summary?.eligibleStudents || 0} eligible / ${summary?.reviewStudents || 0} review`} />
-        <SummaryCard title="Stage Assignments" value={summary?.stageAssignments || 0} subtitle={`${summary?.liveAssignments || 0} currently live`} />
-        <SummaryCard title="Notifications" value={summary?.notifications || 0} subtitle={`${events.length} live events received`} />
-        <SummaryCard title="Vendors" value={summary?.vendors || 0} subtitle={`${summary?.pendingTasks || 0} tasks pending`} />
-        <SummaryCard title="Allowed Budget" value={`₹${summary?.totalAllowedBudget || 0}`} subtitle={`Actual ₹${summary?.totalActualExpense || 0}`} />
-        <SummaryCard title="Available Guests" value={summary?.availableGuests || 0} subtitle="Expected / available / early arrived" tone="success" />
-      </div>
-
-      <div className="grid two mt16">
-        <div className="panel">
-          <h3>Current live sequence</h3>
-          {currentAssignment ? (
-            <div className="stack gap8">
-              <div><strong>Student:</strong> {currentAssignment.studentId?.fullName}</div>
-              <div><strong>Category:</strong> {currentAssignment.categoryId?.title}</div>
-              <div><strong>Anchor:</strong> {currentAssignment.actualAnchorId?.name || currentAssignment.plannedAnchorId?.name || '-'}</div>
-              <div><strong>Guest:</strong> {currentAssignment.actualGuestId?.name || currentAssignment.plannedGuestId?.name || '-'}</div>
-              <div><strong>Status:</strong> <span className="pill">{currentAssignment.status}</span></div>
-            </div>
-          ) : <div className="small">No live assignment yet.</div>}
-        </div>
-
-        <div className="panel">
-          <h3>Planning vs live rule</h3>
-          <DataTable headers={['Key', 'Value']} rows={taskRows} />
-        </div>
-      </div>
-
-      <div className="grid two mt16">
-        <div className="panel">
-          <h3>Recent live feed</h3>
-          <div className="feed">
-            {events.length ? events.map((item, idx) => (
-              <div key={idx} className="feed-item">
-                <strong>{item.name}</strong>
-                <div className="small">{new Date(item.at).toLocaleString()}</div>
-                <pre className="code mini">{JSON.stringify(item.payload, null, 2)}</pre>
-              </div>
-            )) : <div className="small">No live events received yet.</div>}
-          </div>
-        </div>
-
-        <div className="panel">
-          <h3>Available guests now</h3>
-          <DataTable
-            headers={['Guest', 'Status', 'Guest Awards']}
-            rows={(liveBoard.guests || []).map((guest) => [guest.name, guest.availabilityStatus, guest.stageCounts?.guestAwards || 0])}
-          />
-        </div>
-      </div>
-    </div>
+    <>
+      <PageHeader
+        title="Operations dashboard"
+        subtitle="Planning and live event overview with role-wise visibility."
+        chips={[{ label: user?.roleId?.name || '-' }, { label: user?.eventDutyType || 'NONE' }, { label: connected ? 'Live mode connected' : 'Reconnecting', color: connected ? 'success' : 'warning' }]}
+      />
+      <Grid container spacing={2}>
+        {[
+          ['Students', summary.students || 0], ['Eligible', summary.eligibleStudents || 0], ['Stage', summary.stageAssignments || 0], ['Teams', summary.teams || 0], ['Budget Heads', summary.budgetHeads || 0], ['Vendors', summary.vendors || 0], ['Expenses', `₹${summary.totalActualExpense || 0}`], ['WhatsApp Logs', summary.whatsappMessages || 0]
+        ].map(([title, value]) => <Grid key={title} size={{ xs: 12, sm: 6, lg: 3 }}><StatCard title={title} value={value} /></Grid>)}
+        <Grid size={{ xs: 12, lg: 8 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 2 }}>Master flow status</Typography>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}><Alert severity="info">Planning mode: local-first and manual sync friendly.</Alert></Grid>
+                <Grid size={{ xs: 12, md: 6 }}><Alert severity="success">Live day mode: sockets + server truth + guest change alerts.</Alert></Grid>
+                <Grid size={{ xs: 12, md: 6 }}><Alert severity="warning">Certificate render, OCR, and WhatsApp sending remain safe placeholders unless real integrations are configured.</Alert></Grid>
+                <Grid size={{ xs: 12, md: 6 }}><Alert severity="success">Budget, vendor, task, student, stage, and WhatsApp modules are now visible in one app.</Alert></Grid>
+              </Grid>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid size={{ xs: 12, lg: 4 }}>
+          <Card sx={{ height: '100%' }}>
+            <CardContent>
+              <Typography variant="h6" sx={{ mb: 1 }}>Live activity</Typography>
+              <List dense sx={{ maxHeight: 360, overflow: 'auto' }}>
+                {events.length ? events.map((ev, idx) => (
+                  <ListItem key={idx} divider>
+                    <ListItemText primary={ev.name.replaceAll('_',' ')} secondary={JSON.stringify(ev.payload).slice(0, 120)} />
+                  </ListItem>
+                )) : <Typography color="text.secondary">No live events yet.</Typography>}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+    </>
   );
 }
