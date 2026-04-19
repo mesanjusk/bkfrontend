@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Avatar,
-  Badge,
   Box,
   Chip,
   Divider,
@@ -14,6 +13,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Snackbar,
   TextField,
   Toolbar,
   Typography
@@ -30,7 +30,10 @@ import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import SearchIcon from '@mui/icons-material/Search';
 import LogoutIcon from '@mui/icons-material/Logout';
+import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import { useLive } from '../context/LiveContext';
+import RecentNotificationsPopover from './notifications/RecentNotificationsPopover';
 
 const drawerWidth = 260;
 
@@ -47,13 +50,21 @@ const menu = [
 
 export default function AppShell({ children }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { latestPopup, clearPopup } = useLive();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [recentNotifications, setRecentNotifications] = useState([]);
+  const [notificationAnchor, setNotificationAnchor] = useState(null);
   const canSeeAdmin = ['SUPER_ADMIN', 'ADMIN', 'HOST'].includes(user?.roleId?.code);
 
   const mode = useMemo(() => (location.pathname === '/stage' ? 'LIVE' : 'PLANNING'), [location.pathname]);
   const roleLabel = user?.roleId?.name || 'Unknown Role';
   const duty = user?.eventDutyType || 'NONE';
+
+  useEffect(() => {
+    api.get('/notifications').then((res) => setRecentNotifications(res.data || [])).catch(() => setRecentNotifications([]));
+  }, [location.pathname]);
 
   const drawerContent = (
     <Box>
@@ -102,8 +113,17 @@ export default function AppShell({ children }) {
           <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
             <Chip size="small" color={mode === 'LIVE' ? 'error' : 'primary'} label={`${mode} MODE`} />
             <Chip size="small" variant="outlined" label={duty} />
-            <Chip size="small" label={roleLabel} />
-            <IconButton><Badge color="error" variant="dot"><NotificationsIcon /></Badge></IconButton>
+            <Chip size="small" label={roleLabel} sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
+            <RecentNotificationsPopover
+              notifications={recentNotifications}
+              anchorEl={notificationAnchor}
+              onOpen={(e) => setNotificationAnchor(e.currentTarget)}
+              onClose={() => setNotificationAnchor(null)}
+              onClickItem={(n) => {
+                setNotificationAnchor(null);
+                navigate(n.routePath || '/notifications');
+              }}
+            />
             <Avatar sx={{ width: 30, height: 30 }}>{(user?.name || 'U').charAt(0)}</Avatar>
             <IconButton onClick={logout}><LogoutIcon /></IconButton>
           </Box>
@@ -122,6 +142,13 @@ export default function AppShell({ children }) {
       <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3 }, mt: 8 }}>
         {children}
       </Box>
+
+      <Snackbar
+        open={Boolean(latestPopup)}
+        onClose={clearPopup}
+        autoHideDuration={3500}
+        message={latestPopup ? `${latestPopup.name.replaceAll('_', ' ')} update received` : ''}
+      />
     </Box>
   );
 }
