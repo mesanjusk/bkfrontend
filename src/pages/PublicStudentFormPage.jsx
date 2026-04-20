@@ -33,24 +33,15 @@ function HeroCard({ editMode }) {
           <Stack direction="row" spacing={1} alignItems="center">
             <EmojiEvents />
             <Typography variant="h5" fontWeight={700}>
-              BK Scholar Awards 2026
+              Badte Kadam
             </Typography>
           </Stack>
           <Typography sx={{ opacity: 0.92 }}>
             {editMode
-              ? 'Update your submitted registration and manage your certificate preview.'
-              : 'Complete your scholar award registration with your academic details, marksheet and photo.'}
+              ? 'Scholar Awards 2026'
+              : ''}
           </Typography>
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            <Chip
-              label={editMode ? 'Edit Access' : 'Student Registration'}
-              sx={{ bgcolor: 'rgba(255,255,255,0.18)', color: '#fff' }}
-            />
-            <Chip
-              label="Premium School Award Form"
-              sx={{ bgcolor: 'rgba(255,255,255,0.18)', color: '#fff' }}
-            />
-          </Stack>
+          
         </Stack>
       </CardContent>
     </Card>
@@ -151,8 +142,8 @@ export default function PublicStudentFormPage() {
 
         <Alert severity="info" icon={<School />}>
           {editMode
-            ? 'You can update your registration details here. Certificate preview is available below.'
-            : 'After successful registration, confirmation will be sent on WhatsApp to the student mobile number. The secure edit link will be sent only on WhatsApp, not shown on screen.'}
+            ? ''
+            : 'After successful registration, confirmation will be sent on WhatsApp to the student mobile number.'}
         </Alert>
 
         {successMessage ? (
