@@ -199,6 +199,16 @@ export function StudentWizardStepAcademic({
     }));
   };
 
+  const handleCategoryChange = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      categoryId: value,
+      categoryOther: value === 'OTHER' ? prev.categoryOther || '' : '',
+      percentage: prev.percentage,
+      subjects: prev.subjects?.length ? prev.subjects : [{ ...emptySubject }]
+    }));
+  };
+
   return (
     <Stack spacing={1.75}>
       <Grid container spacing={1.5}>
@@ -208,19 +218,11 @@ export function StudentWizardStepAcademic({
             size="small"
             select
             label="Category"
-            value={form.categoryId}
+            value={form.categoryId || ''}
             error={Boolean(errors.categoryId)}
             helperText={errors.categoryId}
             sx={inputSx}
-            onChange={(e) =>
-              setForm((prev) => ({
-                ...prev,
-                categoryId: e.target.value,
-                categoryOther: '',
-                percentage: prev.percentage,
-                subjects: prev.subjects?.length ? prev.subjects : [{ ...emptySubject }]
-              }))
-            }
+            onChange={(e) => handleCategoryChange(e.target.value)}
           >
             {categories.map((cat) => (
               <MenuItem key={cat._id} value={cat._id}>
@@ -237,7 +239,7 @@ export function StudentWizardStepAcademic({
               fullWidth
               size="small"
               label="Other Category"
-              value={form.categoryOther}
+              value={form.categoryOther || ''}
               error={Boolean(errors.categoryOther)}
               helperText={errors.categoryOther}
               sx={inputSx}
@@ -316,7 +318,7 @@ export function StudentWizardStepAcademic({
               </Button>
             </Stack>
 
-            {form.subjects.map((subject, idx) => (
+            {(form.subjects || []).map((subject, idx) => (
               <Paper
                 key={idx}
                 variant="outlined"
@@ -745,7 +747,9 @@ export default function StudentFormWizard({
         nextErrors.categoryOther = 'Other Category is required';
       }
 
-      const hasMarks = (form.subjects || []).some((s) => s.subject?.trim() && isPresent(s.marksObtained));
+      const hasMarks = (form.subjects || []).some(
+        (s) => s.subject?.trim() && isPresent(s.marksObtained)
+      );
 
       if (isCbse) {
         if (!isPresent(form.percentage) && !hasMarks) {

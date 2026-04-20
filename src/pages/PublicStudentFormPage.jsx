@@ -139,6 +139,57 @@ function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
   );
 }
 
+function normalizeFormFromApi(data) {
+  const initial = createInitialStudentForm();
+  const hasOtherCategory = !data.categoryId && data.categoryOther;
+
+  return {
+    ...initial,
+    ...data,
+    categoryId: hasOtherCategory
+      ? 'OTHER'
+      : (data.categoryId?._id || data.categoryId || ''),
+    categoryOther: data.categoryOther || '',
+    subjects: data.subjects?.length ? data.subjects : initial.subjects,
+    certificateAdjustments: {
+      photoScale: data.certificateAdjustments?.photoScale ?? 1,
+      photoX: data.certificateAdjustments?.photoX ?? 0,
+      photoY: data.certificateAdjustments?.photoY ?? 0,
+      photoRotation: data.certificateAdjustments?.photoRotation ?? 0
+    }
+  };
+}
+
+function buildPayload(form, categories) {
+  const isOtherCategory = String(form.categoryId) === 'OTHER';
+
+  const category = categories.find(
+    (c) => String(c._id) === String(form.categoryId)
+  );
+
+  const payload = toStudentPayload({
+    ...form,
+    categoryId: isOtherCategory ? 'OTHER' : (form.categoryId || ''),
+    categoryOther: isOtherCategory ? String(form.categoryOther || '').trim() : '',
+    board: isOtherCategory ? (form.board || '') : (category?.board || form.board || ''),
+    categoryName: isOtherCategory
+      ? (form.categoryOther || form.categoryName || 'Other')
+      : (category?.name || category?.title || form.categoryName || ''),
+    resultImageUrl: form.resultImageUrl || form.marksheetFileUrl || '',
+    certificatePhotoUrl: form.certificatePhotoUrl || form.studentPhotoUrl || ''
+  });
+
+  if (isOtherCategory) {
+    payload.categoryId = 'OTHER';
+    payload.categoryOther = String(form.categoryOther || '').trim();
+  } else {
+    payload.categoryId = form.categoryId || '';
+    payload.categoryOther = '';
+  }
+
+  return payload;
+}
+
 export default function PublicStudentFormPage() {
   const { token } = useParams();
   const navigate = useNavigate();
@@ -162,20 +213,7 @@ export default function PublicStudentFormPage() {
     api.get(`/students/public-edit/${token}`)
       .then((r) => {
         const data = r.data || {};
-        setForm({
-          ...createInitialStudentForm(),
-          ...data,
-          categoryId: data.categoryId?._id || data.categoryId || '',
-          subjects: data.subjects?.length
-            ? data.subjects
-            : createInitialStudentForm().subjects,
-          certificateAdjustments: {
-            photoScale: data.certificateAdjustments?.photoScale ?? 1,
-            photoX: data.certificateAdjustments?.photoX ?? 0,
-            photoY: data.certificateAdjustments?.photoY ?? 0,
-            photoRotation: data.certificateAdjustments?.photoRotation ?? 0
-          }
-        });
+        setForm(normalizeFormFromApi(data));
         setLoading(false);
       })
       .catch(() => {
@@ -188,17 +226,7 @@ export default function PublicStudentFormPage() {
     setSuccessMessage('');
 
     try {
-      const category = categories.find(
-        (c) => String(c._id) === String(form.categoryId)
-      );
-
-      const payload = toStudentPayload({
-        ...form,
-        board: category?.board || form.board || '',
-        categoryName: category?.name || form.categoryName || '',
-        resultImageUrl: form.resultImageUrl || form.marksheetFileUrl || '',
-        certificatePhotoUrl: form.certificatePhotoUrl || form.studentPhotoUrl || ''
-      });
+      const payload = buildPayload(form, categories);
 
       if (editMode) {
         await api.put(`/students/public-edit/${token}`, payload);
@@ -209,6 +237,10 @@ export default function PublicStudentFormPage() {
         setSuccessMessage(data?.message || 'Registration submitted successfully.');
         setSubmitted(true);
       }
+    } catch (error) {
+      setSuccessMessage(
+        error?.response?.data?.message || 'Something went wrong. Please try again.'
+      );
     } finally {
       setSaving(false);
     }
