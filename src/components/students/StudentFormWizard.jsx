@@ -25,8 +25,7 @@ import {
   DriveFolderUpload,
   Insights,
   Delete,
-  EmojiEvents,
-  School
+  EmojiEvents
 } from '@mui/icons-material';
 import {
   emptySubject,
@@ -62,10 +61,35 @@ const fieldLabels = {
   studentPhotoUrl: 'Student Photo Upload'
 };
 
+const inputSx = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 2.5,
+    bgcolor: '#fff'
+  }
+};
+
+const sectionPaperSx = {
+  p: { xs: 1.5, sm: 2 },
+  borderRadius: 3,
+  border: '1px solid #e5e7eb',
+  bgcolor: '#fff'
+};
+
 const DetailLine = ({ label, value }) => (
-  <Stack direction="row" justifyContent="space-between" spacing={1}>
-    <Typography color="text.secondary">{label}</Typography>
-    <Typography fontWeight={600} textAlign="right">
+  <Stack
+    direction="row"
+    justifyContent="space-between"
+    spacing={2}
+    sx={{
+      py: 0.7,
+      borderBottom: '1px dashed #eef2f7',
+      '&:last-child': { borderBottom: 'none', pb: 0 }
+    }}
+  >
+    <Typography color="text.secondary" sx={{ fontSize: 14 }}>
+      {label}
+    </Typography>
+    <Typography fontWeight={600} textAlign="right" sx={{ fontSize: 14 }}>
       {value || '-'}
     </Typography>
   </Stack>
@@ -73,25 +97,31 @@ const DetailLine = ({ label, value }) => (
 
 export function StudentWizardStepPersonal({ form, setForm, errors }) {
   return (
-    <Stack spacing={2}>
-      <TextField
-        fullWidth
-        label="Full Name"
-        value={form.fullName}
-        error={Boolean(errors.fullName)}
-        helperText={errors.fullName}
-        onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
-      />
-
-      <Grid container spacing={2}>
+    <Stack spacing={1.5}>
+      <Grid container spacing={1.5}>
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
+            size="small"
+            label="Full Name"
+            value={form.fullName}
+            error={Boolean(errors.fullName)}
+            helperText={errors.fullName}
+            sx={inputSx}
+            onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            size="small"
             select
             label="Gender"
             value={form.gender}
             error={Boolean(errors.gender)}
             helperText={errors.gender}
+            sx={inputSx}
             onChange={(e) => setForm((prev) => ({ ...prev, gender: e.target.value }))}
           >
             <MenuItem value="Any">Any</MenuItem>
@@ -103,12 +133,14 @@ export function StudentWizardStepPersonal({ form, setForm, errors }) {
         <Grid item xs={12}>
           <TextField
             fullWidth
+            size="small"
             multiline
             minRows={2}
             label="Address"
             value={form.address}
             error={Boolean(errors.address)}
             helperText={errors.address}
+            sx={inputSx}
             onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
           />
         </Grid>
@@ -116,10 +148,12 @@ export function StudentWizardStepPersonal({ form, setForm, errors }) {
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
+            size="small"
             label="Mobile Number"
             value={form.mobile}
             error={Boolean(errors.mobile)}
             helperText={errors.mobile}
+            sx={inputSx}
             onChange={(e) => setForm((prev) => ({ ...prev, mobile: e.target.value }))}
           />
         </Grid>
@@ -127,10 +161,12 @@ export function StudentWizardStepPersonal({ form, setForm, errors }) {
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
+            size="small"
             label="Parent Mobile Number"
             value={form.parentMobile}
             error={Boolean(errors.parentMobile)}
             helperText={errors.parentMobile}
+            sx={inputSx}
             onChange={(e) => setForm((prev) => ({ ...prev, parentMobile: e.target.value }))}
           />
         </Grid>
@@ -164,16 +200,18 @@ export function StudentWizardStepAcademic({
   };
 
   return (
-    <Stack spacing={2}>
-      <Grid container spacing={2}>
-        <Grid item xs={12}>
+    <Stack spacing={1.75}>
+      <Grid container spacing={1.5}>
+        <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
+            size="small"
             select
             label="Category"
             value={form.categoryId}
             error={Boolean(errors.categoryId)}
             helperText={errors.categoryId}
+            sx={inputSx}
             onChange={(e) =>
               setForm((prev) => ({
                 ...prev,
@@ -194,13 +232,15 @@ export function StudentWizardStepAcademic({
         </Grid>
 
         {isOtherCategory(form.categoryId) ? (
-          <Grid item xs={12}>
+          <Grid item xs={12} sm={6}>
             <TextField
               fullWidth
+              size="small"
               label="Other Category"
               value={form.categoryOther}
               error={Boolean(errors.categoryOther)}
               helperText={errors.categoryOther}
+              sx={inputSx}
               onChange={(e) => setForm((prev) => ({ ...prev, categoryOther: e.target.value }))}
             />
           </Grid>
@@ -209,10 +249,12 @@ export function StudentWizardStepAcademic({
         <Grid item xs={12}>
           <TextField
             fullWidth
+            size="small"
             label="School or College Name"
             value={form.schoolName}
             error={Boolean(errors.schoolName)}
             helperText={errors.schoolName}
+            sx={inputSx}
             onChange={(e) => setForm((prev) => ({ ...prev, schoolName: e.target.value }))}
           />
         </Grid>
@@ -220,10 +262,12 @@ export function StudentWizardStepAcademic({
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
+            size="small"
             label="Class"
             value={form.className}
             error={Boolean(errors.className)}
             helperText={errors.className}
+            sx={inputSx}
             onChange={(e) => setForm((prev) => ({ ...prev, className: e.target.value }))}
           />
         </Grid>
@@ -231,11 +275,13 @@ export function StudentWizardStepAcademic({
         <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
+            size="small"
             type="number"
-            label={isCbse ? 'Percentage (optional if subject marks added)' : 'Percentage'}
+            label={isCbse ? 'Percentage (optional)' : 'Percentage'}
             value={form.percentage}
             error={Boolean(errors.percentage)}
             helperText={errors.percentage}
+            sx={inputSx}
             onChange={(e) => setForm((prev) => ({ ...prev, percentage: e.target.value }))}
           />
         </Grid>
@@ -244,70 +290,106 @@ export function StudentWizardStepAcademic({
       {isCbse ? (
         <>
           <Divider />
-          <Stack spacing={1}>
-            <Typography variant="subtitle1" fontWeight={700}>
-              Subject-wise Marks
-            </Typography>
+          <Stack spacing={1.25}>
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              justifyContent="space-between"
+              alignItems={{ xs: 'flex-start', sm: 'center' }}
+              spacing={1}
+            >
+              <Typography variant="subtitle1" fontWeight={700}>
+                Subject-wise Marks
+              </Typography>
+
+              <Button
+                size="small"
+                startIcon={<Add />}
+                onClick={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    subjects: [...(prev.subjects || []), { ...emptySubject }]
+                  }))
+                }
+                sx={{ textTransform: 'none', fontWeight: 600 }}
+              >
+                Add Subject
+              </Button>
+            </Stack>
 
             {form.subjects.map((subject, idx) => (
-              <Paper key={idx} variant="outlined" sx={{ p: 1.5 }}>
-                <Grid container spacing={1.5} alignItems="center">
+              <Paper
+                key={idx}
+                variant="outlined"
+                sx={{
+                  p: 1.25,
+                  borderRadius: 2.5,
+                  borderColor: '#e5e7eb',
+                  bgcolor: '#fafafa'
+                }}
+              >
+                <Grid container spacing={1.25} alignItems="center">
                   <Grid item xs={12} sm={5}>
                     <TextField
                       fullWidth
+                      size="small"
                       label="Subject"
                       value={subject.subject}
+                      sx={inputSx}
                       onChange={(e) => updateSubject(idx, 'subject', e.target.value)}
                     />
                   </Grid>
+
                   <Grid item xs={5} sm={3}>
                     <TextField
                       fullWidth
+                      size="small"
                       type="number"
                       label="Marks"
                       value={subject.marksObtained}
+                      sx={inputSx}
                       onChange={(e) => updateSubject(idx, 'marksObtained', e.target.value)}
                     />
                   </Grid>
+
                   <Grid item xs={5} sm={3}>
                     <TextField
                       fullWidth
+                      size="small"
                       type="number"
-                      label="Max"
+                      label="Max Marks"
                       value={subject.maxMarks}
+                      sx={inputSx}
                       onChange={(e) => updateSubject(idx, 'maxMarks', e.target.value)}
                     />
                   </Grid>
+
                   <Grid item xs={2} sm={1}>
-                    <Button color="error" onClick={() => removeSubject(idx)} sx={{ minWidth: 0, p: 1 }}>
-                      <Delete />
+                    <Button
+                      color="error"
+                      onClick={() => removeSubject(idx)}
+                      sx={{
+                        minWidth: 0,
+                        p: 0.8,
+                        borderRadius: 2,
+                        width: '100%'
+                      }}
+                    >
+                      <Delete fontSize="small" />
                     </Button>
                   </Grid>
                 </Grid>
               </Paper>
             ))}
 
-            <Button
-              startIcon={<Add />}
-              onClick={() =>
-                setForm((prev) => ({
-                  ...prev,
-                  subjects: [...(prev.subjects || []), { ...emptySubject }]
-                }))
-              }
-            >
-              Add subject
-            </Button>
+            <Alert severity="info" icon={<Insights />} sx={{ borderRadius: 2.5 }}>
+              <Typography fontWeight={700} sx={{ fontSize: 14 }}>
+                CBSE Best 5 preview: {best5Preview.percentage.toFixed(2)}%
+              </Typography>
+              <Typography variant="body2">
+                Top 5 subjects are calculated automatically.
+              </Typography>
+            </Alert>
           </Stack>
-
-          <Alert severity="info" icon={<Insights />}>
-            <Typography fontWeight={700}>
-              CBSE Best 5 preview: {best5Preview.percentage.toFixed(2)}%
-            </Typography>
-            <Typography variant="body2">
-              Top 5 subjects are considered automatically for your preview.
-            </Typography>
-          </Alert>
         </>
       ) : null}
     </Stack>
@@ -351,57 +433,98 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
   };
 
   return (
-    <Stack spacing={2}>
-      {uploadingField ? <LinearProgress sx={{ borderRadius: 999 }} /> : null}
+    <Stack spacing={1.75}>
+      {uploadingField ? <LinearProgress sx={{ borderRadius: 999, height: 6 }} /> : null}
 
-      {uploadError ? <Alert severity="error">{uploadError}</Alert> : null}
+      {uploadError ? (
+        <Alert severity="error" sx={{ borderRadius: 2.5 }}>
+          {uploadError}
+        </Alert>
+      ) : null}
 
-      <Button
-        component="label"
-        fullWidth
-        variant="outlined"
-        startIcon={<DriveFolderUpload />}
-        sx={{ py: 2, borderStyle: 'dashed' }}
-        color={errors.marksheetFileUrl ? 'error' : 'primary'}
-        disabled={Boolean(uploadingField)}
-      >
-        {uploadingField === 'marksheetFileUrl' ? 'Uploading marksheet...' : form.marksheetFileUrl || form.resultImageUrl ? 'Marksheet uploaded' : 'Upload marksheet *'}
-        <input hidden type="file" accept="image/*,.pdf" onChange={(e) => handleFile(e, 'marksheetFileUrl')} />
-      </Button>
+      <Paper sx={sectionPaperSx}>
+        <Stack spacing={1.25}>
+          <Typography variant="subtitle2" fontWeight={700}>
+            Upload Documents
+          </Typography>
 
-      <Button
-        component="label"
-        fullWidth
-        variant="outlined"
-        startIcon={<DriveFolderUpload />}
-        sx={{ py: 2, borderStyle: 'dashed' }}
-        color={errors.studentPhotoUrl ? 'error' : 'primary'}
-        disabled={Boolean(uploadingField)}
-      >
-        {uploadingField === 'studentPhotoUrl' ? 'Uploading student photo...' : form.studentPhotoUrl || form.certificatePhotoUrl ? 'Student photo uploaded' : 'Upload student photo *'}
-        <input hidden type="file" accept="image/*" onChange={(e) => handleFile(e, 'studentPhotoUrl')} />
-      </Button>
+          <Button
+            component="label"
+            fullWidth
+            variant="outlined"
+            startIcon={<DriveFolderUpload />}
+            sx={{
+              py: 1.4,
+              borderStyle: 'dashed',
+              borderRadius: 2.5,
+              textTransform: 'none',
+              fontWeight: 600
+            }}
+            color={errors.marksheetFileUrl ? 'error' : 'primary'}
+            disabled={Boolean(uploadingField)}
+          >
+            {uploadingField === 'marksheetFileUrl'
+              ? 'Uploading marksheet...'
+              : form.marksheetFileUrl || form.resultImageUrl
+                ? 'Marksheet Uploaded'
+                : 'Upload Marksheet *'}
+            <input hidden type="file" accept="image/*,.pdf" onChange={(e) => handleFile(e, 'marksheetFileUrl')} />
+          </Button>
 
-      {form.studentPhotoUrl && (
-        <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
-          <Typography variant="caption" color="text.secondary">
-            Photo preview
+          <Button
+            component="label"
+            fullWidth
+            variant="outlined"
+            startIcon={<DriveFolderUpload />}
+            sx={{
+              py: 1.4,
+              borderStyle: 'dashed',
+              borderRadius: 2.5,
+              textTransform: 'none',
+              fontWeight: 600
+            }}
+            color={errors.studentPhotoUrl ? 'error' : 'primary'}
+            disabled={Boolean(uploadingField)}
+          >
+            {uploadingField === 'studentPhotoUrl'
+              ? 'Uploading student photo...'
+              : form.studentPhotoUrl || form.certificatePhotoUrl
+                ? 'Student Photo Uploaded'
+                : 'Upload Student Photo *'}
+            <input hidden type="file" accept="image/*" onChange={(e) => handleFile(e, 'studentPhotoUrl')} />
+          </Button>
+        </Stack>
+      </Paper>
+
+      {form.studentPhotoUrl ? (
+        <Paper sx={sectionPaperSx}>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
+            Photo Preview
           </Typography>
           <Box
             component="img"
             src={form.studentPhotoUrl}
             alt="Student preview"
-            sx={{ width: 84, height: 100, borderRadius: 2, display: 'block', mt: 1, objectFit: 'cover' }}
+            sx={{
+              width: 84,
+              height: 100,
+              borderRadius: 2,
+              display: 'block',
+              objectFit: 'cover',
+              border: '1px solid #e5e7eb'
+            }}
           />
-        </Box>
-      )}
+        </Paper>
+      ) : null}
 
       <TextField
         fullWidth
+        size="small"
         multiline
         minRows={3}
-        label="Remarks (optional)"
+        label="Remarks (Optional)"
         value={form.remarks}
+        sx={inputSx}
         onChange={(e) => setForm((prev) => ({ ...prev, remarks: e.target.value }))}
       />
     </Stack>
@@ -414,8 +537,8 @@ export function StudentWizardStepReview({ form, categories = [] }) {
   const best5Preview = calculateBest5Preview(form.subjects || []);
 
   return (
-    <Stack spacing={2}>
-      <Paper variant="outlined" sx={{ p: 2 }}>
+    <Stack spacing={1.5}>
+      <Paper variant="outlined" sx={sectionPaperSx}>
         <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
           Personal Details
         </Typography>
@@ -426,7 +549,7 @@ export function StudentWizardStepReview({ form, categories = [] }) {
         <DetailLine label="Parent Mobile Number" value={form.parentMobile} />
       </Paper>
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Paper variant="outlined" sx={sectionPaperSx}>
         <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
           Academic Details
         </Typography>
@@ -439,23 +562,23 @@ export function StudentWizardStepReview({ form, categories = [] }) {
         <DetailLine label="Percentage" value={form.percentage || 'Will use subject marks'} />
         {isCbse ? (
           <DetailLine
-            label="Subject rows"
+            label="Subject Rows"
             value={String(form.subjects?.filter((s) => s.subject?.trim()).length || 0)}
           />
         ) : null}
       </Paper>
 
-      <Paper variant="outlined" sx={{ p: 2 }}>
+      <Paper variant="outlined" sx={sectionPaperSx}>
         <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
           Uploads
         </Typography>
-        <DetailLine label="Marksheet" value={form.marksheetFileUrl || form.resultImageUrl ? 'Selected' : 'Missing'} />
-        <DetailLine label="Photo" value={form.studentPhotoUrl || form.certificatePhotoUrl ? 'Selected' : 'Missing'} />
+        <DetailLine label="Marksheet" value={form.marksheetFileUrl || form.resultImageUrl ? 'Uploaded' : 'Missing'} />
+        <DetailLine label="Photo" value={form.studentPhotoUrl || form.certificatePhotoUrl ? 'Uploaded' : 'Missing'} />
         <DetailLine label="Remarks" value={form.remarks || '-'} />
       </Paper>
 
       {isCbse ? (
-        <Alert severity="info" icon={<Insights />}>
+        <Alert severity="info" icon={<Insights />} sx={{ borderRadius: 2.5 }}>
           Best 5 calculated preview is <strong>{best5Preview.percentage.toFixed(2)}%</strong>.
         </Alert>
       ) : null}
@@ -465,10 +588,16 @@ export function StudentWizardStepReview({ form, categories = [] }) {
 
 export function StudentCertificatePreviewSection({ form, editable = false, onAdjustmentsChange }) {
   return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Certificate preview
+    <Card
+      sx={{
+        borderRadius: 3,
+        border: '1px solid #e5e7eb',
+        boxShadow: 'none'
+      }}
+    >
+      <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+        <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 700 }}>
+          Certificate Preview
         </Typography>
 
         <Box
@@ -488,7 +617,7 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
             </Typography>
           </Stack>
 
-          <Typography variant="h6" sx={{ mt: 3 }}>
+          <Typography variant="h6" sx={{ mt: 3, fontWeight: 700 }}>
             {form.fullName || 'Student Name'}
           </Typography>
           <Typography color="text.secondary">
@@ -521,9 +650,9 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
         </Box>
 
         {editable ? (
-          <Stack spacing={1.2} sx={{ mt: 2.5 }}>
+          <Stack spacing={1.1} sx={{ mt: 2.25 }}>
             <Typography variant="subtitle2" fontWeight={700}>
-              Certificate photo alignment
+              Certificate Photo Alignment
             </Typography>
 
             <Typography variant="caption" color="text.secondary">
@@ -648,10 +777,11 @@ export default function StudentFormWizard({
   const progress = ((activeStep + 1) / steps.length) * 100;
 
   return (
-    <Stack spacing={2.5}>
+    <Stack spacing={2}>
       <Paper
         sx={{
-          p: 2.2,
+          p: { xs: 1.5, sm: 2 },
+          borderRadius: 3,
           background: 'linear-gradient(135deg, #ffffff 0%, #f5f8ff 55%, #fff8ec 100%)',
           border: '1px solid #dce7ff'
         }}
@@ -660,36 +790,79 @@ export default function StudentFormWizard({
           <Typography variant="subtitle1" fontWeight={800}>
             {topInfo.title}
           </Typography>
+
           <Typography color="text.secondary" variant="body2">
             {topInfo.description}
           </Typography>
 
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-            <Chip size="small" color="primary" label={`Step ${activeStep + 1} of ${steps.length}`} />
+          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+            <Chip
+              size="small"
+              color="primary"
+              label={`Step ${activeStep + 1} of ${steps.length}`}
+            />
             <Chip
               size="small"
               variant="outlined"
               label={mode === 'public' ? 'Public registration' : 'Admin-assisted'}
             />
             {isCbse ? <Chip size="small" color="info" variant="outlined" label="CBSE Best 5" /> : null}
+            {activeStep === 1 && isCbse ? (
+              <Chip
+                size="small"
+                variant="outlined"
+                color="success"
+                label={`Best 5: ${best5Preview.percentage.toFixed(2)}%`}
+              />
+            ) : null}
           </Stack>
 
-          <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 999 }} />
+          <LinearProgress
+            variant="determinate"
+            value={progress}
+            sx={{ height: 8, borderRadius: 999 }}
+          />
         </Stack>
       </Paper>
 
-      {successMessage ? <Alert icon={<CheckCircle />} severity="success">{successMessage}</Alert> : null}
+      {successMessage ? (
+        <Alert icon={<CheckCircle />} severity="success" sx={{ borderRadius: 2.5 }}>
+          {successMessage}
+        </Alert>
+      ) : null}
 
-      <Stepper activeStep={activeStep} alternativeLabel>
-        {steps.map((label) => (
-          <Step key={label}>
-            <StepLabel>{label}</StepLabel>
-          </Step>
-        ))}
-      </Stepper>
+      <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+        <Stepper activeStep={activeStep} alternativeLabel>
+          {steps.map((label) => (
+            <Step key={label}>
+              <StepLabel>{label}</StepLabel>
+            </Step>
+          ))}
+        </Stepper>
+      </Box>
 
-      <Card>
-        <CardContent>
+      <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
+        <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap" useFlexGap>
+          {steps.map((label, index) => (
+            <Chip
+              key={label}
+              size="small"
+              label={label}
+              color={index === activeStep ? 'primary' : 'default'}
+              variant={index === activeStep ? 'filled' : 'outlined'}
+            />
+          ))}
+        </Stack>
+      </Box>
+
+      <Card
+        sx={{
+          borderRadius: 3,
+          border: '1px solid #e5e7eb',
+          boxShadow: 'none'
+        }}
+      >
+        <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
           {activeStep === 0 ? (
             <StudentWizardStepPersonal form={form} setForm={setForm} errors={errors} />
           ) : null}
@@ -717,26 +890,61 @@ export default function StudentFormWizard({
 
       <Paper
         sx={{
-          p: 2,
+          p: 1.5,
           position: { xs: 'sticky', md: 'static' },
-          bottom: { xs: 0, md: 'auto' },
+          bottom: { xs: 8, md: 'auto' },
           zIndex: 5,
-          borderTop: '1px solid',
-          borderColor: 'divider'
+          borderRadius: 3,
+          border: '1px solid #e5e7eb',
+          boxShadow: { xs: '0 8px 24px rgba(15,23,42,0.08)', md: 'none' },
+          bgcolor: '#fff'
         }}
       >
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button fullWidth variant="outlined" disabled={activeStep === 0 || saving} onClick={onBack}>
+        <Stack direction={{ xs: 'row', sm: 'row' }} spacing={1.25}>
+          <Button
+            fullWidth
+            variant="outlined"
+            disabled={activeStep === 0 || saving}
+            onClick={onBack}
+            sx={{
+              borderRadius: 2.5,
+              textTransform: 'none',
+              fontWeight: 700,
+              py: 1.1
+            }}
+          >
             Back
           </Button>
 
           {activeStep < steps.length - 1 ? (
-            <Button fullWidth variant="contained" onClick={onNext} disabled={saving}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={onNext}
+              disabled={saving}
+              sx={{
+                borderRadius: 2.5,
+                textTransform: 'none',
+                fontWeight: 700,
+                py: 1.1
+              }}
+            >
               Next
             </Button>
           ) : (
-            <Button fullWidth variant="contained" onClick={submit} disabled={saving}>
-              {saving ? 'Processing...' : mode === 'public' ? 'Submit registration' : 'Save student'}
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={submit}
+              disabled={saving}
+              sx={{
+                borderRadius: 2.5,
+                textTransform: 'none',
+                fontWeight: 700,
+                py: 1.1
+              }}
+            >
+              {saving ? 'Processing...' : mode === 'public' ? 'Submit Registration' : 'Save Student'}
             </Button>
           )}
         </Stack>
