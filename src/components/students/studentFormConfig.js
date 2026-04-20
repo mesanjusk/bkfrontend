@@ -4,6 +4,15 @@ export const emptySubject = {
   maxMarks: 100
 };
 
+export function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function createInitialStudentForm() {
   return {
     fullName: '',

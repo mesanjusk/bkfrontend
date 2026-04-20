@@ -19,70 +19,136 @@ import {
   Slider
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Add, CheckCircle, DriveFolderUpload, Insights, Delete } from '@mui/icons-material';
-import { emptySubject, fileToDataUrl } from './studentFormConfig';
+import {
+  Add,
+  CheckCircle,
+  DriveFolderUpload,
+  Insights,
+  Delete,
+  EmojiEvents,
+  School
+} from '@mui/icons-material';
+import {
+  emptySubject,
+  fileToDataUrl,
+  isOtherCategory,
+  getSelectedCategory,
+  isCbseCategory,
+  calculateBest5Preview
+} from './studentFormConfig';
 
 const steps = ['Personal', 'Academic', 'Uploads', 'Review'];
 
 const requiredByStep = {
-  0: ['fullName', 'mobile', 'parentMobile', 'gender', 'city', 'state'],
-  1: ['schoolName', 'board', 'className'],
+  0: ['fullName', 'gender', 'address', 'mobile', 'parentMobile'],
+  1: ['categoryId', 'schoolName', 'className'],
   2: ['marksheetFileUrl', 'studentPhotoUrl']
 };
 
 const isPresent = (value) => value !== null && value !== undefined && String(value).trim() !== '';
 
 const fieldLabels = {
-  fullName: 'Full name',
-  mobile: 'Student mobile',
-  parentMobile: 'Parent mobile',
+  fullName: 'Full Name',
   gender: 'Gender',
-  city: 'City',
-  state: 'State',
-  schoolName: 'School name',
-  board: 'Board',
+  address: 'Address',
+  mobile: 'Mobile Number',
+  parentMobile: 'Parent Mobile Number',
+  categoryId: 'Category',
+  categoryOther: 'Other Category',
+  schoolName: 'School or College Name',
   className: 'Class',
-  marksheetFileUrl: 'Marksheet upload',
-  studentPhotoUrl: 'Student photo upload'
+  percentage: 'Percentage',
+  marksheetFileUrl: 'Marksheet Upload',
+  studentPhotoUrl: 'Student Photo Upload'
 };
 
 const DetailLine = ({ label, value }) => (
   <Stack direction="row" justifyContent="space-between" spacing={1}>
     <Typography color="text.secondary">{label}</Typography>
-    <Typography fontWeight={600} textAlign="right">{value || '-'}</Typography>
+    <Typography fontWeight={600} textAlign="right">
+      {value || '-'}
+    </Typography>
   </Stack>
 );
 
 export function StudentWizardStepPersonal({ form, setForm, errors }) {
   return (
     <Stack spacing={2}>
-      <TextField fullWidth label="Full name" value={form.fullName} error={Boolean(errors.fullName)} helperText={errors.fullName} onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))} />
+      <TextField
+        fullWidth
+        label="Full Name"
+        value={form.fullName}
+        error={Boolean(errors.fullName)}
+        helperText={errors.fullName}
+        onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
+      />
+
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Student mobile" value={form.mobile} error={Boolean(errors.mobile)} helperText={errors.mobile} onChange={(e) => setForm((prev) => ({ ...prev, mobile: e.target.value }))} />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="Parent mobile" value={form.parentMobile} error={Boolean(errors.parentMobile)} helperText={errors.parentMobile} onChange={(e) => setForm((prev) => ({ ...prev, parentMobile: e.target.value }))} />
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField fullWidth select label="Gender" value={form.gender} error={Boolean(errors.gender)} helperText={errors.gender} onChange={(e) => setForm((prev) => ({ ...prev, gender: e.target.value }))}>
+          <TextField
+            fullWidth
+            select
+            label="Gender"
+            value={form.gender}
+            error={Boolean(errors.gender)}
+            helperText={errors.gender}
+            onChange={(e) => setForm((prev) => ({ ...prev, gender: e.target.value }))}
+          >
             <MenuItem value="Any">Any</MenuItem>
             <MenuItem value="Male">Male</MenuItem>
             <MenuItem value="Female">Female</MenuItem>
           </TextField>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="City" value={form.city} error={Boolean(errors.city)} helperText={errors.city} onChange={(e) => setForm((prev) => ({ ...prev, city: e.target.value }))} />
+
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            multiline
+            minRows={2}
+            label="Address"
+            value={form.address}
+            error={Boolean(errors.address)}
+            helperText={errors.address}
+            onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+          />
         </Grid>
+
         <Grid item xs={12} sm={6}>
-          <TextField fullWidth label="State" value={form.state} error={Boolean(errors.state)} helperText={errors.state} onChange={(e) => setForm((prev) => ({ ...prev, state: e.target.value }))} />
+          <TextField
+            fullWidth
+            label="Mobile Number"
+            value={form.mobile}
+            error={Boolean(errors.mobile)}
+            helperText={errors.mobile}
+            onChange={(e) => setForm((prev) => ({ ...prev, mobile: e.target.value }))}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Parent Mobile Number"
+            value={form.parentMobile}
+            error={Boolean(errors.parentMobile)}
+            helperText={errors.parentMobile}
+            onChange={(e) => setForm((prev) => ({ ...prev, parentMobile: e.target.value }))}
+          />
         </Grid>
       </Grid>
     </Stack>
   );
 }
 
-export function StudentWizardStepAcademic({ form, setForm, errors, best5Preview }) {
+export function StudentWizardStepAcademic({
+  form,
+  setForm,
+  errors,
+  categories = []
+}) {
+  const selectedCategory = getSelectedCategory(categories, form.categoryId);
+  const isCbse = isCbseCategory(selectedCategory, form);
+  const best5Preview = calculateBest5Preview(form.subjects || []);
+
   const updateSubject = (idx, key, value) => {
     const subjects = [...(form.subjects || [])];
     subjects[idx] = { ...subjects[idx], [key]: value };
@@ -91,26 +157,82 @@ export function StudentWizardStepAcademic({ form, setForm, errors, best5Preview 
 
   const removeSubject = (idx) => {
     const subjects = (form.subjects || []).filter((_, index) => index !== idx);
-    setForm((prev) => ({ ...prev, subjects: subjects.length ? subjects : [{ ...emptySubject }] }));
+    setForm((prev) => ({
+      ...prev,
+      subjects: subjects.length ? subjects : [{ ...emptySubject }]
+    }));
   };
 
   return (
     <Stack spacing={2}>
       <Grid container spacing={2}>
         <Grid item xs={12}>
-          <TextField fullWidth label="School name" value={form.schoolName} error={Boolean(errors.schoolName)} helperText={errors.schoolName} onChange={(e) => setForm((prev) => ({ ...prev, schoolName: e.target.value }))} />
+          <TextField
+            fullWidth
+            select
+            label="Category"
+            value={form.categoryId}
+            error={Boolean(errors.categoryId)}
+            helperText={errors.categoryId}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                categoryId: e.target.value,
+                categoryOther: '',
+                percentage: prev.percentage,
+                subjects: prev.subjects?.length ? prev.subjects : [{ ...emptySubject }]
+              }))
+            }
+          >
+            {categories.map((cat) => (
+              <MenuItem key={cat._id} value={cat._id}>
+                {cat.title}
+              </MenuItem>
+            ))}
+            <MenuItem value="OTHER">Other</MenuItem>
+          </TextField>
         </Grid>
-        <Grid item xs={12} sm={4}>
-          <TextField fullWidth label="Board" value={form.board} error={Boolean(errors.board)} helperText={errors.board} onChange={(e) => setForm((prev) => ({ ...prev, board: e.target.value }))} />
+
+        {isOtherCategory(form.categoryId) ? (
+          <Grid item xs={12}>
+            <TextField
+              fullWidth
+              label="Other Category"
+              value={form.categoryOther}
+              error={Boolean(errors.categoryOther)}
+              helperText={errors.categoryOther}
+              onChange={(e) => setForm((prev) => ({ ...prev, categoryOther: e.target.value }))}
+            />
+          </Grid>
+        ) : null}
+
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="School or College Name"
+            value={form.schoolName}
+            error={Boolean(errors.schoolName)}
+            helperText={errors.schoolName}
+            onChange={(e) => setForm((prev) => ({ ...prev, schoolName: e.target.value }))}
+          />
         </Grid>
-        <Grid item xs={12} sm={4}>
-          <TextField fullWidth label="Class" value={form.className} error={Boolean(errors.className)} helperText={errors.className} onChange={(e) => setForm((prev) => ({ ...prev, className: e.target.value }))} />
+
+        <Grid item xs={12} sm={6}>
+          <TextField
+            fullWidth
+            label="Class"
+            value={form.className}
+            error={Boolean(errors.className)}
+            helperText={errors.className}
+            onChange={(e) => setForm((prev) => ({ ...prev, className: e.target.value }))}
+          />
         </Grid>
-        <Grid item xs={12} sm={4}>
+
+        <Grid item xs={12} sm={6}>
           <TextField
             fullWidth
             type="number"
-            label="Percentage (optional)"
+            label={isCbse ? 'Percentage (optional if subject marks added)' : 'Percentage'}
             value={form.percentage}
             error={Boolean(errors.percentage)}
             helperText={errors.percentage}
@@ -119,39 +241,75 @@ export function StudentWizardStepAcademic({ form, setForm, errors, best5Preview 
         </Grid>
       </Grid>
 
-      <Divider />
+      {isCbse ? (
+        <>
+          <Divider />
+          <Stack spacing={1}>
+            <Typography variant="subtitle1" fontWeight={700}>
+              Subject-wise Marks
+            </Typography>
 
-      <Stack spacing={1}>
-        <Typography variant="subtitle1" fontWeight={700}>Subject marks</Typography>
-        {form.subjects.map((subject, idx) => (
-          <Paper key={idx} variant="outlined" sx={{ p: 1.5 }}>
-            <Grid container spacing={1.5} alignItems="center">
-              <Grid item xs={12} sm={5}>
-                <TextField fullWidth label="Subject" value={subject.subject} onChange={(e) => updateSubject(idx, 'subject', e.target.value)} />
-              </Grid>
-              <Grid item xs={5} sm={3}>
-                <TextField fullWidth type="number" label="Marks" value={subject.marksObtained} onChange={(e) => updateSubject(idx, 'marksObtained', e.target.value)} />
-              </Grid>
-              <Grid item xs={5} sm={3}>
-                <TextField fullWidth type="number" label="Max" value={subject.maxMarks} onChange={(e) => updateSubject(idx, 'maxMarks', e.target.value)} />
-              </Grid>
-              <Grid item xs={2} sm={1}>
-                <Button color="error" onClick={() => removeSubject(idx)} sx={{ minWidth: 0, p: 1 }}><Delete /></Button>
-              </Grid>
-            </Grid>
-          </Paper>
-        ))}
-        <Button startIcon={<Add />} onClick={() => setForm((prev) => ({ ...prev, subjects: [...(prev.subjects || []), { ...emptySubject }] }))}>
-          Add subject
-        </Button>
-      </Stack>
+            {form.subjects.map((subject, idx) => (
+              <Paper key={idx} variant="outlined" sx={{ p: 1.5 }}>
+                <Grid container spacing={1.5} alignItems="center">
+                  <Grid item xs={12} sm={5}>
+                    <TextField
+                      fullWidth
+                      label="Subject"
+                      value={subject.subject}
+                      onChange={(e) => updateSubject(idx, 'subject', e.target.value)}
+                    />
+                  </Grid>
+                  <Grid item xs={5} sm={3}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Marks"
+                      value={subject.marksObtained}
+                      onChange={(e) => updateSubject(idx, 'marksObtained', e.target.value)}
+                    />
+                  </Grid>
+                  <Grid item xs={5} sm={3}>
+                    <TextField
+                      fullWidth
+                      type="number"
+                      label="Max"
+                      value={subject.maxMarks}
+                      onChange={(e) => updateSubject(idx, 'maxMarks', e.target.value)}
+                    />
+                  </Grid>
+                  <Grid item xs={2} sm={1}>
+                    <Button color="error" onClick={() => removeSubject(idx)} sx={{ minWidth: 0, p: 1 }}>
+                      <Delete />
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Paper>
+            ))}
 
-      {form.board?.trim().toUpperCase() === 'CBSE' && (
-        <Alert severity="info" icon={<Insights />}>
-          <Typography fontWeight={700}>CBSE Best 5 preview: {best5Preview.percentage.toFixed(2)}%</Typography>
-          <Typography variant="body2">Top 5 subjects are considered automatically for your preview.</Typography>
-        </Alert>
-      )}
+            <Button
+              startIcon={<Add />}
+              onClick={() =>
+                setForm((prev) => ({
+                  ...prev,
+                  subjects: [...(prev.subjects || []), { ...emptySubject }]
+                }))
+              }
+            >
+              Add subject
+            </Button>
+          </Stack>
+
+          <Alert severity="info" icon={<Insights />}>
+            <Typography fontWeight={700}>
+              CBSE Best 5 preview: {best5Preview.percentage.toFixed(2)}%
+            </Typography>
+            <Typography variant="body2">
+              Top 5 subjects are considered automatically for your preview.
+            </Typography>
+          </Alert>
+        </>
+      ) : null}
     </Stack>
   );
 }
@@ -161,69 +319,122 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
     const file = event.target.files?.[0];
     if (!file) return;
     const url = await fileToDataUrl(file);
+
     if (field === 'marksheetFileUrl') {
       setForm((prev) => ({ ...prev, marksheetFileUrl: url, resultImageUrl: url }));
       return;
     }
-    setForm((prev) => ({ ...prev, studentPhotoUrl: url, certificatePhotoUrl: url }));
+
+    setForm((prev) => ({
+      ...prev,
+      studentPhotoUrl: url,
+      certificatePhotoUrl: url
+    }));
   };
 
   return (
     <Stack spacing={2}>
-      <Button component="label" fullWidth variant="outlined" startIcon={<DriveFolderUpload />} sx={{ py: 2, borderStyle: 'dashed' }} color={errors.marksheetFileUrl ? 'error' : 'primary'}>
+      <Button
+        component="label"
+        fullWidth
+        variant="outlined"
+        startIcon={<DriveFolderUpload />}
+        sx={{ py: 2, borderStyle: 'dashed' }}
+        color={errors.marksheetFileUrl ? 'error' : 'primary'}
+      >
         {form.marksheetFileUrl || form.resultImageUrl ? 'Marksheet selected' : 'Upload marksheet *'}
         <input hidden type="file" accept="image/*,.pdf" onChange={(e) => handleFile(e, 'marksheetFileUrl')} />
       </Button>
-      <Button component="label" fullWidth variant="outlined" startIcon={<DriveFolderUpload />} sx={{ py: 2, borderStyle: 'dashed' }} color={errors.studentPhotoUrl ? 'error' : 'primary'}>
+
+      <Button
+        component="label"
+        fullWidth
+        variant="outlined"
+        startIcon={<DriveFolderUpload />}
+        sx={{ py: 2, borderStyle: 'dashed' }}
+        color={errors.studentPhotoUrl ? 'error' : 'primary'}
+      >
         {form.studentPhotoUrl || form.certificatePhotoUrl ? 'Student photo selected' : 'Upload student photo *'}
         <input hidden type="file" accept="image/*" onChange={(e) => handleFile(e, 'studentPhotoUrl')} />
       </Button>
 
       {form.studentPhotoUrl && (
         <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
-          <Typography variant="caption" color="text.secondary">Photo preview</Typography>
-          <Box component="img" src={form.studentPhotoUrl} alt="Student preview" sx={{ width: 84, height: 100, borderRadius: 2, display: 'block', mt: 1, objectFit: 'cover' }} />
+          <Typography variant="caption" color="text.secondary">
+            Photo preview
+          </Typography>
+          <Box
+            component="img"
+            src={form.studentPhotoUrl}
+            alt="Student preview"
+            sx={{ width: 84, height: 100, borderRadius: 2, display: 'block', mt: 1, objectFit: 'cover' }}
+          />
         </Box>
       )}
 
-      <TextField fullWidth multiline minRows={3} label="Remarks (optional)" value={form.remarks} onChange={(e) => setForm((prev) => ({ ...prev, remarks: e.target.value }))} />
+      <TextField
+        fullWidth
+        multiline
+        minRows={3}
+        label="Remarks (optional)"
+        value={form.remarks}
+        onChange={(e) => setForm((prev) => ({ ...prev, remarks: e.target.value }))}
+      />
     </Stack>
   );
 }
 
-export function StudentWizardStepReview({ form, best5Preview }) {
+export function StudentWizardStepReview({ form, categories = [] }) {
+  const selectedCategory = getSelectedCategory(categories, form.categoryId);
+  const isCbse = isCbseCategory(selectedCategory, form);
+  const best5Preview = calculateBest5Preview(form.subjects || []);
+
   return (
     <Stack spacing={2}>
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Personal details</Typography>
-        <DetailLine label="Full name" value={form.fullName} />
-        <DetailLine label="Student mobile" value={form.mobile} />
-        <DetailLine label="Parent mobile" value={form.parentMobile} />
+        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+          Personal Details
+        </Typography>
+        <DetailLine label="Full Name" value={form.fullName} />
         <DetailLine label="Gender" value={form.gender} />
-        <DetailLine label="City / State" value={`${form.city || '-'} / ${form.state || '-'}`} />
+        <DetailLine label="Address" value={form.address} />
+        <DetailLine label="Mobile Number" value={form.mobile} />
+        <DetailLine label="Parent Mobile Number" value={form.parentMobile} />
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Academic details</Typography>
-        <DetailLine label="School" value={form.schoolName} />
-        <DetailLine label="Board" value={form.board} />
+        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+          Academic Details
+        </Typography>
+        <DetailLine
+          label="Category"
+          value={isOtherCategory(form.categoryId) ? form.categoryOther : selectedCategory?.title}
+        />
+        <DetailLine label="School or College Name" value={form.schoolName} />
         <DetailLine label="Class" value={form.className} />
         <DetailLine label="Percentage" value={form.percentage || 'Will use subject marks'} />
-        <DetailLine label="Subject rows" value={String(form.subjects?.filter((s) => s.subject?.trim()).length || 0)} />
+        {isCbse ? (
+          <DetailLine
+            label="Subject rows"
+            value={String(form.subjects?.filter((s) => s.subject?.trim()).length || 0)}
+          />
+        ) : null}
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 2 }}>
-        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Uploads</Typography>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+          Uploads
+        </Typography>
         <DetailLine label="Marksheet" value={form.marksheetFileUrl || form.resultImageUrl ? 'Selected' : 'Missing'} />
         <DetailLine label="Photo" value={form.studentPhotoUrl || form.certificatePhotoUrl ? 'Selected' : 'Missing'} />
         <DetailLine label="Remarks" value={form.remarks || '-'} />
       </Paper>
 
-      {form.board?.trim().toUpperCase() === 'CBSE' && (
+      {isCbse ? (
         <Alert severity="info" icon={<Insights />}>
           Best 5 calculated preview is <strong>{best5Preview.percentage.toFixed(2)}%</strong>.
         </Alert>
-      )}
+      ) : null}
     </Stack>
   );
 }
@@ -232,11 +443,34 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6" sx={{ mb: 2 }}>Certificate preview</Typography>
-        <Box sx={{ borderRadius: 3, bgcolor: '#fff7e6', minHeight: 260, p: 2, position: 'relative', border: '1px dashed #e2b866' }}>
-          <Typography variant="caption" color="text.secondary">Award certificate preview</Typography>
-          <Typography variant="h6" sx={{ mt: 3 }}>{form.fullName || 'Student Name'}</Typography>
-          <Typography color="text.secondary">{form.board || 'Board'} · {form.className || 'Class'} · {form.percentage || 0}%</Typography>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          Certificate preview
+        </Typography>
+
+        <Box
+          sx={{
+            borderRadius: 3,
+            bgcolor: '#fff7e6',
+            minHeight: 260,
+            p: 2,
+            position: 'relative',
+            border: '1px dashed #e2b866'
+          }}
+        >
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+            <EmojiEvents fontSize="small" color="warning" />
+            <Typography variant="caption" color="text.secondary">
+              Award certificate preview
+            </Typography>
+          </Stack>
+
+          <Typography variant="h6" sx={{ mt: 3 }}>
+            {form.fullName || 'Student Name'}
+          </Typography>
+          <Typography color="text.secondary">
+            {form.className || 'Class'} · {form.percentage || 0}%
+          </Typography>
+
           <Box
             sx={{
               width: 100,
@@ -256,14 +490,21 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
           >
             {form.studentPhotoUrl ? (
               <img src={form.studentPhotoUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : 'PHOTO'}
+            ) : (
+              'PHOTO'
+            )}
           </Box>
         </Box>
 
-        {editable && (
+        {editable ? (
           <Stack spacing={1.2} sx={{ mt: 2.5 }}>
-            <Typography variant="subtitle2" fontWeight={700}>Certificate photo alignment</Typography>
-            <Typography variant="caption" color="text.secondary">Scale</Typography>
+            <Typography variant="subtitle2" fontWeight={700}>
+              Certificate photo alignment
+            </Typography>
+
+            <Typography variant="caption" color="text.secondary">
+              Scale
+            </Typography>
             <Slider
               min={0.6}
               max={2}
@@ -271,7 +512,10 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
               value={form.certificateAdjustments?.photoScale || 1}
               onChange={(_, v) => onAdjustmentsChange({ photoScale: Number(v) })}
             />
-            <Typography variant="caption" color="text.secondary">Rotation</Typography>
+
+            <Typography variant="caption" color="text.secondary">
+              Rotation
+            </Typography>
             <Slider
               min={-20}
               max={20}
@@ -279,7 +523,10 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
               value={form.certificateAdjustments?.photoRotation || 0}
               onChange={(_, v) => onAdjustmentsChange({ photoRotation: Number(v) })}
             />
-            <Typography variant="caption" color="text.secondary">Move X</Typography>
+
+            <Typography variant="caption" color="text.secondary">
+              Move X
+            </Typography>
             <Slider
               min={-100}
               max={100}
@@ -287,7 +534,10 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
               value={form.certificateAdjustments?.photoX || 0}
               onChange={(_, v) => onAdjustmentsChange({ photoX: Number(v) })}
             />
-            <Typography variant="caption" color="text.secondary">Move Y</Typography>
+
+            <Typography variant="caption" color="text.secondary">
+              Move Y
+            </Typography>
             <Slider
               min={-100}
               max={100}
@@ -296,7 +546,7 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
               onChange={(_, v) => onAdjustmentsChange({ photoY: Number(v) })}
             />
           </Stack>
-        )}
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -306,6 +556,7 @@ export default function StudentFormWizard({
   mode,
   form,
   setForm,
+  categories = [],
   onSubmit,
   saving,
   successMessage,
@@ -315,29 +566,42 @@ export default function StudentFormWizard({
   const [activeStep, setActiveStep] = useState(0);
   const [errors, setErrors] = useState({});
 
-  const best5Preview = useMemo(() => {
-    const validSubjects = (form.subjects || []).filter((s) => s.subject?.trim() && Number(s.maxMarks || 0) > 0);
-    const topFive = validSubjects
-      .map((s) => ({ marks: Number(s.marksObtained || 0), max: Number(s.maxMarks || 100) }))
-      .sort((a, b) => b.marks - a.marks)
-      .slice(0, 5);
-    const total = topFive.reduce((sum, item) => sum + item.marks, 0);
-    const maxTotal = topFive.reduce((sum, item) => sum + item.max, 0);
-    return { total, maxTotal, percentage: maxTotal ? (total / maxTotal) * 100 : 0 };
-  }, [form.subjects]);
+  const selectedCategory = getSelectedCategory(categories, form.categoryId);
+  const isCbse = isCbseCategory(selectedCategory, form);
+  const best5Preview = useMemo(() => calculateBest5Preview(form.subjects || []), [form.subjects]);
 
   const validateStep = (step) => {
-    const requiredFields = step === 2 && mode === 'admin' ? [] : (requiredByStep[step] || []);
+    const requiredFields = step === 2 && mode === 'admin' ? [] : requiredByStep[step] || [];
     const nextErrors = {};
+
     requiredFields.forEach((field) => {
-      const value = field === 'marksheetFileUrl' ? (form.marksheetFileUrl || form.resultImageUrl) : field === 'studentPhotoUrl' ? (form.studentPhotoUrl || form.certificatePhotoUrl) : form[field];
-      if (!isPresent(value)) nextErrors[field] = `${fieldLabels[field]} is required`;
+      const value =
+        field === 'marksheetFileUrl'
+          ? form.marksheetFileUrl || form.resultImageUrl
+          : field === 'studentPhotoUrl'
+            ? form.studentPhotoUrl || form.certificatePhotoUrl
+            : form[field];
+
+      if (!isPresent(value)) {
+        nextErrors[field] = `${fieldLabels[field]} is required`;
+      }
     });
 
     if (step === 1) {
+      if (isOtherCategory(form.categoryId) && !isPresent(form.categoryOther)) {
+        nextErrors.categoryOther = 'Other Category is required';
+      }
+
       const hasMarks = (form.subjects || []).some((s) => s.subject?.trim() && isPresent(s.marksObtained));
-      if (!isPresent(form.percentage) && !hasMarks) {
-        nextErrors.percentage = 'Enter percentage or at least one subject mark';
+
+      if (isCbse) {
+        if (!isPresent(form.percentage) && !hasMarks) {
+          nextErrors.percentage = 'Enter percentage or at least one subject mark for CBSE';
+        }
+      } else {
+        if (!isPresent(form.percentage)) {
+          nextErrors.percentage = 'Percentage is required';
+        }
       }
     }
 
@@ -361,44 +625,95 @@ export default function StudentFormWizard({
 
   return (
     <Stack spacing={2.5}>
-      <Paper sx={{ p: 2.2, background: 'linear-gradient(135deg, #ffffff 0%, #f5f8ff 55%, #fff8ec 100%)', border: '1px solid #dce7ff' }}>
+      <Paper
+        sx={{
+          p: 2.2,
+          background: 'linear-gradient(135deg, #ffffff 0%, #f5f8ff 55%, #fff8ec 100%)',
+          border: '1px solid #dce7ff'
+        }}
+      >
         <Stack spacing={1}>
-          <Typography variant="subtitle1" fontWeight={800}>{topInfo.title}</Typography>
-          <Typography color="text.secondary" variant="body2">{topInfo.description}</Typography>
+          <Typography variant="subtitle1" fontWeight={800}>
+            {topInfo.title}
+          </Typography>
+          <Typography color="text.secondary" variant="body2">
+            {topInfo.description}
+          </Typography>
+
           <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
             <Chip size="small" color="primary" label={`Step ${activeStep + 1} of ${steps.length}`} />
-            <Chip size="small" variant="outlined" label={mode === 'public' ? 'Public registration' : 'Admin-assisted'} />
+            <Chip
+              size="small"
+              variant="outlined"
+              label={mode === 'public' ? 'Public registration' : 'Admin-assisted'}
+            />
+            {isCbse ? <Chip size="small" color="info" variant="outlined" label="CBSE Best 5" /> : null}
           </Stack>
+
           <LinearProgress variant="determinate" value={progress} sx={{ height: 8, borderRadius: 999 }} />
         </Stack>
       </Paper>
 
-      {successMessage && <Alert icon={<CheckCircle />} severity="success">{successMessage}</Alert>}
+      {successMessage ? <Alert icon={<CheckCircle />} severity="success">{successMessage}</Alert> : null}
 
       <Stepper activeStep={activeStep} alternativeLabel>
         {steps.map((label) => (
-          <Step key={label}><StepLabel>{label}</StepLabel></Step>
+          <Step key={label}>
+            <StepLabel>{label}</StepLabel>
+          </Step>
         ))}
       </Stepper>
 
       <Card>
         <CardContent>
-          {activeStep === 0 && <StudentWizardStepPersonal form={form} setForm={setForm} errors={errors} />}
-          {activeStep === 1 && <StudentWizardStepAcademic form={form} setForm={setForm} errors={errors} best5Preview={best5Preview} />}
-          {activeStep === 2 && <StudentWizardStepUploads form={form} setForm={setForm} errors={errors} />}
-          {activeStep === 3 && <StudentWizardStepReview form={form} best5Preview={best5Preview} />}
+          {activeStep === 0 ? (
+            <StudentWizardStepPersonal form={form} setForm={setForm} errors={errors} />
+          ) : null}
+
+          {activeStep === 1 ? (
+            <StudentWizardStepAcademic
+              form={form}
+              setForm={setForm}
+              errors={errors}
+              categories={categories}
+            />
+          ) : null}
+
+          {activeStep === 2 ? (
+            <StudentWizardStepUploads form={form} setForm={setForm} errors={errors} />
+          ) : null}
+
+          {activeStep === 3 ? (
+            <StudentWizardStepReview form={form} categories={categories} />
+          ) : null}
         </CardContent>
       </Card>
 
-      {showCertificatePreview && <StudentCertificatePreviewSection form={form} />}
+      {showCertificatePreview ? <StudentCertificatePreviewSection form={form} /> : null}
 
-      <Paper sx={{ p: 2, position: { xs: 'sticky', md: 'static' }, bottom: { xs: 0, md: 'auto' }, zIndex: 5, borderTop: '1px solid', borderColor: 'divider' }}>
+      <Paper
+        sx={{
+          p: 2,
+          position: { xs: 'sticky', md: 'static' },
+          bottom: { xs: 0, md: 'auto' },
+          zIndex: 5,
+          borderTop: '1px solid',
+          borderColor: 'divider'
+        }}
+      >
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-          <Button fullWidth variant="outlined" disabled={activeStep === 0 || saving} onClick={onBack}>Back</Button>
+          <Button fullWidth variant="outlined" disabled={activeStep === 0 || saving} onClick={onBack}>
+            Back
+          </Button>
+
           {activeStep < steps.length - 1 ? (
-            <Button fullWidth variant="contained" onClick={onNext} disabled={saving}>Next</Button>
+            <Button fullWidth variant="contained" onClick={onNext} disabled={saving}>
+              Next
+            </Button>
           ) : (
-            <Button fullWidth variant="contained" onClick={submit} disabled={saving}>{saving ? 'Processing...' : mode === 'public' ? 'Submit registration' : 'Save student'}</Button>
+            <Button fullWidth variant="contained" onClick={submit} disabled={saving}>
+              {saving ? 'Processing...' : mode === 'public' ? 'Submit registration' : 'Save student'}
+            </Button>
           )}
         </Stack>
       </Paper>
