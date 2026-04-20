@@ -15,12 +15,12 @@ import PageHeader from '../components/PageHeader';
 import ResponsiveTable from '../components/ResponsiveTable';
 import StatusChip from '../components/StatusChip';
 import StudentFormWizard, { StudentCertificatePreviewSection } from '../components/students/StudentFormWizard';
-import { initialStudentForm, toStudentPayload } from '../components/students/studentFormConfig';
+import { createInitialStudentForm, toStudentPayload } from '../components/students/studentFormConfig';
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [form, setForm] = useState(initialStudentForm);
+  const [form, setForm] = useState(createInitialStudentForm);
   const [saving, setSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
   const [lastCreatedId, setLastCreatedId] = useState('');
@@ -42,7 +42,7 @@ export default function StudentsPage() {
       const { data } = await api.post('/students', toStudentPayload(form));
       setLastCreatedId(data?._id || '');
       setSavedMessage('Student saved successfully by admin.');
-      setForm(initialStudentForm);
+      setForm(createInitialStudentForm());
       await load();
     } finally {
       setSaving(false);

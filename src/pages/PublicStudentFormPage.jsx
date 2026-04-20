@@ -16,12 +16,12 @@ import {
 import { School } from '@mui/icons-material';
 import api from '../api';
 import StudentFormWizard, { StudentCertificatePreviewSection } from '../components/students/StudentFormWizard';
-import { initialStudentForm, normalizeStudentForm, toStudentPayload } from '../components/students/studentFormConfig';
+import { createInitialStudentForm, normalizeStudentForm, toStudentPayload } from '../components/students/studentFormConfig';
 
 export default function PublicStudentFormPage() {
   const { token } = useParams();
   const isEditMode = Boolean(token);
-  const [form, setForm] = useState(initialStudentForm);
+  const [form, setForm] = useState(createInitialStudentForm);
   const [tab, setTab] = useState(0);
   const [loading, setLoading] = useState(isEditMode);
   const [saving, setSaving] = useState(false);
@@ -61,7 +61,7 @@ export default function PublicStudentFormPage() {
       const { data } = await api.post('/students/public-register', payload);
       setSuccessData(data);
       setSavedMessage('Registration submitted successfully.');
-      setForm(initialStudentForm);
+      setForm(createInitialStudentForm());
     } finally {
       setSaving(false);
     }
@@ -117,7 +117,14 @@ export default function PublicStudentFormPage() {
 
             {isEditMode && tab === 1 && (
               <Stack spacing={2}>
-                <StudentCertificatePreviewSection form={form} />
+                <StudentCertificatePreviewSection
+                  form={form}
+                  editable
+                  onAdjustmentsChange={(patch) => setForm((prev) => ({
+                    ...prev,
+                    certificateAdjustments: { ...prev.certificateAdjustments, ...patch }
+                  }))}
+                />
                 <Button variant="contained" onClick={handleSave} disabled={saving}>{saving ? 'Saving...' : 'Save adjustments'}</Button>
               </Stack>
             )}

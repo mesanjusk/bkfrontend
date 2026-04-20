@@ -1,6 +1,6 @@
 export const emptySubject = { subject: '', marksObtained: '', maxMarks: 100 };
 
-export const initialStudentForm = {
+const baseStudentForm = {
   fullName: '',
   mobile: '',
   parentMobile: '',
@@ -20,6 +20,14 @@ export const initialStudentForm = {
   certificateAdjustments: { photoScale: 1, photoRotation: 0, photoX: 0, photoY: 0 }
 };
 
+export const createInitialStudentForm = () => ({
+  ...baseStudentForm,
+  subjects: [{ ...emptySubject }],
+  certificateAdjustments: { ...baseStudentForm.certificateAdjustments }
+});
+
+export const initialStudentForm = createInitialStudentForm();
+
 export const toStudentPayload = (form) => ({
   ...form,
   percentage: form.percentage === '' ? '' : Number(form.percentage),
@@ -36,7 +44,7 @@ export const fileToDataUrl = (file) =>
   });
 
 export const normalizeStudentForm = (data = {}) => ({
-  ...initialStudentForm,
+  ...createInitialStudentForm(),
   ...data,
   percentage: data.percentage ?? '',
   subjects: data.subjects?.length ? data.subjects : [{ ...emptySubject }],

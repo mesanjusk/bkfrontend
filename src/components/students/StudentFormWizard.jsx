@@ -15,7 +15,8 @@ import {
   StepLabel,
   Stepper,
   TextField,
-  Typography
+  Typography,
+  Slider
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { Add, CheckCircle, DriveFolderUpload, Insights, Delete } from '@mui/icons-material';
@@ -106,7 +107,15 @@ export function StudentWizardStepAcademic({ form, setForm, errors, best5Preview 
           <TextField fullWidth label="Class" value={form.className} error={Boolean(errors.className)} helperText={errors.className} onChange={(e) => setForm((prev) => ({ ...prev, className: e.target.value }))} />
         </Grid>
         <Grid item xs={12} sm={4}>
-          <TextField fullWidth type="number" label="Percentage (optional)" value={form.percentage} onChange={(e) => setForm((prev) => ({ ...prev, percentage: e.target.value }))} />
+          <TextField
+            fullWidth
+            type="number"
+            label="Percentage (optional)"
+            value={form.percentage}
+            error={Boolean(errors.percentage)}
+            helperText={errors.percentage}
+            onChange={(e) => setForm((prev) => ({ ...prev, percentage: e.target.value }))}
+          />
         </Grid>
       </Grid>
 
@@ -219,7 +228,7 @@ export function StudentWizardStepReview({ form, best5Preview }) {
   );
 }
 
-export function StudentCertificatePreviewSection({ form }) {
+export function StudentCertificatePreviewSection({ form, editable = false, onAdjustmentsChange }) {
   return (
     <Card>
       <CardContent>
@@ -250,6 +259,44 @@ export function StudentCertificatePreviewSection({ form }) {
             ) : 'PHOTO'}
           </Box>
         </Box>
+
+        {editable && (
+          <Stack spacing={1.2} sx={{ mt: 2.5 }}>
+            <Typography variant="subtitle2" fontWeight={700}>Certificate photo alignment</Typography>
+            <Typography variant="caption" color="text.secondary">Scale</Typography>
+            <Slider
+              min={0.6}
+              max={2}
+              step={0.1}
+              value={form.certificateAdjustments?.photoScale || 1}
+              onChange={(_, v) => onAdjustmentsChange({ photoScale: Number(v) })}
+            />
+            <Typography variant="caption" color="text.secondary">Rotation</Typography>
+            <Slider
+              min={-20}
+              max={20}
+              step={1}
+              value={form.certificateAdjustments?.photoRotation || 0}
+              onChange={(_, v) => onAdjustmentsChange({ photoRotation: Number(v) })}
+            />
+            <Typography variant="caption" color="text.secondary">Move X</Typography>
+            <Slider
+              min={-100}
+              max={100}
+              step={1}
+              value={form.certificateAdjustments?.photoX || 0}
+              onChange={(_, v) => onAdjustmentsChange({ photoX: Number(v) })}
+            />
+            <Typography variant="caption" color="text.secondary">Move Y</Typography>
+            <Slider
+              min={-100}
+              max={100}
+              step={1}
+              value={form.certificateAdjustments?.photoY || 0}
+              onChange={(_, v) => onAdjustmentsChange({ photoY: Number(v) })}
+            />
+          </Stack>
+        )}
       </CardContent>
     </Card>
   );
@@ -280,12 +327,20 @@ export default function StudentFormWizard({
   }, [form.subjects]);
 
   const validateStep = (step) => {
-    const requiredFields = requiredByStep[step] || [];
+    const requiredFields = step === 2 && mode === 'admin' ? [] : (requiredByStep[step] || []);
     const nextErrors = {};
     requiredFields.forEach((field) => {
       const value = field === 'marksheetFileUrl' ? (form.marksheetFileUrl || form.resultImageUrl) : field === 'studentPhotoUrl' ? (form.studentPhotoUrl || form.certificatePhotoUrl) : form[field];
       if (!isPresent(value)) nextErrors[field] = `${fieldLabels[field]} is required`;
     });
+
+    if (step === 1) {
+      const hasMarks = (form.subjects || []).some((s) => s.subject?.trim() && isPresent(s.marksObtained));
+      if (!isPresent(form.percentage) && !hasMarks) {
+        nextErrors.percentage = 'Enter percentage or at least one subject mark';
+      }
+    }
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
