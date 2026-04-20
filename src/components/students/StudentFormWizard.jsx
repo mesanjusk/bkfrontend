@@ -39,7 +39,7 @@ import {
 } from './studentFormConfig';
 import { uploadPublicFile } from '../../services/uploadService';
 
-const steps = ['Profile', 'Academic', 'Uploads', 'Review'];
+const steps = ['Profile', 'Academic', 'Uploads', ''];
 
 const requiredByStep = {
   0: ['firstName', 'lastName', 'fatherName', 'gender', 'address', 'mobile', 'parentMobile'],
@@ -205,7 +205,7 @@ export function StudentWizardStepPersonal({ form, setForm, errors }) {
       <TextField
         fullWidth
         size="small"
-        label="Mobile Number"
+        label="Student Mobile Number"
         value={form.mobile}
         error={Boolean(errors.mobile)}
         helperText={errors.mobile}
@@ -409,14 +409,7 @@ export function StudentWizardStepAcademic({
               </Paper>
             ))}
 
-            <Alert severity="info" icon={<Insights />} sx={{ borderRadius: 2 }}>
-              <Typography fontWeight={700} sx={{ fontSize: 14 }}>
-                CBSE Best 5 preview: {best5Preview.percentage.toFixed(2)}%
-              </Typography>
-              <Typography variant="body2">
-                Top 5 subjects are calculated automatically.
-              </Typography>
-            </Alert>
+            
           </Stack>
         </>
       ) : null}
@@ -541,16 +534,7 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
         </Paper>
       ) : null}
 
-      <TextField
-        fullWidth
-        size="small"
-        multiline
-        minRows={3}
-        label="Remarks (Optional)"
-        value={form.remarks}
-        sx={inputSx}
-        onChange={(e) => setForm((prev) => ({ ...prev, remarks: e.target.value }))}
-      />
+      
     </Stack>
   );
 }
