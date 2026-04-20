@@ -53,7 +53,7 @@ function HeroCard({ editMode }) {
         fontWeight={800}
         sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' }, textTransform: 'uppercase' }}
       >
-        
+        BADTE KADAM
       </Typography>
 
       <Typography
@@ -64,7 +64,7 @@ function HeroCard({ editMode }) {
           fontSize: { xs: '0.82rem', sm: '0.92rem' }
         }}
       >
-        {editMode ? 'Update your submitted details' : 'Awrads2026 Registration Form'}
+        {editMode ? 'Update your submitted details' : 'Scholar Awrads 2026' }
       </Typography>
     </Box>
   );
@@ -380,7 +380,7 @@ export default function PublicStudentFormPage() {
                   saving={saving}
                   successMessage={successMessage}
                   topInfo={{
-                    title: 'Badte Kadam',
+                    title: 'REGISTRATION FORM',
                     description: editMode
                       ? 'Update your details below.'
                       : 'Fill the form carefully and submit.'
