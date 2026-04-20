@@ -30,12 +30,12 @@ import {
 } from '@mui/icons-material';
 import {
   emptySubject,
-  fileToDataUrl,
   isOtherCategory,
   getSelectedCategory,
   isCbseCategory,
   calculateBest5Preview
 } from './studentFormConfig';
+import { uploadPublicFile } from '../../services/uploadService';
 
 const steps = ['Personal', 'Academic', 'Uploads', 'Review'];
 
@@ -315,25 +315,47 @@ export function StudentWizardStepAcademic({
 }
 
 export function StudentWizardStepUploads({ form, setForm, errors }) {
+  const [uploadingField, setUploadingField] = useState('');
+  const [uploadError, setUploadError] = useState('');
+
   const handleFile = async (event, field) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const url = await fileToDataUrl(file);
 
-    if (field === 'marksheetFileUrl') {
-      setForm((prev) => ({ ...prev, marksheetFileUrl: url, resultImageUrl: url }));
-      return;
+    setUploadError('');
+    setUploadingField(field);
+
+    try {
+      const uploaded = await uploadPublicFile(
+        file,
+        field === 'marksheetFileUrl' ? 'bk_awards/marksheets' : 'bk_awards/student_photos'
+      );
+
+      const url = uploaded?.url || '';
+
+      if (field === 'marksheetFileUrl') {
+        setForm((prev) => ({ ...prev, marksheetFileUrl: url, resultImageUrl: url }));
+      } else {
+        setForm((prev) => ({
+          ...prev,
+          studentPhotoUrl: url,
+          certificatePhotoUrl: url
+        }));
+      }
+    } catch (error) {
+      setUploadError(error?.response?.data?.message || 'File upload failed. Please try a smaller file.');
+    } finally {
+      setUploadingField('');
+      event.target.value = '';
     }
-
-    setForm((prev) => ({
-      ...prev,
-      studentPhotoUrl: url,
-      certificatePhotoUrl: url
-    }));
   };
 
   return (
     <Stack spacing={2}>
+      {uploadingField ? <LinearProgress sx={{ borderRadius: 999 }} /> : null}
+
+      {uploadError ? <Alert severity="error">{uploadError}</Alert> : null}
+
       <Button
         component="label"
         fullWidth
@@ -341,8 +363,9 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
         startIcon={<DriveFolderUpload />}
         sx={{ py: 2, borderStyle: 'dashed' }}
         color={errors.marksheetFileUrl ? 'error' : 'primary'}
+        disabled={Boolean(uploadingField)}
       >
-        {form.marksheetFileUrl || form.resultImageUrl ? 'Marksheet selected' : 'Upload marksheet *'}
+        {uploadingField === 'marksheetFileUrl' ? 'Uploading marksheet...' : form.marksheetFileUrl || form.resultImageUrl ? 'Marksheet uploaded' : 'Upload marksheet *'}
         <input hidden type="file" accept="image/*,.pdf" onChange={(e) => handleFile(e, 'marksheetFileUrl')} />
       </Button>
 
@@ -353,8 +376,9 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
         startIcon={<DriveFolderUpload />}
         sx={{ py: 2, borderStyle: 'dashed' }}
         color={errors.studentPhotoUrl ? 'error' : 'primary'}
+        disabled={Boolean(uploadingField)}
       >
-        {form.studentPhotoUrl || form.certificatePhotoUrl ? 'Student photo selected' : 'Upload student photo *'}
+        {uploadingField === 'studentPhotoUrl' ? 'Uploading student photo...' : form.studentPhotoUrl || form.certificatePhotoUrl ? 'Student photo uploaded' : 'Upload student photo *'}
         <input hidden type="file" accept="image/*" onChange={(e) => handleFile(e, 'studentPhotoUrl')} />
       </Button>
 
