@@ -20,8 +20,8 @@ import defaultTemplate from '../../assets/certificates/bk-awards-2026.jpg';
 
 const PLACEHOLDER = {
   top: 12.1,
-  left: 51.7,
-  size: 27.2
+  left: 60.7,
+  size: 30.2
 };
 
 const initialTouchState = {
