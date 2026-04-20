@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import { AutoFixHigh } from '@mui/icons-material';
+import { AutoFixHigh, School, People, Analytics } from '@mui/icons-material';
 import {
   Alert,
   Button,
   Card,
   CardContent,
   Grid,
-  Paper,
   Stack,
-  Typography
+  Typography,
+  Box,
+  Fade
 } from '@mui/material';
 import api from '../api';
 import PageHeader from '../components/PageHeader';
@@ -31,9 +32,7 @@ export default function StudentsPage() {
     setCategories(c.data);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   const save = async () => {
     setSaving(true);
@@ -41,103 +40,135 @@ export default function StudentsPage() {
     try {
       const { data } = await api.post('/students', toStudentPayload(form));
       setLastCreatedId(data?._id || '');
-      setSavedMessage('Student saved successfully by admin.');
+      setSavedMessage('Student profile created successfully.');
       setForm(createInitialStudentForm());
       await load();
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
-  const evaluate = async (id) => {
-    await api.post(`/students/${id}/evaluate`);
-    load();
-  };
-  const parse = async (id) => {
-    await api.post(`/students/${id}/parse`);
-    load();
-  };
+  const evaluate = async (id) => { await api.post(`/students/${id}/evaluate`); load(); };
+  const parse = async (id) => { await api.post(`/students/${id}/parse`); load(); };
 
   const columns = [
     { key: 'name', label: 'Student' },
-    { key: 'mobile', label: 'Student Mobile' },
-    { key: 'parentMobile', label: 'Parent Mobile' },
-    { key: 'board', label: 'Board' },
-    { key: 'className', label: 'Class' },
-    { key: 'percentage', label: 'Percentage' },
+    { key: 'details', label: 'Academic Info' },
     { key: 'status', label: 'Status' },
-    { key: 'matched', label: 'Matched Categories' },
-    { key: 'actions', label: 'Actions' }
+    { key: 'actions', label: 'Intelligence' }
   ];
 
   const rows = students.map((s) => ({
     title: s.fullName,
-    name: s.fullName,
-    mobile: s.mobile || '-',
-    parentMobile: s.parentMobile || '-',
-    board: s.board || '-',
-    className: s.className || '-',
-    percentage: s.percentage || '-',
+    name: (
+      <Box>
+        <Typography variant="body2" fontWeight={700}>{s.fullName}</Typography>
+        <Typography variant="caption" color="text.secondary">{s.mobile || 'No Mobile'}</Typography>
+      </Box>
+    ),
+    details: (
+      <Box>
+        <Typography variant="caption" display="block"><b>{s.board || '-'}</b> · {s.className || '-'}</Typography>
+        <Typography variant="caption" color="primary" fontWeight={700}>{s.percentage}%</Typography>
+      </Box>
+    ),
     status: () => <StatusChip label={s.status} />,
-    matched: (s.matchedCategoryIds || []).map((c) => c.title).join(', ') || '-',
     actions: () => (
       <Stack direction="row" spacing={1}>
-        <Button size="small" variant="outlined" onClick={() => parse(s._id)}>Parse</Button>
-        <Button size="small" variant="contained" onClick={() => evaluate(s._id)}>Evaluate</Button>
+        <Button size="small" variant="text" sx={{ fontWeight: 700 }} onClick={() => parse(s._id)}>Parse</Button>
+        <Button size="small" variant="outlined" sx={{ borderRadius: 2 }} onClick={() => evaluate(s._id)}>Evaluate</Button>
       </Stack>
     )
   }));
 
   return (
-    <>
-      <PageHeader
-        title="Student intake"
-        subtitle="Admin-assisted wizard, public registration support, and eligibility flow."
-        chips={[{ label: `${students.length} students` }, { label: `${categories.length} categories` }]}
-      />
+    <Box sx={{ pb: 4 }}>
+      {/* High-End Operations Header */}
+      <Box sx={{ 
+        bgcolor: '#1a1a1a', color: '#fff', pt: 4, pb: 6, px: 3, 
+        borderRadius: '0 0 32px 32px', mb: -4 
+      }}>
+        <PageHeader
+          title="Student Intake"
+          subtitle="Manage registrations and eligibility flow."
+          chips={[
+            { label: `${students.length} Total`, icon: <People fontSize="small" /> },
+            { label: `${categories.length} Categories`, icon: <Analytics fontSize="small" /> }
+          ]}
+          dark
+        />
+      </Box>
 
-      <Grid container spacing={2}>
-        <Grid item xs={12} lg={7}>
-          <Paper sx={{ p: { xs: 2, md: 3 } }}>
-            <Typography variant="h6" sx={{ mb: 2 }}>Add student (Admin/Staff wizard)</Typography>
-            <StudentFormWizard
-              mode="admin"
-              form={form}
-              setForm={setForm}
-              onSubmit={save}
-              saving={saving}
-              successMessage={savedMessage}
-              topInfo={{
-                title: 'Admin-assisted student registration',
-                description: 'Use this guided 4-step wizard to quickly add students from the protected dashboard.'
-              }}
-            />
-          </Paper>
-        </Grid>
-
-        <Grid item xs={12} lg={5}>
-          <Stack spacing={2} sx={{ position: { lg: 'sticky' }, top: { lg: 96 } }}>
-            <StudentCertificatePreviewSection form={form} />
-
-            <Card>
-              <CardContent>
-                <Stack spacing={1.2}>
-                  <Typography variant="h6">Admin controls</Typography>
-                  <Alert severity="info" icon={<AutoFixHigh />}>
-                    After saving a student, you can trigger parse/evaluate directly from the table.
-                  </Alert>
-                  <Button variant="outlined" disabled={!lastCreatedId} onClick={() => parse(lastCreatedId)}>Parse latest saved student</Button>
-                  <Button variant="contained" disabled={!lastCreatedId} onClick={() => evaluate(lastCreatedId)}>Evaluate latest saved student</Button>
-                </Stack>
+      <Container maxWidth="xl">
+        <Grid container spacing={3}>
+          {/* Main Wizard Area */}
+          <Grid item xs={12} lg={8}>
+            <Card sx={{ borderRadius: 4, border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.04)' }}>
+              <CardContent sx={{ p: { xs: 2, md: 4 } }}>
+                <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', mb: 2, display: 'block' }}>
+                  Guided Registration Wizard
+                </Typography>
+                <StudentFormWizard
+                  mode="admin"
+                  form={form}
+                  setForm={setForm}
+                  onSubmit={save}
+                  saving={saving}
+                  successMessage={savedMessage}
+                  topInfo={{
+                    title: 'New Student Intake',
+                    description: 'Admin-assisted 4-step verification process.'
+                  }}
+                />
               </CardContent>
             </Card>
-          </Stack>
-        </Grid>
+          </Grid>
 
-        <Grid item xs={12}>
-          <ResponsiveTable columns={columns} rows={rows} mobileTitleKey="title" />
+          {/* Side Preview & Quick Controls */}
+          <Grid item xs={12} lg={4}>
+            <Stack spacing={3}>
+              <StudentCertificatePreviewSection form={form} />
+
+              <Card sx={{ borderRadius: 4, bgcolor: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <CardContent>
+                  <Typography variant="subtitle2" fontWeight={800} gutterBottom>Intelligence Hub</Typography>
+                  <Alert severity="info" variant="outlined" icon={<AutoFixHigh />} sx={{ borderRadius: 3, mb: 2, bgcolor: '#fff' }}>
+                    Trigger parsing or evaluation for the latest entry.
+                  </Alert>
+                  <Stack spacing={1.5}>
+                    <Button 
+                      fullWidth 
+                      variant="contained" 
+                      disabled={!lastCreatedId} 
+                      onClick={() => evaluate(lastCreatedId)}
+                      sx={{ borderRadius: 2.5, py: 1.2, bgcolor: '#1a1a1a' }}
+                    >
+                      Evaluate Latest
+                    </Button>
+                    <Button 
+                      fullWidth 
+                      variant="outlined" 
+                      disabled={!lastCreatedId} 
+                      onClick={() => parse(lastCreatedId)}
+                      sx={{ borderRadius: 2.5, py: 1.2 }}
+                    >
+                      Parse Latest
+                    </Button>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Stack>
+          </Grid>
+
+          {/* Database View */}
+          <Grid item xs={12}>
+            <Typography variant="overline" sx={{ fontWeight: 800, color: 'text.secondary', ml: 1 }}>
+              Student Records
+            </Typography>
+            <Box sx={{ mt: 1 }}>
+              <ResponsiveTable columns={columns} rows={rows} mobileTitleKey="title" />
+            </Box>
+          </Grid>
         </Grid>
-      </Grid>
-    </>
+      </Container>
+    </Box>
   );
 }

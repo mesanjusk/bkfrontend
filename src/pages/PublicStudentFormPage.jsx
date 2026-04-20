@@ -1,50 +1,33 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Container,
-  LinearProgress,
-  Stack,
-  Tabs,
-  Tab,
-  Typography
+  Alert, Box, Button, Card, CardContent, Container, IconButton,
+  LinearProgress, Stack, Tabs, Tab, Typography, Fade
 } from '@mui/material';
-import { CheckCircle, EmojiEvents, School } from '@mui/icons-material';
+import { CheckCircle, EmojiEvents, School, Tune, ArrowBack } from '@mui/icons-material';
 import api from '../api';
 import StudentFormWizard, { StudentCertificatePreviewSection } from '../components/students/StudentFormWizard';
 import { createInitialStudentForm, toStudentPayload } from '../components/students/studentFormConfig';
 
+// --- Aesthetic Hero Component ---
 function HeroCard({ editMode }) {
   return (
-    <Card
-      sx={{
-        borderRadius: 4,
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #c69214 100%)',
-        color: '#fff'
-      }}
-    >
-      <CardContent sx={{ p: { xs: 2.5, md: 3.5 } }}>
-        <Stack spacing={1.2}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <EmojiEvents />
-            <Typography variant="h5" fontWeight={700}>
-              Badte Kadam
-            </Typography>
-          </Stack>
-          <Typography sx={{ opacity: 0.92 }}>
-            {editMode
-              ? 'Scholar Awards 2026'
-              : ''}
-          </Typography>
-          
-        </Stack>
-      </CardContent>
-    </Card>
+    <Box sx={{ 
+      bgcolor: '#1a1a1a', 
+      color: '#fff', 
+      pt: 6, pb: 4, px: 3, 
+      textAlign: 'center', 
+      borderRadius: '0 0 32px 32px',
+      mb: -3 // Overlap for the content below
+    }}>
+      <EmojiEvents sx={{ fontSize: 48, mb: 1.5, color: '#d4af37' }} />
+      <Typography variant="h5" fontWeight={800} sx={{ letterSpacing: -0.5 }}>
+        Badte Kadam
+      </Typography>
+      <Typography variant="body2" sx={{ opacity: 0.7, mt: 0.5 }}>
+        Scholar Awards 2026 · Merit Recognition
+      </Typography>
+    </Box>
   );
 }
 
@@ -65,7 +48,6 @@ export default function PublicStudentFormPage() {
 
   useEffect(() => {
     if (!editMode) return;
-
     api.get(`/students/public-edit/${token}`).then((r) => {
       const data = r.data || {};
       setForm({
@@ -84,109 +66,119 @@ export default function PublicStudentFormPage() {
     });
   }, [editMode, token]);
 
-  const selectedCategory = useMemo(
-    () => categories.find((c) => String(c._id) === String(form.categoryId)),
-    [categories, form.categoryId]
-  );
-
-  const isCbse = useMemo(() => {
-    const board = String(selectedCategory?.board || form.board || '').toUpperCase();
-    const title = String(selectedCategory?.title || '').toUpperCase();
-    return board === 'CBSE' || title.includes('CBSE');
-  }, [selectedCategory, form.board]);
-
   const handleSubmit = async () => {
     setSaving(true);
     setSuccessMessage('');
-
     try {
       const payload = toStudentPayload({
         ...form,
-        board: selectedCategory?.board || form.board || '',
+        board: categories.find(c => String(c._id) === String(form.categoryId))?.board || form.board || '',
         resultImageUrl: form.resultImageUrl || form.marksheetFileUrl || '',
         certificatePhotoUrl: form.studentPhotoUrl || form.certificatePhotoUrl || ''
       });
 
       if (editMode) {
         await api.put(`/students/public-edit/${token}`, payload);
-        setSuccessMessage('Your form has been updated successfully.');
+        setSuccessMessage('Changes saved successfully.');
       } else {
         const { data } = await api.post('/students/public-register', payload);
         setSuccessMessage(data?.message || 'Registration submitted successfully.');
         setForm(createInitialStudentForm());
       }
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
-  if (loading) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Stack spacing={2}>
-          <HeroCard editMode />
-          <Card>
-            <CardContent>
-              <LinearProgress />
-            </CardContent>
-          </Card>
-        </Stack>
-      </Container>
-    );
-  }
+  if (loading) return (
+    <Container maxWidth="sm" sx={{ py: 8 }}>
+      <Skeleton variant="rounded" height={400} sx={{ borderRadius: 5 }} />
+    </Container>
+  );
 
   return (
-    <Container maxWidth="lg" sx={{ py: { xs: 2, md: 4 } }}>
-      <Stack spacing={3}>
-        <HeroCard editMode={editMode} />
+    <Box sx={{ bgcolor: '#f8fafc', minHeight: '100vh', pb: 10 }}>
+      <HeroCard editMode={editMode} />
 
-        <Alert severity="info" icon={<School />}>
-          {editMode
-            ? ''
-            : 'After successful registration, confirmation will be sent on WhatsApp to the student mobile number.'}
-        </Alert>
+      <Container maxWidth="sm" sx={{ mt: 0 }}>
+        <Stack spacing={2.5}>
+          
+          {/* Status Alerts */}
+          {successMessage && (
+            <Fade in>
+              <Alert severity="success" variant="filled" sx={{ borderRadius: 3, boxShadow: '0 8px 20px rgba(0,0,0,0.1)' }}>
+                {successMessage}
+              </Alert>
+            </Fade>
+          )}
 
-        {successMessage ? (
-          <Alert severity="success" icon={<CheckCircle />}>
-            {successMessage}
-          </Alert>
-        ) : null}
+          {!editMode && !successMessage && (
+            <Alert severity="info" icon={<School />} sx={{ borderRadius: 3, bgcolor: '#fff', border: '1px solid #e2e8f0', color: '#1a1a1a' }}>
+              Confirmation will be sent on WhatsApp.
+            </Alert>
+          )}
 
-        {editMode ? (
-          <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto">
-            <Tab label="Form Details" />
-            <Tab label="Certificate Preview" />
-          </Tabs>
-        ) : null}
+          {/* Minimal Tab Switcher */}
+          {editMode && (
+            <Tabs 
+              value={tab} 
+              onChange={(_, v) => setTab(v)} 
+              centered
+              sx={{ 
+                bgcolor: '#fff', 
+                borderRadius: 3, 
+                p: 0.5, 
+                '& .MuiTabs-indicator': { height: '100%', borderRadius: 2.5, zIndex: 0, bgcolor: '#f1f5f9' },
+                '& .MuiTab-root': { zIndex: 1, textTransform: 'none', fontWeight: 700, borderRadius: 2.5 }
+              }}
+            >
+              <Tab label="Form Details" />
+              <Tab label="Preview" />
+            </Tabs>
+          )}
 
-        {!editMode || tab === 0 ? (
-          <Card sx={{ borderRadius: 4 }}>
-            <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-              <StudentFormWizard
-                mode="public"
-                form={form}
-                setForm={setForm}
-                categories={categories}
-                onSubmit={handleSubmit}
-                saving={saving}
-                successMessage={successMessage}
-                topInfo={{
-                  title: editMode ? 'Edit registration form' : 'Student self registration',
-                  description: editMode
-                    ? 'Update your submitted form details below.'
-                    : 'Fill the guided wizard step by step. Confirmation will be sent on WhatsApp after submission.'
-                }}
-              />
+          {/* Main Content Card */}
+          <Card sx={{ borderRadius: 5, boxShadow: '0 20px 25px -5px rgba(0,0,0,0.05)', border: 'none', overflow: 'visible' }}>
+            <CardContent sx={{ p: { xs: 2.5, sm: 4 } }}>
+              {!editMode || tab === 0 ? (
+                <StudentFormWizard
+                  mode="public"
+                  form={form}
+                  setForm={setForm}
+                  categories={categories}
+                  onSubmit={handleSubmit}
+                  saving={saving}
+                  successMessage={successMessage}
+                  topInfo={{
+                    title: editMode ? 'Update Details' : 'Register Now',
+                    description: editMode 
+                      ? 'Adjust your submission below.' 
+                      : 'Fill the guided wizard step by step.'
+                  }}
+                />
+              ) : (
+                <Fade in>
+                  <Box>
+                    <StudentCertificatePreviewSection form={form} />
+                    <Button 
+                      fullWidth 
+                      variant="contained" 
+                      onClick={handleSubmit} 
+                      disabled={saving}
+                      sx={{ mt: 3, py: 1.5, borderRadius: 3, bgcolor: '#1a1a1a' }}
+                    >
+                      {saving ? 'Saving...' : 'Save Adjustments'}
+                    </Button>
+                  </Box>
+                </Fade>
+              )}
             </CardContent>
           </Card>
-        ) : null}
 
-        {editMode && tab === 1 ? (
-          <Box>
-            <StudentCertificatePreviewSection form={form} />
-          </Box>
-        ) : null}
-      </Stack>
-    </Container>
+          {/* Help Footer */}
+          <Typography variant="caption" sx={{ textAlign: 'center', opacity: 0.5, display: 'block', mt: 2 }}>
+            Secure Registration · © 2026 Badte Kadam
+          </Typography>
+        </Stack>
+      </Container>
+    </Box>
   );
 }
