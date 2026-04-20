@@ -80,8 +80,8 @@ export default function PublicStudentFormPage() {
     <Box sx={{ minHeight: '100vh', bgcolor: '#ffffff', pb: 8 }}>
       <Box sx={{ background: 'linear-gradient(165deg, #0f1b3d 0%, #1e3f7a 60%, #7d6526 130%)', color: '#fff', pt: 6, pb: 8, px: 3, textAlign: 'center', borderRadius: '0 0 30px 30px' }}>
         <School sx={{ fontSize: 40, mb: 1, color: '#f4d27b' }} />
-        <Typography variant="h4" fontWeight={800}>{isEditMode ? 'Edit Registration' : 'Scholar Registration Wizard'}</Typography>
-        <Typography variant="body2" sx={{ opacity: 0.84, mt: 1 }}>BK Scholar Awards 2026</Typography>
+        <Typography variant="h4" fontWeight={800}>{isEditMode ? 'Edit Registration' : 'Badte Kadam'}</Typography>
+        <Typography variant="body2" sx={{ opacity: 0.84, mt: 1 }}>Scholar Awards 2026</Typography>
       </Box>
 
       <Container maxWidth="sm" sx={{ mt: -4 }}>
@@ -109,8 +109,8 @@ export default function PublicStudentFormPage() {
                 saving={saving}
                 successMessage={savedMessage}
                 topInfo={{
-                  title: 'Secure registration flow',
-                  description: 'After successful submission, a secure link can be shared for future edits.'
+                  title: 'Registration Form',
+                  
                 }}
               />
             )}
