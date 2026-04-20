@@ -35,7 +35,11 @@ const theme = createTheme({
   components: {
     MuiButton: {
       styleOverrides: {
-        root: { padding: '10px 20px', boxShadow: 'none', '&:hover': { boxShadow: 'none' } },
+        root: {
+          padding: '10px 20px',
+          boxShadow: 'none',
+          '&:hover': { boxShadow: 'none' }
+        },
         contained: { borderRadius: '10px' }
       }
     },
@@ -49,7 +53,10 @@ const theme = createTheme({
       }
     },
     MuiTextField: {
-      defaultProps: { variant: 'filled', InputProps: { disableUnderline: true } },
+      defaultProps: {
+        variant: 'filled',
+        InputProps: { disableUnderline: true }
+      },
       styleOverrides: {
         root: {
           '& .MuiFilledInput-root': {
@@ -76,10 +83,12 @@ export default function App() {
         <LiveProvider>
           <BrowserRouter>
             <Routes>
+              {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/student-register" element={<PublicStudentFormPage />} />
               <Route path="/student-edit/:token" element={<PublicStudentFormPage />} />
 
+              {/* Protected routes */}
               {[
                 ['/', <DashboardPage />],
                 ['/students', <StudentsPage />],
@@ -103,6 +112,7 @@ export default function App() {
                 />
               ))}
             </Routes>
+
             <AppUpdatePrompt />
           </BrowserRouter>
         </LiveProvider>
