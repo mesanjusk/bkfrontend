@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
@@ -16,7 +16,10 @@ import {
   Stepper,
   TextField,
   Typography,
-  Slider
+  Slider,
+  RadioGroup,
+  FormControlLabel,
+  Radio
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import {
@@ -36,10 +39,10 @@ import {
 } from './studentFormConfig';
 import { uploadPublicFile } from '../../services/uploadService';
 
-const steps = ['Personal', 'Academic', 'Uploads', 'Review'];
+const steps = ['Profile', 'Academic', 'Uploads', 'Review'];
 
 const requiredByStep = {
-  0: ['fullName', 'gender', 'address', 'mobile', 'parentMobile'],
+  0: ['firstName', 'lastName', 'fatherName', 'gender', 'address', 'mobile', 'parentMobile'],
   1: ['categoryId', 'schoolName', 'className'],
   2: ['marksheetFileUrl', 'studentPhotoUrl']
 };
@@ -47,7 +50,9 @@ const requiredByStep = {
 const isPresent = (value) => value !== null && value !== undefined && String(value).trim() !== '';
 
 const fieldLabels = {
-  fullName: 'Full Name',
+  firstName: 'Student First Name',
+  lastName: 'Surname / Last Name',
+  fatherName: "Father's Name",
   gender: 'Gender',
   address: 'Address',
   mobile: 'Mobile Number',
@@ -63,16 +68,36 @@ const fieldLabels = {
 
 const inputSx = {
   '& .MuiOutlinedInput-root': {
-    borderRadius: 2.5,
+    borderRadius: 1.5,
     bgcolor: '#fff'
   }
 };
 
 const sectionPaperSx = {
   p: { xs: 1.5, sm: 2 },
-  borderRadius: 3,
-  border: '1px solid #e5e7eb',
+  borderRadius: 2,
+  border: '1px solid #d9d9d9',
   bgcolor: '#fff'
+};
+
+const topTabSx = {
+  minHeight: 34,
+  fontSize: '0.78rem',
+  fontWeight: 700,
+  textTransform: 'none',
+  px: 1.6,
+  py: 0.7,
+  borderRadius: 0,
+  border: '1px solid #cfcfcf',
+  color: '#6b7280',
+  bgcolor: '#e5e5e5'
+};
+
+const activeTopTabSx = {
+  ...topTabSx,
+  color: '#fff',
+  bgcolor: '#2497d3',
+  borderColor: '#2497d3'
 };
 
 const DetailLine = ({ label, value }) => (
@@ -82,7 +107,7 @@ const DetailLine = ({ label, value }) => (
     spacing={2}
     sx={{
       py: 0.7,
-      borderBottom: '1px dashed #eef2f7',
+      borderBottom: '1px dashed #e5e7eb',
       '&:last-child': { borderBottom: 'none', pb: 0 }
     }}
   >
@@ -95,82 +120,109 @@ const DetailLine = ({ label, value }) => (
   </Stack>
 );
 
+function buildFullName(form) {
+  return [form.firstName, form.lastName].filter(Boolean).join(' ').trim();
+}
+
 export function StudentWizardStepPersonal({ form, setForm, errors }) {
+  const updateField = (key, value) => {
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      next.fullName = buildFullName(next);
+      return next;
+    });
+  };
+
   return (
-    <Stack spacing={1.5}>
-      <Grid container spacing={1.5}>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Full Name"
-            value={form.fullName}
-            error={Boolean(errors.fullName)}
-            helperText={errors.fullName}
-            sx={inputSx}
-            onChange={(e) => setForm((prev) => ({ ...prev, fullName: e.target.value }))}
-          />
-        </Grid>
+    <Stack spacing={2}>
+      <TextField
+        fullWidth
+        size="small"
+        label="Student First Name"
+        value={form.firstName || ''}
+        error={Boolean(errors.firstName)}
+        helperText={errors.firstName}
+        sx={inputSx}
+        onChange={(e) => updateField('firstName', e.target.value)}
+      />
 
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            size="small"
-            select
-            label="Gender"
-            value={form.gender}
-            error={Boolean(errors.gender)}
-            helperText={errors.gender}
-            sx={inputSx}
-            onChange={(e) => setForm((prev) => ({ ...prev, gender: e.target.value }))}
-          >
-            <MenuItem value="Any">Any</MenuItem>
-            <MenuItem value="Male">Male</MenuItem>
-            <MenuItem value="Female">Female</MenuItem>
-          </TextField>
-        </Grid>
+      <TextField
+        fullWidth
+        size="small"
+        label="Surname / Last Name"
+        value={form.lastName || ''}
+        error={Boolean(errors.lastName)}
+        helperText={errors.lastName}
+        sx={inputSx}
+        onChange={(e) => updateField('lastName', e.target.value)}
+      />
 
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            size="small"
-            multiline
-            minRows={2}
-            label="Address"
-            value={form.address}
-            error={Boolean(errors.address)}
-            helperText={errors.address}
-            sx={inputSx}
-            onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
-          />
-        </Grid>
+      <TextField
+        fullWidth
+        size="small"
+        label="Father's Name"
+        value={form.fatherName || ''}
+        error={Boolean(errors.fatherName)}
+        helperText={errors.fatherName}
+        sx={inputSx}
+        onChange={(e) => updateField('fatherName', e.target.value)}
+      />
 
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Mobile Number"
-            value={form.mobile}
-            error={Boolean(errors.mobile)}
-            helperText={errors.mobile}
-            sx={inputSx}
-            onChange={(e) => setForm((prev) => ({ ...prev, mobile: e.target.value }))}
-          />
-        </Grid>
+      <Box>
+        <Typography sx={{ mb: 0.8, fontSize: '0.92rem', color: errors.gender ? 'error.main' : 'text.secondary' }}>
+          Gender :
+        </Typography>
 
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Parent Mobile Number"
-            value={form.parentMobile}
-            error={Boolean(errors.parentMobile)}
-            helperText={errors.parentMobile}
-            sx={inputSx}
-            onChange={(e) => setForm((prev) => ({ ...prev, parentMobile: e.target.value }))}
-          />
-        </Grid>
-      </Grid>
+        <RadioGroup
+          row
+          value={form.gender || ''}
+          onChange={(e) => updateField('gender', e.target.value)}
+        >
+          <FormControlLabel value="Female" control={<Radio size="small" />} label="Female" />
+          <FormControlLabel value="Male" control={<Radio size="small" />} label="Male" />
+        </RadioGroup>
+
+        {errors.gender ? (
+          <Typography sx={{ mt: 0.4, fontSize: '0.75rem', color: 'error.main' }}>
+            {errors.gender}
+          </Typography>
+        ) : null}
+      </Box>
+
+      <TextField
+        fullWidth
+        size="small"
+        multiline
+        minRows={4}
+        label="Address"
+        value={form.address}
+        error={Boolean(errors.address)}
+        helperText={errors.address}
+        sx={inputSx}
+        onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
+      />
+
+      <TextField
+        fullWidth
+        size="small"
+        label="Mobile Number"
+        value={form.mobile}
+        error={Boolean(errors.mobile)}
+        helperText={errors.mobile}
+        sx={inputSx}
+        onChange={(e) => setForm((prev) => ({ ...prev, mobile: e.target.value }))}
+      />
+
+      <TextField
+        fullWidth
+        size="small"
+        label="Parent Mobile Number"
+        value={form.parentMobile}
+        error={Boolean(errors.parentMobile)}
+        helperText={errors.parentMobile}
+        sx={inputSx}
+        onChange={(e) => setForm((prev) => ({ ...prev, parentMobile: e.target.value }))}
+      />
     </Stack>
   );
 }
@@ -204,101 +256,83 @@ export function StudentWizardStepAcademic({
       ...prev,
       categoryId: value,
       categoryOther: value === 'OTHER' ? prev.categoryOther || '' : '',
-      percentage: prev.percentage,
       subjects: prev.subjects?.length ? prev.subjects : [{ ...emptySubject }]
     }));
   };
 
   return (
-    <Stack spacing={1.75}>
-      <Grid container spacing={1.5}>
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            size="small"
-            select
-            label="Category"
-            value={form.categoryId || ''}
-            error={Boolean(errors.categoryId)}
-            helperText={errors.categoryId}
-            sx={inputSx}
-            onChange={(e) => handleCategoryChange(e.target.value)}
-          >
-            {categories.map((cat) => (
-              <MenuItem key={cat._id} value={cat._id}>
-                {cat.title}
-              </MenuItem>
-            ))}
-            <MenuItem value="OTHER">Other</MenuItem>
-          </TextField>
-        </Grid>
+    <Stack spacing={2}>
+      <TextField
+        fullWidth
+        size="small"
+        select
+        label="Category"
+        value={form.categoryId || ''}
+        error={Boolean(errors.categoryId)}
+        helperText={errors.categoryId}
+        sx={inputSx}
+        onChange={(e) => handleCategoryChange(e.target.value)}
+      >
+        {categories.map((cat) => (
+          <MenuItem key={cat._id} value={cat._id}>
+            {cat.title}
+          </MenuItem>
+        ))}
+        <MenuItem value="OTHER">Other</MenuItem>
+      </TextField>
 
-        {isOtherCategory(form.categoryId) ? (
-          <Grid item xs={12} sm={6}>
-            <TextField
-              fullWidth
-              size="small"
-              label="Other Category"
-              value={form.categoryOther || ''}
-              error={Boolean(errors.categoryOther)}
-              helperText={errors.categoryOther}
-              sx={inputSx}
-              onChange={(e) => setForm((prev) => ({ ...prev, categoryOther: e.target.value }))}
-            />
-          </Grid>
-        ) : null}
+      {isOtherCategory(form.categoryId) ? (
+        <TextField
+          fullWidth
+          size="small"
+          label="Other Category"
+          value={form.categoryOther || ''}
+          error={Boolean(errors.categoryOther)}
+          helperText={errors.categoryOther}
+          sx={inputSx}
+          onChange={(e) => setForm((prev) => ({ ...prev, categoryOther: e.target.value }))}
+        />
+      ) : null}
 
-        <Grid item xs={12}>
-          <TextField
-            fullWidth
-            size="small"
-            label="School or College Name"
-            value={form.schoolName}
-            error={Boolean(errors.schoolName)}
-            helperText={errors.schoolName}
-            sx={inputSx}
-            onChange={(e) => setForm((prev) => ({ ...prev, schoolName: e.target.value }))}
-          />
-        </Grid>
+      <TextField
+        fullWidth
+        size="small"
+        label="School or College Name"
+        value={form.schoolName}
+        error={Boolean(errors.schoolName)}
+        helperText={errors.schoolName}
+        sx={inputSx}
+        onChange={(e) => setForm((prev) => ({ ...prev, schoolName: e.target.value }))}
+      />
 
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            size="small"
-            label="Class"
-            value={form.className}
-            error={Boolean(errors.className)}
-            helperText={errors.className}
-            sx={inputSx}
-            onChange={(e) => setForm((prev) => ({ ...prev, className: e.target.value }))}
-          />
-        </Grid>
+      <TextField
+        fullWidth
+        size="small"
+        label="Class"
+        value={form.className}
+        error={Boolean(errors.className)}
+        helperText={errors.className}
+        sx={inputSx}
+        onChange={(e) => setForm((prev) => ({ ...prev, className: e.target.value }))}
+      />
 
-        <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            size="small"
-            type="number"
-            label={isCbse ? 'Percentage (optional)' : 'Percentage'}
-            value={form.percentage}
-            error={Boolean(errors.percentage)}
-            helperText={errors.percentage}
-            sx={inputSx}
-            onChange={(e) => setForm((prev) => ({ ...prev, percentage: e.target.value }))}
-          />
-        </Grid>
-      </Grid>
+      <TextField
+        fullWidth
+        size="small"
+        type="number"
+        label={isCbse ? 'Percentage (optional)' : 'Percentage'}
+        value={form.percentage}
+        error={Boolean(errors.percentage)}
+        helperText={errors.percentage}
+        sx={inputSx}
+        onChange={(e) => setForm((prev) => ({ ...prev, percentage: e.target.value }))}
+      />
 
       {isCbse ? (
         <>
           <Divider />
           <Stack spacing={1.25}>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              justifyContent="space-between"
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              spacing={1}
-            >
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="subtitle1" fontWeight={700}>
                 Subject-wise Marks
               </Typography>
@@ -324,66 +358,58 @@ export function StudentWizardStepAcademic({
                 variant="outlined"
                 sx={{
                   p: 1.25,
-                  borderRadius: 2.5,
+                  borderRadius: 2,
                   borderColor: '#e5e7eb',
                   bgcolor: '#fafafa'
                 }}
               >
-                <Grid container spacing={1.25} alignItems="center">
-                  <Grid item xs={12} sm={5}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      label="Subject"
-                      value={subject.subject}
-                      sx={inputSx}
-                      onChange={(e) => updateSubject(idx, 'subject', e.target.value)}
-                    />
-                  </Grid>
+                <Stack spacing={1.2}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    label="Subject"
+                    value={subject.subject}
+                    sx={inputSx}
+                    onChange={(e) => updateSubject(idx, 'subject', e.target.value)}
+                  />
 
-                  <Grid item xs={5} sm={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      type="number"
-                      label="Marks"
-                      value={subject.marksObtained}
-                      sx={inputSx}
-                      onChange={(e) => updateSubject(idx, 'marksObtained', e.target.value)}
-                    />
-                  </Grid>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    label="Marks"
+                    value={subject.marksObtained}
+                    sx={inputSx}
+                    onChange={(e) => updateSubject(idx, 'marksObtained', e.target.value)}
+                  />
 
-                  <Grid item xs={5} sm={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      type="number"
-                      label="Max Marks"
-                      value={subject.maxMarks}
-                      sx={inputSx}
-                      onChange={(e) => updateSubject(idx, 'maxMarks', e.target.value)}
-                    />
-                  </Grid>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="number"
+                    label="Max Marks"
+                    value={subject.maxMarks}
+                    sx={inputSx}
+                    onChange={(e) => updateSubject(idx, 'maxMarks', e.target.value)}
+                  />
 
-                  <Grid item xs={2} sm={1}>
-                    <Button
-                      color="error"
-                      onClick={() => removeSubject(idx)}
-                      sx={{
-                        minWidth: 0,
-                        p: 0.8,
-                        borderRadius: 2,
-                        width: '100%'
-                      }}
-                    >
-                      <Delete fontSize="small" />
-                    </Button>
-                  </Grid>
-                </Grid>
+                  <Button
+                    color="error"
+                    variant="outlined"
+                    onClick={() => removeSubject(idx)}
+                    sx={{
+                      alignSelf: 'flex-start',
+                      textTransform: 'none',
+                      borderRadius: 1.5
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </Stack>
               </Paper>
             ))}
 
-            <Alert severity="info" icon={<Insights />} sx={{ borderRadius: 2.5 }}>
+            <Alert severity="info" icon={<Insights />} sx={{ borderRadius: 2 }}>
               <Typography fontWeight={700} sx={{ fontSize: 14 }}>
                 CBSE Best 5 preview: {best5Preview.percentage.toFixed(2)}%
               </Typography>
@@ -439,17 +465,13 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
       {uploadingField ? <LinearProgress sx={{ borderRadius: 999, height: 6 }} /> : null}
 
       {uploadError ? (
-        <Alert severity="error" sx={{ borderRadius: 2.5 }}>
+        <Alert severity="error" sx={{ borderRadius: 2 }}>
           {uploadError}
         </Alert>
       ) : null}
 
       <Paper sx={sectionPaperSx}>
         <Stack spacing={1.25}>
-          <Typography variant="subtitle2" fontWeight={700}>
-            Upload Documents
-          </Typography>
-
           <Button
             component="label"
             fullWidth
@@ -457,8 +479,8 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
             startIcon={<DriveFolderUpload />}
             sx={{
               py: 1.4,
-              borderStyle: 'dashed',
-              borderRadius: 2.5,
+              borderStyle: 'solid',
+              borderRadius: 1.5,
               textTransform: 'none',
               fontWeight: 600
             }}
@@ -480,8 +502,8 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
             startIcon={<DriveFolderUpload />}
             sx={{
               py: 1.4,
-              borderStyle: 'dashed',
-              borderRadius: 2.5,
+              borderStyle: 'solid',
+              borderRadius: 1.5,
               textTransform: 'none',
               fontWeight: 600
             }}
@@ -510,7 +532,7 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
             sx={{
               width: 84,
               height: 100,
-              borderRadius: 2,
+              borderRadius: 1.5,
               display: 'block',
               objectFit: 'cover',
               border: '1px solid #e5e7eb'
@@ -544,6 +566,9 @@ export function StudentWizardStepReview({ form, categories = [] }) {
         <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
           Personal Details
         </Typography>
+        <DetailLine label="Student First Name" value={form.firstName} />
+        <DetailLine label="Surname / Last Name" value={form.lastName} />
+        <DetailLine label="Father's Name" value={form.fatherName} />
         <DetailLine label="Full Name" value={form.fullName} />
         <DetailLine label="Gender" value={form.gender} />
         <DetailLine label="Address" value={form.address} />
@@ -580,7 +605,7 @@ export function StudentWizardStepReview({ form, categories = [] }) {
       </Paper>
 
       {isCbse ? (
-        <Alert severity="info" icon={<Insights />} sx={{ borderRadius: 2.5 }}>
+        <Alert severity="info" icon={<Insights />} sx={{ borderRadius: 2 }}>
           Best 5 calculated preview is <strong>{best5Preview.percentage.toFixed(2)}%</strong>.
         </Alert>
       ) : null}
@@ -592,8 +617,8 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
   return (
     <Card
       sx={{
-        borderRadius: 3,
-        border: '1px solid #e5e7eb',
+        borderRadius: 2,
+        border: '1px solid #d9d9d9',
         boxShadow: 'none'
       }}
     >
@@ -604,7 +629,7 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
 
         <Box
           sx={{
-            borderRadius: 3,
+            borderRadius: 2,
             bgcolor: '#fff7e6',
             minHeight: 260,
             p: 2,
@@ -721,6 +746,14 @@ export default function StudentFormWizard({
   const [activeStep, setActiveStep] = useState(0);
   const [errors, setErrors] = useState({});
 
+  useEffect(() => {
+    setForm((prev) => {
+      const nextFullName = buildFullName(prev);
+      if (nextFullName === (prev.fullName || '')) return prev;
+      return { ...prev, fullName: nextFullName };
+    });
+  }, [form.firstName, form.lastName, setForm]);
+
   const selectedCategory = getSelectedCategory(categories, form.categoryId);
   const isCbse = isCbseCategory(selectedCategory, form);
   const best5Preview = useMemo(() => calculateBest5Preview(form.subjects || []), [form.subjects]);
@@ -778,64 +811,70 @@ export default function StudentFormWizard({
     await onSubmit();
   };
 
-  const progress = ((activeStep + 1) / steps.length) * 100;
-
   return (
     <Stack spacing={2}>
       <Paper
         sx={{
           p: { xs: 1.5, sm: 2 },
-          borderRadius: 3,
-          background: 'linear-gradient(135deg, #ffffff 0%, #f5f8ff 55%, #fff8ec 100%)',
-          border: '1px solid #dce7ff'
+          borderRadius: 2,
+          bgcolor: '#fff',
+          border: '1px solid #d9d9d9'
         }}
       >
-        <Stack spacing={1}>
-          <Typography variant="subtitle1" fontWeight={800}>
-            {topInfo.title}
+        <Stack spacing={1.3}>
+          <Typography
+            variant="h6"
+            sx={{
+              textAlign: 'center',
+              fontWeight: 800,
+              color: '#2497d3',
+              textTransform: 'uppercase',
+              fontSize: { xs: '1rem', sm: '1.12rem' }
+            }}
+          >
+            {topInfo?.title || 'Multi Steps Form Widget'}
           </Typography>
 
-          <Typography color="text.secondary" variant="body2">
-            {topInfo.description}
+          <Typography
+            color="text.secondary"
+            variant="body2"
+            sx={{ textAlign: 'center' }}
+          >
+            {topInfo?.description || 'Fill all details carefully'}
           </Typography>
 
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-            <Chip
-              size="small"
-              color="primary"
-              label={`Step ${activeStep + 1} of ${steps.length}`}
-            />
-            <Chip
-              size="small"
-              variant="outlined"
-              label={mode === 'public' ? 'Public registration' : 'Admin-assisted'}
-            />
-            {isCbse ? <Chip size="small" color="info" variant="outlined" label="CBSE Best 5" /> : null}
-            {activeStep === 1 && isCbse ? (
-              <Chip
-                size="small"
-                variant="outlined"
-                color="success"
-                label={`Best 5: ${best5Preview.percentage.toFixed(2)}%`}
-              />
-            ) : null}
+          <Stack
+            direction="row"
+            spacing={0.7}
+            justifyContent="center"
+            flexWrap="wrap"
+            useFlexGap
+          >
+            {steps.map((label, index) => (
+              <Box
+                key={label}
+                sx={index === activeStep ? activeTopTabSx : topTabSx}
+              >
+                {label}
+              </Box>
+            ))}
           </Stack>
 
           <LinearProgress
             variant="determinate"
-            value={progress}
-            sx={{ height: 8, borderRadius: 999 }}
+            value={((activeStep + 1) / steps.length) * 100}
+            sx={{ height: 6, borderRadius: 999 }}
           />
         </Stack>
       </Paper>
 
       {successMessage ? (
-        <Alert icon={<CheckCircle />} severity="success" sx={{ borderRadius: 2.5 }}>
+        <Alert icon={<CheckCircle />} severity="success" sx={{ borderRadius: 2 }}>
           {successMessage}
         </Alert>
       ) : null}
 
-      <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+      <Box sx={{ display: 'none' }}>
         <Stepper activeStep={activeStep} alternativeLabel>
           {steps.map((label) => (
             <Step key={label}>
@@ -845,28 +884,17 @@ export default function StudentFormWizard({
         </Stepper>
       </Box>
 
-      <Box sx={{ display: { xs: 'block', sm: 'none' } }}>
-        <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap" useFlexGap>
-          {steps.map((label, index) => (
-            <Chip
-              key={label}
-              size="small"
-              label={label}
-              color={index === activeStep ? 'primary' : 'default'}
-              variant={index === activeStep ? 'filled' : 'outlined'}
-            />
-          ))}
-        </Stack>
-      </Box>
-
       <Card
         sx={{
-          borderRadius: 3,
-          border: '1px solid #e5e7eb',
-          boxShadow: 'none'
+          borderRadius: 2,
+          border: '1px solid #d9d9d9',
+          boxShadow: 'none',
+          maxWidth: 700,
+          width: '100%',
+          mx: 'auto'
         }}
       >
-        <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
+        <CardContent sx={{ p: { xs: 1.5, sm: 2.4 } }}>
           {activeStep === 0 ? (
             <StudentWizardStepPersonal form={form} setForm={setForm} errors={errors} />
           ) : null}
@@ -894,27 +922,27 @@ export default function StudentFormWizard({
 
       <Paper
         sx={{
-          p: 1.5,
-          position: { xs: 'sticky', md: 'static' },
-          bottom: { xs: 8, md: 'auto' },
-          zIndex: 5,
-          borderRadius: 3,
-          border: '1px solid #e5e7eb',
-          boxShadow: { xs: '0 8px 24px rgba(15,23,42,0.08)', md: 'none' },
+          p: 1.2,
+          borderRadius: 2,
+          border: '1px solid #d9d9d9',
+          boxShadow: 'none',
+          maxWidth: 700,
+          width: '100%',
+          mx: 'auto',
           bgcolor: '#fff'
         }}
       >
-        <Stack direction={{ xs: 'row', sm: 'row' }} spacing={1.25}>
+        <Stack direction="row" spacing={1.2}>
           <Button
             fullWidth
             variant="outlined"
             disabled={activeStep === 0 || saving}
             onClick={onBack}
             sx={{
-              borderRadius: 2.5,
+              borderRadius: 1.5,
               textTransform: 'none',
               fontWeight: 700,
-              py: 1.1
+              py: 1
             }}
           >
             Back
@@ -927,10 +955,11 @@ export default function StudentFormWizard({
               onClick={onNext}
               disabled={saving}
               sx={{
-                borderRadius: 2.5,
+                borderRadius: 1.5,
                 textTransform: 'none',
                 fontWeight: 700,
-                py: 1.1
+                py: 1,
+                bgcolor: '#2497d3'
               }}
             >
               Next
@@ -942,10 +971,11 @@ export default function StudentFormWizard({
               onClick={submit}
               disabled={saving}
               sx={{
-                borderRadius: 2.5,
+                borderRadius: 1.5,
                 textTransform: 'none',
                 fontWeight: 700,
-                py: 1.1
+                py: 1,
+                bgcolor: '#2497d3'
               }}
             >
               {saving ? 'Processing...' : mode === 'public' ? 'Submit Registration' : 'Save Student'}

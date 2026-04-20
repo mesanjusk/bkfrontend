@@ -28,11 +28,15 @@ import {
   toStudentPayload
 } from '../components/students/studentFormConfig';
 
+function buildFullName(data) {
+  return [data.firstName, data.lastName].filter(Boolean).join(' ').trim();
+}
+
 function HeroCard({ editMode }) {
   return (
     <Box
       sx={{
-        bgcolor: '#111827',
+        bgcolor: '#2497d3',
         color: '#fff',
         pt: { xs: 4, sm: 5 },
         pb: { xs: 5, sm: 6 },
@@ -42,29 +46,22 @@ function HeroCard({ editMode }) {
         mb: -2
       }}
     >
-      <EmojiEvents sx={{ fontSize: 40, mb: 1.25, color: '#fbbf24' }} />
+      <EmojiEvents sx={{ fontSize: 38, mb: 1.2, color: '#fff' }} />
+
       <Typography
         variant="h5"
         fontWeight={800}
-        sx={{ letterSpacing: -0.4, fontSize: { xs: '1.3rem', sm: '1.6rem' } }}
+        sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' }, textTransform: 'uppercase' }}
       >
-        Badte Kadam
-      </Typography>
-
-      <Typography
-        variant="body2"
-        sx={{ opacity: 0.78, mt: 0.5, fontSize: { xs: '0.84rem', sm: '0.92rem' } }}
-      >
-        Scholar Awards 2026 · Merit Recognition
+        Multi Steps Form Widget
       </Typography>
 
       <Typography
         variant="body2"
         sx={{
-          mt: 1.25,
-          opacity: 0.9,
-          fontWeight: 500,
-          fontSize: { xs: '0.8rem', sm: '0.9rem' }
+          mt: 1,
+          opacity: 0.95,
+          fontSize: { xs: '0.82rem', sm: '0.92rem' }
         }}
       >
         {editMode ? 'Update your submitted details' : 'Student Registration Form'}
@@ -77,7 +74,7 @@ function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
   return (
     <Box
       sx={{
-        minHeight: '60vh',
+        minHeight: '50vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -89,8 +86,8 @@ function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
           width: '100%',
           maxWidth: 520,
           textAlign: 'center',
-          borderRadius: 4,
-          border: '1px solid #e5e7eb',
+          borderRadius: 2,
+          border: '1px solid #d9d9d9',
           p: { xs: 3, sm: 4 },
           bgcolor: '#fff'
         }}
@@ -112,10 +109,11 @@ function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
             variant="contained"
             onClick={onBackToForm}
             sx={{
-              borderRadius: 2.5,
+              borderRadius: 1.5,
               textTransform: 'none',
               fontWeight: 700,
-              minWidth: 170
+              minWidth: 170,
+              bgcolor: '#2497d3'
             }}
           >
             {editMode ? 'Edit Again' : 'Add Another'}
@@ -125,7 +123,7 @@ function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
             variant="outlined"
             onClick={onGoList}
             sx={{
-              borderRadius: 2.5,
+              borderRadius: 1.5,
               textTransform: 'none',
               fontWeight: 700,
               minWidth: 170
@@ -143,9 +141,12 @@ function normalizeFormFromApi(data) {
   const initial = createInitialStudentForm();
   const hasOtherCategory = !data.categoryId && data.categoryOther;
 
-  return {
+  const next = {
     ...initial,
     ...data,
+    firstName: data.firstName || '',
+    lastName: data.lastName || '',
+    fatherName: data.fatherName || '',
     categoryId: hasOtherCategory
       ? 'OTHER'
       : (data.categoryId?._id || data.categoryId || ''),
@@ -158,28 +159,40 @@ function normalizeFormFromApi(data) {
       photoRotation: data.certificateAdjustments?.photoRotation ?? 0
     }
   };
+
+  next.fullName = data.fullName || buildFullName(next);
+
+  return next;
 }
 
 function buildPayload(form, categories) {
-  const isOtherCategory = String(form.categoryId) === 'OTHER';
+  const isOther = String(form.categoryId) === 'OTHER';
 
   const category = categories.find(
     (c) => String(c._id) === String(form.categoryId)
   );
 
+  const fullName = buildFullName(form);
+
   const payload = toStudentPayload({
     ...form,
-    categoryId: isOtherCategory ? 'OTHER' : (form.categoryId || ''),
-    categoryOther: isOtherCategory ? String(form.categoryOther || '').trim() : '',
-    board: isOtherCategory ? (form.board || '') : (category?.board || form.board || ''),
-    categoryName: isOtherCategory
+    fullName,
+    categoryId: isOther ? 'OTHER' : (form.categoryId || ''),
+    categoryOther: isOther ? String(form.categoryOther || '').trim() : '',
+    board: isOther ? (form.board || '') : (category?.board || form.board || ''),
+    categoryName: isOther
       ? (form.categoryOther || form.categoryName || 'Other')
       : (category?.name || category?.title || form.categoryName || ''),
     resultImageUrl: form.resultImageUrl || form.marksheetFileUrl || '',
     certificatePhotoUrl: form.certificatePhotoUrl || form.studentPhotoUrl || ''
   });
 
-  if (isOtherCategory) {
+  payload.firstName = form.firstName || '';
+  payload.lastName = form.lastName || '';
+  payload.fatherName = form.fatherName || '';
+  payload.fullName = fullName;
+
+  if (isOther) {
     payload.categoryId = 'OTHER';
     payload.categoryOther = String(form.categoryOther || '').trim();
   } else {
@@ -264,13 +277,13 @@ export default function PublicStudentFormPage() {
   if (loading) {
     return (
       <Container maxWidth="sm" sx={{ py: 4 }}>
-        <Skeleton variant="rounded" height={480} sx={{ borderRadius: 4 }} />
+        <Skeleton variant="rounded" height={480} sx={{ borderRadius: 2 }} />
       </Container>
     );
   }
 
   return (
-    <Box sx={{ bgcolor: '#f8fafc', minHeight: '100vh', pb: { xs: 4, sm: 6 } }}>
+    <Box sx={{ bgcolor: '#f0f7fc', minHeight: '100vh', pb: { xs: 4, sm: 6 } }}>
       <HeroCard editMode={editMode} />
 
       <Container
@@ -283,14 +296,7 @@ export default function PublicStudentFormPage() {
         <Stack spacing={1.5}>
           {!submitted && successMessage && (
             <Fade in>
-              <Alert
-                severity="success"
-                variant="filled"
-                sx={{
-                  borderRadius: 2.5,
-                  boxShadow: '0 8px 18px rgba(15,23,42,0.08)'
-                }}
-              >
+              <Alert severity="success" variant="filled" sx={{ borderRadius: 2 }}>
                 {successMessage}
               </Alert>
             </Fade>
@@ -301,13 +307,10 @@ export default function PublicStudentFormPage() {
               severity="info"
               icon={<School />}
               sx={{
-                borderRadius: 2.5,
+                borderRadius: 2,
                 bgcolor: '#fff',
-                border: '1px solid #e2e8f0',
-                color: '#111827',
-                '& .MuiAlert-message': {
-                  fontSize: { xs: '0.82rem', sm: '0.9rem' }
-                }
+                border: '1px solid #d9d9d9',
+                color: '#111827'
               }}
             >
               Confirmation will be sent on WhatsApp after successful submission.
@@ -322,14 +325,14 @@ export default function PublicStudentFormPage() {
               sx={{
                 minHeight: 42,
                 bgcolor: '#fff',
-                borderRadius: 2.5,
+                borderRadius: 2,
                 p: 0.5,
-                border: '1px solid #e5e7eb',
+                border: '1px solid #d9d9d9',
                 '& .MuiTabs-indicator': {
                   height: 'calc(100% - 8px)',
                   margin: '4px',
                   borderRadius: 2,
-                  bgcolor: '#f1f5f9',
+                  bgcolor: '#e8f4fb',
                   zIndex: 0
                 },
                 '& .MuiTab-root': {
@@ -349,10 +352,11 @@ export default function PublicStudentFormPage() {
 
           <Card
             sx={{
-              borderRadius: 4,
-              boxShadow: '0 12px 30px rgba(15,23,42,0.06)',
-              border: '1px solid #eef2f7',
-              overflow: 'hidden'
+              borderRadius: 2,
+              boxShadow: 'none',
+              border: '1px solid #d9d9d9',
+              overflow: 'hidden',
+              bgcolor: '#fff'
             }}
           >
             <CardContent
@@ -376,7 +380,7 @@ export default function PublicStudentFormPage() {
                   saving={saving}
                   successMessage={successMessage}
                   topInfo={{
-                    title: editMode ? 'Update Details' : 'Register Now',
+                    title: 'Multi Steps Form Widget',
                     description: editMode
                       ? 'Update your details below.'
                       : 'Fill the form carefully and submit.'
@@ -398,11 +402,11 @@ export default function PublicStudentFormPage() {
                       disabled={saving}
                       sx={{
                         mt: 2,
-                        py: 1.25,
-                        borderRadius: 2.5,
+                        py: 1.2,
+                        borderRadius: 1.5,
                         textTransform: 'none',
                         fontWeight: 700,
-                        bgcolor: '#111827'
+                        bgcolor: '#2497d3'
                       }}
                     >
                       {saving ? 'Saving...' : 'Save Adjustments'}
@@ -412,19 +416,6 @@ export default function PublicStudentFormPage() {
               )}
             </CardContent>
           </Card>
-
-          <Typography
-            variant="caption"
-            sx={{
-              textAlign: 'center',
-              opacity: 0.6,
-              display: 'block',
-              mt: 0.5,
-              pb: 1
-            }}
-          >
-            Secure Registration · © 2026 Badte Kadam
-          </Typography>
         </Stack>
       </Container>
     </Box>
