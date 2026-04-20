@@ -13,10 +13,21 @@ export function fileToDataUrl(file) {
   });
 }
 
+export function buildFullName(form = {}) {
+  return [form.firstName, form.lastName]
+    .map((v) => String(v || '').trim())
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+}
+
 export function createInitialStudentForm() {
   return {
+    firstName: '',
+    lastName: '',
+    fatherName: '',
     fullName: '',
-    gender: 'Any',
+    gender: '',
     address: '',
     mobile: '',
     parentMobile: '',
@@ -110,14 +121,20 @@ export function toStudentPayload(form, categories = []) {
   const normalizedSubjects = normalizeSubjects(form.subjects);
   const best5 = calculateBest5Preview(normalizedSubjects);
 
+  const fullName = String(form.fullName || buildFullName(form) || '').trim();
+
   let percentage = Number(form.percentage || 0);
   if ((!percentage || percentage === 0) && cbse && best5.totalMax > 0) {
     percentage = Number(best5.percentage.toFixed(2));
   }
 
   return {
-    fullName: form.fullName || '',
-    gender: form.gender || 'Any',
+    firstName: form.firstName || '',
+    lastName: form.lastName || '',
+    fatherName: form.fatherName || '',
+    fullName,
+
+    gender: form.gender || '',
     address: form.address || '',
     mobile: form.mobile || '',
     parentMobile: form.parentMobile || '',
@@ -151,12 +168,20 @@ export function toStudentPayload(form, categories = []) {
 export const studentWizardSteps = [
   {
     key: 'personal',
-    title: 'Personal Details',
-    fields: ['fullName', 'gender', 'address', 'mobile', 'parentMobile']
+    title: 'Profile',
+    fields: [
+      'firstName',
+      'lastName',
+      'fatherName',
+      'gender',
+      'address',
+      'mobile',
+      'parentMobile'
+    ]
   },
   {
     key: 'academic',
-    title: 'Academic Info',
+    title: 'Academic',
     fields: ['categoryId', 'categoryOther', 'schoolName', 'className', 'percentage', 'subjects']
   },
   {
@@ -166,7 +191,7 @@ export const studentWizardSteps = [
   },
   {
     key: 'review',
-    title: 'Review & Submit',
+    title: 'Review',
     fields: []
   }
 ];
