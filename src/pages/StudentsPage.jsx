@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
-import { AutoFixHigh, School, People, Analytics } from '@mui/icons-material';
+import { AutoFixHigh, People, Analytics } from '@mui/icons-material';
 import {
   Alert,
+  Box,
+  Button,
   Card,
   CardContent,
-  Chip,
   Container,
-  LinearProgress,
+  Grid,
   Stack,
-  Tabs,
-  Tab,
   Typography
 } from '@mui/material';
 import api from '../api';
@@ -83,9 +82,9 @@ export default function StudentsPage() {
   return (
     <Box sx={{ pb: 4 }}>
       {/* High-End Operations Header */}
-      <Box sx={{ 
-        bgcolor: '#1a1a1a', color: '#fff', pt: 4, pb: 6, px: 3, 
-        borderRadius: '0 0 32px 32px', mb: -4 
+      <Box sx={{
+        bgcolor: '#1a1a1a', color: '#fff', pt: 4, pb: 6, px: 3,
+        borderRadius: '0 0 32px 32px', mb: -4
       }}>
         <PageHeader
           title="Student Intake"
@@ -135,19 +134,19 @@ export default function StudentsPage() {
                     Trigger parsing or evaluation for the latest entry.
                   </Alert>
                   <Stack spacing={1.5}>
-                    <Button 
-                      fullWidth 
-                      variant="contained" 
-                      disabled={!lastCreatedId} 
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      disabled={!lastCreatedId}
                       onClick={() => evaluate(lastCreatedId)}
                       sx={{ borderRadius: 2.5, py: 1.2, bgcolor: '#1a1a1a' }}
                     >
                       Evaluate Latest
                     </Button>
-                    <Button 
-                      fullWidth 
-                      variant="outlined" 
-                      disabled={!lastCreatedId} 
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      disabled={!lastCreatedId}
                       onClick={() => parse(lastCreatedId)}
                       sx={{ borderRadius: 2.5, py: 1.2 }}
                     >
