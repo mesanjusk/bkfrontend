@@ -231,15 +231,15 @@ export default function StudentCertificatePreviewSection({
     <Stack spacing={2}>
       <Alert
         severity="info"
-        sx={{ borderRadius: 2.5 }}
+        sx={{ borderRadius: 1.5 }}
       >
-        On touch screen: drag with one finger to move photo. Use two fingers to zoom and rotate. On desktop: drag photo with mouse.
+        
       </Alert>
 
       <Paper
         elevation={0}
         sx={{
-          borderRadius: 3,
+          borderRadius: 2,
           border: '1px solid #e5e7eb',
           overflow: 'hidden',
           bgcolor: '#fff'
@@ -497,61 +497,8 @@ export default function StudentCertificatePreviewSection({
           border: '1px solid #e5e7eb'
         }}
       >
-        <Stack spacing={2}>
-          <Typography fontWeight={800}>Certificate Text Preview</Typography>
-
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField
-              fullWidth
-              label="Name"
-              value={displayName}
-              InputProps={{
-                readOnly: true
-              }}
-            />
-            <TextField
-              fullWidth
-              label="Category / Class"
-              value={categoryLabel}
-              InputProps={{
-                readOnly: true
-              }}
-            />
-          </Stack>
-
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-            <TextField
-              fullWidth
-              label="Percentage"
-              value={displayPercentage}
-              InputProps={{
-                readOnly: true
-              }}
-            />
-          </Stack>
-
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <EmojiEventsIcon fontSize="small" color="warning" />
-              <Typography variant="body2">Name comes from student form</Typography>
-            </Stack>
-
-            <Stack direction="row" spacing={1} alignItems="center">
-              <SchoolIcon fontSize="small" color="primary" />
-              <Typography variant="body2">Class/category and percentage auto show here</Typography>
-            </Stack>
-
-            <Stack direction="row" spacing={1} alignItems="center">
-              <ZoomInIcon fontSize="small" color="success" />
-              <Typography variant="body2">Photo saved with adjustments</Typography>
-            </Stack>
-
-            <Stack direction="row" spacing={1} alignItems="center">
-              <RotateRightIcon fontSize="small" color="action" />
-              <Typography variant="body2">Touch gestures supported</Typography>
-            </Stack>
-          </Stack>
-        </Stack>
+        
+        
       </Paper>
     </Stack>
   );
