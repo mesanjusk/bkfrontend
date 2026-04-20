@@ -55,7 +55,7 @@ const fieldLabels = {
   fatherName: "Father's Name",
   gender: 'Gender',
   address: 'Address',
-  mobile: 'Mobile Number',
+  mobile: 'StudentMobile Number',
   parentMobile: 'Parent Mobile Number',
   categoryId: 'Category',
   categoryOther: 'Other Category',
