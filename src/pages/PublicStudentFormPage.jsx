@@ -21,9 +21,8 @@ import {
   School
 } from '@mui/icons-material';
 import api from '../api';
-import StudentFormWizard, {
-  StudentCertificatePreviewSection
-} from '../components/students/StudentFormWizard';
+import StudentFormWizard from '../components/students/StudentFormWizard';
+import StudentCertificatePreviewSection from '../components/students/StudentCertificatePreviewSection';
 import {
   createInitialStudentForm,
   toStudentPayload
@@ -51,6 +50,7 @@ function HeroCard({ editMode }) {
       >
         Badte Kadam
       </Typography>
+
       <Typography
         variant="body2"
         sx={{ opacity: 0.78, mt: 0.5, fontSize: { xs: '0.84rem', sm: '0.92rem' } }}
@@ -159,24 +159,28 @@ export default function PublicStudentFormPage() {
   useEffect(() => {
     if (!editMode) return;
 
-    api.get(`/students/public-edit/${token}`).then((r) => {
-      const data = r.data || {};
-      setForm({
-        ...createInitialStudentForm(),
-        ...data,
-        categoryId: data.categoryId?._id || data.categoryId || '',
-        subjects: data.subjects?.length ? data.subjects : createInitialStudentForm().subjects,
-        certificateAdjustments: {
-          photoScale: data.certificateAdjustments?.photoScale ?? 1,
-          photoX: data.certificateAdjustments?.photoX ?? 0,
-          photoY: data.certificateAdjustments?.photoY ?? 0,
-          photoRotation: data.certificateAdjustments?.photoRotation ?? 0
-        }
+    api.get(`/students/public-edit/${token}`)
+      .then((r) => {
+        const data = r.data || {};
+        setForm({
+          ...createInitialStudentForm(),
+          ...data,
+          categoryId: data.categoryId?._id || data.categoryId || '',
+          subjects: data.subjects?.length
+            ? data.subjects
+            : createInitialStudentForm().subjects,
+          certificateAdjustments: {
+            photoScale: data.certificateAdjustments?.photoScale ?? 1,
+            photoX: data.certificateAdjustments?.photoX ?? 0,
+            photoY: data.certificateAdjustments?.photoY ?? 0,
+            photoRotation: data.certificateAdjustments?.photoRotation ?? 0
+          }
+        });
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
       });
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
   }, [editMode, token]);
 
   const handleSubmit = async () => {
@@ -184,11 +188,16 @@ export default function PublicStudentFormPage() {
     setSuccessMessage('');
 
     try {
+      const category = categories.find(
+        (c) => String(c._id) === String(form.categoryId)
+      );
+
       const payload = toStudentPayload({
         ...form,
-        board: categories.find((c) => String(c._id) === String(form.categoryId))?.board || form.board || '',
+        board: category?.board || form.board || '',
+        categoryName: category?.name || form.categoryName || '',
         resultImageUrl: form.resultImageUrl || form.marksheetFileUrl || '',
-        certificatePhotoUrl: form.studentPhotoUrl || form.certificatePhotoUrl || ''
+        certificatePhotoUrl: form.certificatePhotoUrl || form.studentPhotoUrl || ''
       });
 
       if (editMode) {
@@ -233,7 +242,7 @@ export default function PublicStudentFormPage() {
       <HeroCard editMode={editMode} />
 
       <Container
-        maxWidth="sm"
+        maxWidth="md"
         sx={{
           mt: { xs: 1.5, sm: 2 },
           px: { xs: 1.25, sm: 2 }
@@ -302,7 +311,7 @@ export default function PublicStudentFormPage() {
               }}
             >
               <Tab label="Form Details" />
-              <Tab label="Preview" />
+              <Tab label="Preview & Adjust" />
             </Tabs>
           )}
 
@@ -344,7 +353,12 @@ export default function PublicStudentFormPage() {
               ) : (
                 <Fade in>
                   <Box>
-                    <StudentCertificatePreviewSection form={form} />
+                    <StudentCertificatePreviewSection
+                      form={form}
+                      setForm={setForm}
+                      categories={categories}
+                    />
+
                     <Button
                       fullWidth
                       variant="contained"

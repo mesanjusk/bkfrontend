@@ -30,6 +30,7 @@ export function createInitialStudentForm() {
     resultImageUrl: '',
     studentPhotoUrl: '',
     certificatePhotoUrl: '',
+    certificateTemplateUrl: '',
     remarks: '',
     board: '',
     certificateAdjustments: {
@@ -52,15 +53,17 @@ export function getSelectedCategory(categories = [], categoryId = '') {
 export function getBoardFromCategory(category) {
   if (!category) return '';
   if (category.board) return category.board;
-  const title = String(category.title || '').toUpperCase();
+
+  const title = String(category.title || category.name || '').toUpperCase();
   if (title.includes('CBSE')) return 'CBSE';
   if (title.includes('STATE')) return 'STATE BOARD';
+
   return '';
 }
 
 export function isCbseCategory(category, form = {}) {
   const board = String(category?.board || form.board || '').toUpperCase();
-  const title = String(category?.title || '').toUpperCase();
+  const title = String(category?.title || category?.name || '').toUpperCase();
   return board === 'CBSE' || title.includes('CBSE');
 }
 
@@ -73,7 +76,10 @@ export function calculateBest5Preview(subjects = []) {
     }))
     .filter((s) => s.subject || s.marksObtained || s.maxMarks);
 
-  const sorted = [...valid].sort((a, b) => b.marksObtained - a.marksObtained).slice(0, 5);
+  const sorted = [...valid]
+    .sort((a, b) => b.marksObtained - a.marksObtained)
+    .slice(0, 5);
+
   const totalObtained = sorted.reduce((sum, s) => sum + Number(s.marksObtained || 0), 0);
   const totalMax = sorted.reduce((sum, s) => sum + Number(s.maxMarks || 0), 0);
 
@@ -122,12 +128,13 @@ export function toStudentPayload(form, categories = []) {
     schoolName: form.schoolName || '',
     className: form.className || '',
     percentage,
-    subjects: cbse ? normalizedSubjects : normalizedSubjects,
+    subjects: normalizedSubjects,
 
     marksheetFileUrl: form.marksheetFileUrl || '',
     resultImageUrl: form.resultImageUrl || form.marksheetFileUrl || '',
     studentPhotoUrl: form.studentPhotoUrl || '',
-    certificatePhotoUrl: form.studentPhotoUrl || form.certificatePhotoUrl || '',
+    certificatePhotoUrl: form.certificatePhotoUrl || form.studentPhotoUrl || '',
+    certificateTemplateUrl: form.certificateTemplateUrl || '',
 
     remarks: form.remarks || '',
     board: derivedBoard || form.board || '',
