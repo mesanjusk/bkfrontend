@@ -1,4 +1,4 @@
-const SW_VERSION = 'v1.0.0';
+const SW_VERSION = 'v1.1.0';
 const SHELL_CACHE = `shell-${SW_VERSION}`;
 const STATIC_CACHE = `static-${SW_VERSION}`;
 const SAFE_API_CACHE = `safe-api-${SW_VERSION}`;

@@ -3,7 +3,6 @@ import Cropper from 'react-easy-crop';
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -11,6 +10,7 @@ import {
   Stack,
   Typography
 } from '@mui/material';
+import ResponsiveDialog from '../ResponsiveDialog';
 import { getCroppedImageFile } from '../../utils/imageCrop';
 
 export default function ImageCropDialog({
@@ -44,7 +44,7 @@ export default function ImageCropDialog({
   }, [croppedAreaPixels, imageSrc, onDone]);
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="sm">
+    <ResponsiveDialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="sm">
       <DialogTitle>{title}</DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
@@ -85,6 +85,6 @@ export default function ImageCropDialog({
           {saving ? 'Cropping...' : 'Use cropped photo'}
         </Button>
       </DialogActions>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }

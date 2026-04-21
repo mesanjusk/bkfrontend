@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Dialog,
   DialogContent,
   DialogTitle,
   Grid,
@@ -18,6 +17,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
+import ResponsiveDialog from '../components/ResponsiveDialog';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
@@ -147,7 +147,7 @@ function CategoryFormDialog({ open, onClose, onSaved, editItem }) {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+    <ResponsiveDialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
       <DialogTitle>{isEditMode ? 'Edit category' : 'Add category'}</DialogTitle>
       <DialogContent>
         <Box component="form" onSubmit={save} sx={{ pt: 1 }}>
@@ -251,7 +251,7 @@ function CategoryFormDialog({ open, onClose, onSaved, editItem }) {
           </Stack>
         </Box>
       </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }
 

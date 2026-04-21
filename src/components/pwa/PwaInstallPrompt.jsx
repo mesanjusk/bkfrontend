@@ -30,7 +30,7 @@ export default function PwaInstallPrompt() {
           </>
         }
       >
-        Install Scholar Awards to launch in standalone mode and speed up event operations.
+        Install BK Scholar Awards 2026 for a faster mobile app experience.
       </Alert>
     </Collapse>
   );

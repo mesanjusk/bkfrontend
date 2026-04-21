@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   CardContent,
-  Dialog,
   DialogContent,
   Grid,
   Stack,
@@ -14,6 +13,7 @@ import {
   ToggleButtonGroup,
   Typography
 } from '@mui/material';
+import ResponsiveDialog from '../components/ResponsiveDialog';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
@@ -302,7 +302,7 @@ export default function StudentsPage() {
             ) : null}
           </Grid>
         </DialogContent>
-      </Dialog>
+      </ResponsiveDialog>
     </Box>
   );
 }

@@ -22,9 +22,7 @@ const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        body: {
-          background: 'linear-gradient(180deg, #eef8ff 0%, #f8fbfd 240px, #f6f8fb 100%)'
-        }
+        body: { background: 'linear-gradient(180deg, #eef8ff 0%, #f8fbfd 240px, #f6f8fb 100%)' }
       }
     },
     MuiCard: {
@@ -46,14 +44,16 @@ const theme = createTheme({
     },
     MuiButton: {
       styleOverrides: {
-        root: { borderRadius: 14, paddingInline: 16 },
+        root: { borderRadius: 14, paddingInline: 14, minHeight: 38 },
         contained: { boxShadow: 'none' }
       }
     },
     MuiTextField: { defaultProps: { size: 'small', fullWidth: true } },
     MuiFormControl: { defaultProps: { size: 'small', fullWidth: true } },
     MuiChip: { styleOverrides: { root: { fontWeight: 700 } } },
-    MuiTabs: { styleOverrides: { indicator: { height: 3, borderRadius: 999 } } }
+    MuiTabs: { styleOverrides: { indicator: { height: 3, borderRadius: 999 } } },
+    MuiDialog: { styleOverrides: { paper: { margin: 12, width: 'calc(100% - 24px)' } } },
+    MuiCardContent: { styleOverrides: { root: { padding: 16 } } }
   }
 });
 

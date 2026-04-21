@@ -5,7 +5,6 @@ import {
   Avatar,
   Badge,
   Box,
-  Button,
   Chip,
   Divider,
   Drawer,
@@ -91,9 +90,9 @@ export default function AppShell({ children }) {
 
   const drawer = (
     <Box sx={{ width: drawerWidth, display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Box sx={{ p: 2.5, background: 'linear-gradient(180deg, #2497d3 0%, #6dc8f2 100%)', color: '#fff' }}>
+      <Box sx={{ p: 2.25, background: 'linear-gradient(180deg, #2497d3 0%, #6dc8f2 100%)', color: '#fff' }}>
         <Typography variant="h6" fontWeight={900}>BK Awards</Typography>
-        <Typography variant="body2" sx={{ opacity: 0.92 }}>Clean event workspace</Typography>
+        <Typography variant="body2" sx={{ opacity: 0.92 }}>Mobile-first workspace</Typography>
       </Box>
       <Divider />
       <List sx={{ px: 1.25, py: 1.25, flexGrow: 1 }}>
@@ -114,7 +113,7 @@ export default function AppShell({ children }) {
               },
             }}
           >
-            <ListItemIcon>{navIcons[item.to]}</ListItemIcon>
+            <ListItemIcon sx={{ minWidth: 40 }}>{navIcons[item.to]}</ListItemIcon>
             <ListItemText primary={item.label} />
           </ListItemButton>
         ))}
@@ -142,24 +141,24 @@ export default function AppShell({ children }) {
           ml: { md: `${drawerWidth}px` },
         }}
       >
-        <Toolbar sx={{ gap: 1 }}>
+        <Toolbar sx={{ gap: 1, minHeight: { xs: 64, sm: 72 } }}>
           {mobile && <IconButton onClick={() => setOpen(true)}><MenuIcon /></IconButton>}
           <Box sx={{ flexGrow: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" color="text.secondary" noWrap>
+            <Typography variant="caption" color="text.secondary" noWrap>
               {user?.roleId?.name || 'Dashboard'}
             </Typography>
-            <Typography variant="h6" fontWeight={900} noWrap>
+            <Typography variant="subtitle1" fontWeight={900} noWrap>
               {user?.name || 'User'}
             </Typography>
           </Box>
           <Tooltip title="Notifications">
-            <IconButton component={RouterLink} to="/notifications">
+            <IconButton component={RouterLink} to="/notifications" size={mobile ? 'small' : 'medium'}>
               <Badge badgeContent={events.length} color="error">
                 <NotificationsIcon />
               </Badge>
             </IconButton>
           </Tooltip>
-          <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)}>
+          <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} size={mobile ? 'small' : 'medium'}>
             <MoreVertIcon />
           </IconButton>
           <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
@@ -171,13 +170,13 @@ export default function AppShell({ children }) {
       </AppBar>
 
       {mobile ? (
-        <Drawer open={open} onClose={() => setOpen(false)}>{drawer}</Drawer>
+        <Drawer open={open} onClose={() => setOpen(false)} PaperProps={{ sx: { width: drawerWidth } }}>{drawer}</Drawer>
       ) : (
         <Drawer variant="permanent" open PaperProps={{ sx: { width: drawerWidth, boxSizing: 'border-box', borderRight: '1px solid', borderColor: 'divider' } }}>{drawer}</Drawer>
       )}
 
-      <Box component="main" sx={{ flexGrow: 1, p: { xs: 2, md: 3 }, pt: { xs: 11, md: 12 }, ml: { md: `${drawerWidth}px` }, width: { md: `calc(100% - ${drawerWidth}px)` } }}>
-        <Stack spacing={1.25} sx={{ mb: 2 }}>
+      <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.25, sm: 2, md: 3 }, pt: { xs: 9.5, sm: 10.5, md: 11.5 }, ml: { md: `${drawerWidth}px` }, width: { md: `calc(100% - ${drawerWidth}px)` }, maxWidth: '100vw', overflowX: 'hidden' }}>
+        <Stack spacing={1} sx={{ mb: 1.5 }}>
           <PwaInstallPrompt />
           <OnlineStatusBanner isOnline={isOnline} isLiveMode={isLiveMode} />
           <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
@@ -191,7 +190,7 @@ export default function AppShell({ children }) {
       {pathname === '/' ? (
         <SpeedDial
           ariaLabel="Quick add"
-          sx={{ position: 'fixed', bottom: 24, right: 24 }}
+          sx={{ position: 'fixed', bottom: { xs: 16, sm: 24 }, right: { xs: 16, sm: 24 } }}
           icon={<AddIcon />}
           FabProps={{ color: 'primary' }}
         >
