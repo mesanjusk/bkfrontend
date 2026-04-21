@@ -18,19 +18,14 @@ export default function DashboardPage() {
   const cards = [
     ['Students', summary.students || 0],
     ['Eligible', summary.eligibleStudents || 0],
-    ['Expenses', `₹${summary.totalActualExpense || 0}`],
+    
     ['WhatsApp', summary.whatsappMessages || 0],
   ];
 
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
-        title="Dashboard"
-        subtitle="Clear view of today’s work"
-        chips={[
-          { label: user?.roleId?.name || 'Staff' },
-          { label: connected ? 'Live' : 'Offline', color: connected ? 'success' : 'warning' },
-        ]}
+        
       />
 
       <Grid container spacing={2} sx={{ mb: 2 }}>
@@ -66,11 +61,7 @@ export default function DashboardPage() {
           <Card>
             <CardContent>
               <Typography variant="h6" fontWeight={800} sx={{ mb: 1.5 }}>Quick notes</Typography>
-              <Stack spacing={1.25}>
-                <Typography variant="body2" color="text.secondary">Use the + button for student, volunteer, guest and team member entry.</Typography>
-                <Typography variant="body2" color="text.secondary">Open Students to view marksheet, photo and certificate-ready records.</Typography>
-                <Typography variant="body2" color="text.secondary">Super admin can control module access from Admin → Roles & Access.</Typography>
-              </Stack>
+              
             </CardContent>
           </Card>
         </Grid>
