@@ -1,12 +1,13 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AuthProvider } from './context/AuthContext';
 import { LiveProvider } from './context/LiveContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AppShell from './components/AppShell';
 import AppUpdatePrompt from './components/pwa/AppUpdatePrompt';
+import theme from './theme';
+import { MODULE_PERMISSIONS } from './utils/accessControl';
 
-// Pages
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import StudentsPage from './pages/StudentsPage';
@@ -21,60 +22,22 @@ import WhatsAppPage from './pages/WhatsAppPage';
 import PublicStudentFormPage from './pages/PublicStudentFormPage';
 import PublicVolunteerFormPage from './pages/PublicVolunteerFormPage';
 
-const theme = createTheme({
-  palette: {
-    primary: { main: '#1a1a1a' },
-    background: { default: '#f8f9fa', paper: '#ffffff' },
-    text: { primary: '#2d3436', secondary: '#636e72' }
-  },
-  shape: { borderRadius: 12 },
-  typography: {
-    fontFamily: '"Inter", "Roboto", sans-serif',
-    h5: { fontWeight: 800, letterSpacing: '-0.5px' },
-    button: { textTransform: 'none', fontWeight: 600 }
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          padding: '10px 20px',
-          boxShadow: 'none',
-          '&:hover': { boxShadow: 'none' }
-        },
-        contained: { borderRadius: '10px' }
-      }
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          boxShadow: '0 4px 20px rgba(0,0,0,0.04)',
-          border: '1px solid #edf2f7',
-          borderRadius: '16px'
-        }
-      }
-    },
-    MuiTextField: {
-      defaultProps: {
-        variant: 'filled',
-        InputProps: { disableUnderline: true }
-      },
-      styleOverrides: {
-        root: {
-          '& .MuiFilledInput-root': {
-            backgroundColor: '#f1f3f5',
-            borderRadius: '10px',
-            '&:hover': { backgroundColor: '#e9ecef' },
-            '&.Mui-focused': { backgroundColor: '#e9ecef' }
-          }
-        }
-      }
-    }
-  }
-});
-
 function Layout({ children }) {
   return <AppShell>{children}</AppShell>;
 }
+
+const protectedPages = [
+  ['/', <DashboardPage />, MODULE_PERMISSIONS.dashboard],
+  ['/students', <StudentsPage />, MODULE_PERMISSIONS.students],
+  ['/categories', <CategoriesPage />, MODULE_PERMISSIONS.categories],
+  ['/stage', <StagePage />, MODULE_PERMISSIONS.stage],
+  ['/budget', <BudgetPage />, MODULE_PERMISSIONS.budget],
+  ['/responsibilities', <ResponsibilitiesPage />, MODULE_PERMISSIONS.responsibilities],
+  ['/notifications', <NotificationsPage />, MODULE_PERMISSIONS.notifications],
+  ['/admin', <AdminPage />, MODULE_PERMISSIONS.admin],
+  ['/system-flow', <SystemFlowPage />, MODULE_PERMISSIONS.systemFlow],
+  ['/whatsapp', <WhatsAppPage />, MODULE_PERMISSIONS.whatsapp]
+];
 
 export default function App() {
   return (
@@ -84,37 +47,22 @@ export default function App() {
         <LiveProvider>
           <BrowserRouter>
             <Routes>
-              {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/student-register" element={<PublicStudentFormPage />} />
               <Route path="/student-edit/:token" element={<PublicStudentFormPage />} />
               <Route path="/volunteer-register" element={<PublicVolunteerFormPage />} />
-
-              {/* Protected routes */}
-              {[
-                ['/', <DashboardPage />],
-                ['/students', <StudentsPage />],
-                ['/categories', <CategoriesPage />],
-                ['/stage', <StagePage />],
-                ['/budget', <BudgetPage />],
-                ['/responsibilities', <ResponsibilitiesPage />],
-                ['/notifications', <NotificationsPage />],
-                ['/admin', <AdminPage />],
-                ['/system-flow', <SystemFlowPage />],
-                ['/whatsapp', <WhatsAppPage />]
-              ].map(([path, page]) => (
+              {protectedPages.map(([path, page, permission]) => (
                 <Route
                   key={path}
                   path={path}
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute permission={permission}>
                       <Layout>{page}</Layout>
                     </ProtectedRoute>
                   }
                 />
               ))}
             </Routes>
-
             <AppUpdatePrompt />
           </BrowserRouter>
         </LiveProvider>

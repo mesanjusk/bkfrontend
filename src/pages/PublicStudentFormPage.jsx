@@ -445,42 +445,20 @@ export default function PublicStudentFormPage() {
                     )}
                   </>
                 ) : (
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1.05fr) minmax(380px, 520px)' },
-                      gap: { xs: 2, md: 3 },
-                      alignItems: 'start'
-                    }}
-                  >
-                    <Box sx={{ minWidth: 0 }}>
-                      <StudentFormWizard
-                        mode="public"
-                        form={form}
-                        setForm={setForm}
-                        categories={categories}
-                        onSubmit={handleSubmit}
-                        saving={saving}
-                        successMessage={successMessage}
-                        topInfo={{
-                          title: 'REGISTRATION FORM',
-                          description: 'Fill the form carefully and submit.'
-                        }}
-                      />
-                    </Box>
-
-                    <Box
-                      sx={{
-                        display: { xs: 'block', xl: 'block' },
-                        minWidth: 0
+                  <Box sx={{ minWidth: 0 }}>
+                    <StudentFormWizard
+                      mode="public"
+                      form={form}
+                      setForm={setForm}
+                      categories={categories}
+                      onSubmit={handleSubmit}
+                      saving={saving}
+                      successMessage={successMessage}
+                      topInfo={{
+                        title: 'REGISTRATION FORM',
+                        description: 'Fill the form carefully and submit. Certificate preview becomes available on edit only.'
                       }}
-                    >
-                      <StudentCertificatePreviewSection
-                        form={form}
-                        setForm={setForm}
-                        categories={categories}
-                      />
-                    </Box>
+                    />
                   </Box>
                 )}
               </CardContent>

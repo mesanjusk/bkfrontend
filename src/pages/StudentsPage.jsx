@@ -1,25 +1,90 @@
-import { useEffect, useState } from 'react';
-import { Add, AutoFixHigh, People, Analytics, School } from '@mui/icons-material';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
   Card,
   CardContent,
-  Container,
   Dialog,
   DialogContent,
   Grid,
-  IconButton,
   Stack,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography
 } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
+import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import TableRowsIcon from '@mui/icons-material/TableRows';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 import api from '../api';
 import PageHeader from '../components/PageHeader';
 import ResponsiveTable from '../components/ResponsiveTable';
 import StatusChip from '../components/StatusChip';
-import StudentFormWizard, { StudentCertificatePreviewSection } from '../components/students/StudentFormWizard';
+import StudentFormWizard from '../components/students/StudentFormWizard';
+import StudentCertificatePreviewSection from '../components/students/StudentCertificatePreviewSection';
 import { createInitialStudentForm, toStudentPayload } from '../components/students/studentFormConfig';
+
+function StudentRecordCard({ item, onEdit, onParse, onEvaluate }) {
+  return (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Stack spacing={1.5}>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+            <Box>
+              <Typography variant="h6" fontWeight={800}>{item.fullName || '-'}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {item.mobile || 'No mobile'}
+              </Typography>
+            </Box>
+            <StatusChip label={item.status || 'Pending'} />
+          </Stack>
+
+          <Typography variant="body2" color="text.secondary">
+            {item.board || '-'} · {item.className || '-'} · {item.percentage ?? 0}%
+          </Typography>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {item.marksheetFileUrl || item.resultImageUrl ? (
+              <>
+                <Button size="small" variant="outlined" startIcon={<DescriptionOutlinedIcon />} href={item.marksheetFileUrl || item.resultImageUrl} target="_blank" rel="noreferrer">Marksheet</Button>
+                <Button size="small" variant="text" href={item.marksheetFileUrl || item.resultImageUrl} download>Download</Button>
+              </>
+            ) : null}
+            {item.studentPhotoUrl || item.certificatePhotoUrl ? (
+              <>
+                <Button size="small" variant="outlined" startIcon={<ImageOutlinedIcon />} href={item.studentPhotoUrl || item.certificatePhotoUrl} target="_blank" rel="noreferrer">Photo</Button>
+                <Button size="small" variant="text" href={item.studentPhotoUrl || item.certificatePhotoUrl} download>Download</Button>
+              </>
+            ) : null}
+          </Stack>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap justifyContent="flex-end">
+            <Button size="small" onClick={() => onParse(item._id)}>Parse</Button>
+            <Button size="small" variant="outlined" onClick={() => onEvaluate(item._id)}>Evaluate</Button>
+            <Button size="small" variant="contained" startIcon={<EditIcon />} onClick={() => onEdit(item)}>Edit</Button>
+          </Stack>
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+function mapStudentToForm(student) {
+  const initial = createInitialStudentForm();
+  return {
+    ...initial,
+    ...student,
+    categoryId: student.categoryId?._id || student.categoryId || '',
+    studentPhotoPreviewUrl: student.studentPhotoUrl || '',
+    studentPhotoFile: null,
+    marksheetPreviewUrl: student.marksheetFileUrl || student.resultImageUrl || '',
+    certificatePhotoUrl: student.certificatePhotoUrl || student.studentPhotoUrl || ''
+  };
+}
 
 export default function StudentsPage() {
   const [students, setStudents] = useState([]);
@@ -27,8 +92,9 @@ export default function StudentsPage() {
   const [form, setForm] = useState(createInitialStudentForm());
   const [saving, setSaving] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
-  const [lastCreatedId, setLastCreatedId] = useState('');
-  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [editStudent, setEditStudent] = useState(null);
+  const [viewMode, setViewMode] = useState('card');
 
   const load = async () => {
     const [s, c] = await Promise.all([api.get('/students'), api.get('/categories')]);
@@ -40,362 +106,135 @@ export default function StudentsPage() {
     load();
   }, []);
 
-  const handleOpenAdd = () => {
-    setSavedMessage('');
+  const handleAdd = () => {
+    setEditStudent(null);
     setForm(createInitialStudentForm());
-    setOpenAddDialog(true);
+    setSavedMessage('');
+    setOpenDialog(true);
   };
 
-  const handleCloseAdd = () => {
+  const handleEdit = (student) => {
+    setEditStudent(student);
+    setForm(mapStudentToForm(student));
+    setSavedMessage('');
+    setOpenDialog(true);
+  };
+
+  const closeDialog = () => {
     if (saving) return;
-    setOpenAddDialog(false);
+    setOpenDialog(false);
+    setEditStudent(null);
   };
 
   const save = async () => {
     setSaving(true);
     setSavedMessage('');
     try {
-      const { data } = await api.post('/students', toStudentPayload(form));
-      setLastCreatedId(data?._id || '');
-      setSavedMessage('Student profile created successfully.');
-      setForm(createInitialStudentForm());
-      setOpenAddDialog(false);
+      const payload = toStudentPayload(form);
+      if (editStudent?._id) {
+        await api.put(`/students/${editStudent._id}`, payload);
+        setSavedMessage('Student updated successfully.');
+      } else {
+        await api.post('/students', payload);
+        setSavedMessage('Student created successfully.');
+      }
       await load();
+      setOpenDialog(false);
+      setEditStudent(null);
+      setForm(createInitialStudentForm());
     } finally {
       setSaving(false);
     }
   };
 
-  const evaluate = async (id) => {
-    await api.post(`/students/${id}/evaluate`);
-    await load();
-  };
+  const evaluate = async (id) => { await api.post(`/students/${id}/evaluate`); await load(); };
+  const parse = async (id) => { await api.post(`/students/${id}/parse`); await load(); };
 
-  const parse = async (id) => {
-    await api.post(`/students/${id}/parse`);
-    await load();
-  };
-
-  const columns = [
-    { key: 'name', label: 'Student' },
-    { key: 'details', label: 'Academic Info' },
-    { key: 'status', label: 'Status' },
-    { key: 'actions', label: 'Actions' }
-  ];
+  const summary = useMemo(() => ({
+    total: students.length,
+    eligible: students.filter((s) => String(s.status || '').toLowerCase() === 'eligible').length,
+    categories: categories.length
+  }), [students, categories]);
 
   const rows = students.map((s) => ({
     title: s.fullName,
-    name: (
-      <Box>
-        <Typography variant="body2" fontWeight={700}>
-          {s.fullName || '-'}
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {s.mobile || 'No Mobile'}
-        </Typography>
-      </Box>
-    ),
-    details: (
-      <Box>
-        <Typography variant="caption" display="block">
-          <b>{s.board || '-'}</b> · {s.className || '-'}
-        </Typography>
-        <Typography variant="caption" color="primary" fontWeight={700}>
-          {s.percentage ?? '-'}
-          {s.percentage !== undefined && s.percentage !== null ? '%' : ''}
-        </Typography>
-      </Box>
-    ),
+    name: s.fullName || '-',
+    mobile: s.mobile || '-',
+    academic: `${s.board || '-'} · ${s.className || '-'} · ${s.percentage ?? 0}%`,
     status: () => <StatusChip label={s.status || 'Pending'} />,
-    actions: () => (
-      <Stack direction="row" spacing={1} flexWrap="wrap">
-        <Button
-          size="small"
-          variant="text"
-          sx={{ fontWeight: 700 }}
-          onClick={() => parse(s._id)}
-        >
-          Parse
-        </Button>
-        <Button
-          size="small"
-          variant="outlined"
-          sx={{ borderRadius: 2 }}
-          onClick={() => evaluate(s._id)}
-        >
-          Evaluate
-        </Button>
+    files: () => (
+      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+        {s.marksheetFileUrl || s.resultImageUrl ? <Button size="small" href={s.marksheetFileUrl || s.resultImageUrl} target="_blank" rel="noreferrer">Marksheet</Button> : null}
+        {s.studentPhotoUrl || s.certificatePhotoUrl ? <Button size="small" href={s.studentPhotoUrl || s.certificatePhotoUrl} target="_blank" rel="noreferrer">Photo</Button> : null}
+      </Stack>
+    ),
+    action: () => (
+      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+        <Button size="small" onClick={() => parse(s._id)}>Parse</Button>
+        <Button size="small" variant="outlined" onClick={() => evaluate(s._id)}>Evaluate</Button>
+        <Button size="small" variant="contained" onClick={() => handleEdit(s)}>Edit</Button>
       </Stack>
     )
   }));
 
   return (
-    <Box sx={{ pb: 4, bgcolor: '#f8fafc', minHeight: '100vh' }}>
-      <Box
-        sx={{
-          bgcolor: '#1a1a1a',
-          color: '#fff',
-          pt: { xs: 3, md: 4 },
-          pb: { xs: 5, md: 6 },
-          px: { xs: 2, md: 3 },
-          borderRadius: '0 0 28px 28px',
-          mb: -4
-        }}
-      >
-        <Container maxWidth="xl" disableGutters>
-          <PageHeader
-            title="Students"
-            subtitle="List first, quick add second — optimized for desktop and mobile."
-            chips={[
-              { label: `${students.length} Registered`, icon: <People fontSize="small" /> },
-              { label: `${categories.length} Categories`, icon: <Analytics fontSize="small" /> }
-            ]}
-            dark
-          />
-        </Container>
-      </Box>
+    <Box>
+      <PageHeader
+        title="Students"
+        subtitle="List-first student management with files, edit dialog and certificate preview only during edit."
+        chips={[
+          { label: `${summary.total} Registered` },
+          { label: `${summary.eligible} Eligible`, color: 'success' },
+          { label: `${summary.categories} Categories` }
+        ]}
+      />
 
-      <Container maxWidth="xl" sx={{ mt: 0 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12}>
-            <Card
-              sx={{
-                borderRadius: 4,
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.05)',
-                overflow: 'hidden'
-              }}
-            >
-              <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                <Stack spacing={2.5}>
-                  <Stack
-                    direction={{ xs: 'column', md: 'row' }}
-                    alignItems={{ xs: 'stretch', md: 'center' }}
-                    justifyContent="space-between"
-                    spacing={2}
-                  >
-                    <Box>
-                      <Typography variant="h6" fontWeight={800}>
-                        Student Records
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        View registered students and add new records from the + button.
-                      </Typography>
-                    </Box>
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }}>
+            <Box>
+              <Typography variant="h6" fontWeight={800}>Student Records</Typography>
+              <Typography color="text.secondary">Use files buttons for marksheet/photo and edit to fine tune certificate preview.</Typography>
+            </Box>
+            <Stack direction="row" spacing={1}>
+              <ToggleButtonGroup exclusive value={viewMode} onChange={(_, v) => v && setViewMode(v)} size="small">
+                <ToggleButton value="card"><ViewModuleIcon fontSize="small" /></ToggleButton>
+                <ToggleButton value="table"><TableRowsIcon fontSize="small" /></ToggleButton>
+              </ToggleButtonGroup>
+              <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>Add Student</Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
 
-                    <Stack
-                      direction="row"
-                      spacing={1.25}
-                      alignItems="center"
-                      justifyContent={{ xs: 'space-between', sm: 'flex-start' }}
-                      sx={{ width: { xs: '100%', md: 'auto' } }}
-                    >
-                      <IconButton
-                        onClick={handleOpenAdd}
-                        sx={{
-                          bgcolor: '#1a1a1a',
-                          color: '#fff',
-                          width: 48,
-                          height: 48,
-                          borderRadius: 3,
-                          '&:hover': { bgcolor: '#000' }
-                        }}
-                      >
-                        <Add />
-                      </IconButton>
+      {savedMessage ? <Alert sx={{ mb: 2 }} severity="success">{savedMessage}</Alert> : null}
 
-                      <Button
-                        variant="contained"
-                        startIcon={<Add />}
-                        onClick={handleOpenAdd}
-                        sx={{
-                          borderRadius: 3,
-                          px: 2.2,
-                          py: 1.2,
-                          bgcolor: '#1a1a1a',
-                          boxShadow: 'none',
-                          textTransform: 'none',
-                          fontWeight: 700,
-                          '&:hover': { bgcolor: '#000', boxShadow: 'none' }
-                        }}
-                      >
-                        Add Student
-                      </Button>
-                    </Stack>
-                  </Stack>
-
-                  {savedMessage ? (
-                    <Alert sx={{ borderRadius: 3 }} severity="success">
-                      {savedMessage}
-                    </Alert>
-                  ) : null}
-
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6} lg={4}>
-                      <Card
-                        sx={{
-                          borderRadius: 3,
-                          bgcolor: '#f8fafc',
-                          boxShadow: 'none',
-                          border: '1px solid #e2e8f0',
-                          height: '100%'
-                        }}
-                      >
-                        <CardContent>
-                          <Stack direction="row" spacing={1.5} alignItems="center">
-                            <People color="primary" />
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">
-                                Total Students
-                              </Typography>
-                              <Typography variant="h6" fontWeight={800}>
-                                {students.length}
-                              </Typography>
-                            </Box>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-
-                    <Grid item xs={12} sm={6} lg={4}>
-                      <Card
-                        sx={{
-                          borderRadius: 3,
-                          bgcolor: '#f8fafc',
-                          boxShadow: 'none',
-                          border: '1px solid #e2e8f0',
-                          height: '100%'
-                        }}
-                      >
-                        <CardContent>
-                          <Stack direction="row" spacing={1.5} alignItems="center">
-                            <Analytics color="primary" />
-                            <Box>
-                              <Typography variant="caption" color="text.secondary">
-                                Categories
-                              </Typography>
-                              <Typography variant="h6" fontWeight={800}>
-                                {categories.length}
-                              </Typography>
-                            </Box>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-
-                    <Grid item xs={12} lg={4}>
-                      <Card
-                        sx={{
-                          borderRadius: 3,
-                          bgcolor: '#f8fafc',
-                          boxShadow: 'none',
-                          border: '1px solid #e2e8f0',
-                          height: '100%'
-                        }}
-                      >
-                        <CardContent>
-                          <Stack direction="row" spacing={1.5} alignItems="center">
-                            <School color="primary" />
-                            <Box sx={{ minWidth: 0 }}>
-                              <Typography variant="caption" color="text.secondary">
-                                Last Created
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                fontWeight={800}
-                                sx={{ wordBreak: 'break-all' }}
-                              >
-                                {lastCreatedId || 'No recent student'}
-                              </Typography>
-                            </Box>
-                          </Stack>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  </Grid>
-
-                  <Box>
-                    <ResponsiveTable
-                      columns={columns}
-                      rows={rows}
-                      mobileTitleKey="title"
-                    />
-                  </Box>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid item xs={12}>
-            <Card
-              sx={{
-                borderRadius: 4,
-                bgcolor: '#fff',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 20px rgba(15,23,42,0.04)'
-              }}
-            >
-              <CardContent sx={{ p: { xs: 2, md: 2.5 } }}>
-                <Stack spacing={2}>
-                  <Box>
-                    <Typography variant="subtitle1" fontWeight={800}>
-                      Intelligence Hub
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Quick actions for the latest created student.
-                    </Typography>
-                  </Box>
-
-                  <Alert
-                    severity="info"
-                    variant="outlined"
-                    icon={<AutoFixHigh />}
-                    sx={{ borderRadius: 3, bgcolor: '#f8fafc' }}
-                  >
-                    Trigger parsing or evaluation for the latest created student.
-                  </Alert>
-
-                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
-                    <Button
-                      variant="contained"
-                      disabled={!lastCreatedId}
-                      onClick={() => evaluate(lastCreatedId)}
-                      sx={{
-                        borderRadius: 2.5,
-                        py: 1.2,
-                        bgcolor: '#1a1a1a',
-                        textTransform: 'none',
-                        fontWeight: 700,
-                        '&:hover': { bgcolor: '#000' }
-                      }}
-                    >
-                      Evaluate Latest
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      disabled={!lastCreatedId}
-                      onClick={() => parse(lastCreatedId)}
-                      sx={{
-                        borderRadius: 2.5,
-                        py: 1.2,
-                        textTransform: 'none',
-                        fontWeight: 700
-                      }}
-                    >
-                      Parse Latest
-                    </Button>
-                  </Stack>
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
+      {viewMode === 'card' ? (
+        <Grid container spacing={2}>
+          {students.map((student) => (
+            <Grid key={student._id} size={{ xs: 12, md: 6, xl: 4 }}>
+              <StudentRecordCard item={student} onEdit={handleEdit} onParse={parse} onEvaluate={evaluate} />
+            </Grid>
+          ))}
         </Grid>
-      </Container>
+      ) : (
+        <ResponsiveTable
+          columns={[
+            { key: 'name', label: 'Student' },
+            { key: 'mobile', label: 'Mobile' },
+            { key: 'academic', label: 'Academic Info' },
+            { key: 'status', label: 'Status' },
+            { key: 'files', label: 'Files' },
+            { key: 'action', label: 'Action' }
+          ]}
+          rows={rows}
+          mobileTitleKey="title"
+        />
+      )}
 
       <Dialog
-        open={openAddDialog}
-        onClose={handleCloseAdd}
-        fullScreen={false}
+        open={openDialog}
+        onClose={closeDialog}
         fullWidth
         maxWidth={false}
         PaperProps={{
@@ -411,114 +250,45 @@ export default function StudentsPage() {
         }}
       >
         <DialogContent sx={{ p: 0, height: '100%' }}>
-          <Grid
-            container
-            sx={{
-              minHeight: '100%',
-              height: '100%'
-            }}
-          >
-            <Grid
-              item
-              xs={12}
-              lg={7}
-              xl={7.5}
-              sx={{
-                minHeight: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                bgcolor: '#fff'
-              }}
-            >
-              <Box
-                sx={{
-                  px: { xs: 2, md: 3 },
-                  py: { xs: 2, md: 2.5 },
-                  borderBottom: '1px solid #e2e8f0',
-                  position: 'sticky',
-                  top: 0,
-                  zIndex: 2,
-                  bgcolor: '#fff'
-                }}
-              >
-                <Stack
-                  direction={{ xs: 'column', sm: 'row' }}
-                  justifyContent="space-between"
-                  alignItems={{ xs: 'flex-start', sm: 'center' }}
-                  spacing={2}
-                >
+          <Grid container sx={{ minHeight: '100%', height: '100%' }}>
+            <Grid size={{ xs: 12, lg: editStudent ? 7 : 12 }} sx={{ minHeight: 0, display: 'flex', flexDirection: 'column', bgcolor: '#fff' }}>
+              <Box sx={{ px: { xs: 2, md: 3 }, py: { xs: 2, md: 2.5 }, borderBottom: '1px solid #e2e8f0', position: 'sticky', top: 0, zIndex: 2, bgcolor: '#fff' }}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2}>
                   <Box>
-                    <Typography variant="h6" fontWeight={800}>
-                      Add New Student
-                    </Typography>
+                    <Typography variant="h6" fontWeight={800}>{editStudent ? 'Edit Student' : 'Add New Student'}</Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Mobile single screen, desktop split view with large preview.
+                      {editStudent ? 'Certificate preview is available only while editing.' : 'Quick create form without certificate preview.'}
                     </Typography>
                   </Box>
-
-                  <Button
-                    variant="outlined"
-                    onClick={handleCloseAdd}
-                    sx={{ borderRadius: 2.5, textTransform: 'none', fontWeight: 700 }}
-                  >
-                    Close
-                  </Button>
+                  <Stack direction="row" spacing={1}>
+                    <Button variant="outlined" onClick={closeDialog}>Close</Button>
+                    <Button variant="contained" onClick={save} disabled={saving} startIcon={<AutoFixHighIcon />}>{saving ? 'Saving...' : editStudent ? 'Update Student' : 'Save Student'}</Button>
+                  </Stack>
                 </Stack>
               </Box>
-
-              <Box
-                sx={{
-                  flex: 1,
-                  minHeight: 0,
-                  overflowY: 'auto',
-                  px: { xs: 2, md: 3 },
-                  py: { xs: 2, md: 3 }
-                }}
-              >
+              <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', px: { xs: 2, md: 3 }, py: { xs: 2, md: 3 } }}>
                 <StudentFormWizard
                   mode="admin"
                   form={form}
                   setForm={setForm}
                   onSubmit={save}
                   saving={saving}
-                  successMessage={savedMessage}
+                  successMessage=""
                   topInfo={{
-                    title: 'New Student Intake',
-                    description: 'Admin-assisted registration process.'
+                    title: editStudent ? 'Student profile editor' : 'New student intake',
+                    description: editStudent ? 'Update records and files, then preview certificate on the right.' : 'Add the student details and save.'
                   }}
                 />
               </Box>
             </Grid>
 
-            <Grid
-              item
-              xs={12}
-              lg={5}
-              xl={4.5}
-              sx={{
-                bgcolor: '#f8fafc',
-                borderLeft: { lg: '1px solid #e2e8f0' },
-                borderTop: { xs: '1px solid #e2e8f0', lg: 'none' },
-                minHeight: 0,
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-            >
-              <Box
-                sx={{
-                  flex: 1,
-                  minHeight: 0,
-                  overflowY: 'auto',
-                  p: { xs: 1.5, sm: 2, md: 2.5 }
-                }}
-              >
-                <StudentCertificatePreviewSection
-                  form={form}
-                  setForm={setForm}
-                  categories={categories}
-                />
-              </Box>
-            </Grid>
+            {editStudent ? (
+              <Grid size={{ xs: 12, lg: 5 }} sx={{ bgcolor: '#f8fafc', borderLeft: { lg: '1px solid #e2e8f0' }, borderTop: { xs: '1px solid #e2e8f0', lg: 'none' }, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: { xs: 1.5, sm: 2, md: 2.5 } }}>
+                  <StudentCertificatePreviewSection form={form} setForm={setForm} categories={categories} />
+                </Box>
+              </Grid>
+            ) : null}
           </Grid>
         </DialogContent>
       </Dialog>
