@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import {
+  Alert,
   Box,
   Button,
   Card,
@@ -16,10 +19,11 @@ import {
   TextField,
   ToggleButton,
   ToggleButtonGroup,
-  Typography
+  Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import TableRowsIcon from '@mui/icons-material/TableRows';
 import api from '../api';
@@ -30,36 +34,223 @@ import { APP_ROUTES } from '../utils/accessControl';
 
 const permissionsList = APP_ROUTES.map((item) => ({ label: item.label, value: item.permission }));
 
-function UsersTab({ roles, users, reload }) {
+const DUTY_OPTIONS = ['NONE','HOST','SUPER_ADMIN','ADMIN','SENIOR_TEAM','TEAM_LEADER','VOLUNTEER','ANCHOR','GUEST','STUDENT','CERTIFICATE_TEAM'];
+
+function userTemplate(dutyType = 'ADMIN', roleId = '') {
+  return {
+    name: '',
+    username: '',
+    password: '',
+    mobile: '',
+    email: '',
+    roleId,
+    eventDutyType: dutyType,
+    isActive: true,
+  };
+}
+
+function UserDialog({ open, onClose, onSaved, roles, editing, fixedDutyType = null, title = 'User' }) {
+  const [form, setForm] = useState(userTemplate(fixedDutyType || 'ADMIN'));
+
+  useEffect(() => {
+    if (editing) {
+      setForm({
+        name: editing.name || '',
+        username: editing.username || '',
+        password: '',
+        mobile: editing.mobile || '',
+        email: editing.email || '',
+        roleId: editing.roleId?._id || editing.roleId || '',
+        eventDutyType: fixedDutyType || editing.eventDutyType || 'ADMIN',
+        isActive: editing.isActive !== false,
+      });
+    } else {
+      setForm(userTemplate(fixedDutyType || 'ADMIN', roles[0]?._id || ''));
+    }
+  }, [editing, open, fixedDutyType, roles]);
+
+  const save = async () => {
+    const payload = { ...form, eventDutyType: fixedDutyType || form.eventDutyType };
+    if (!payload.password) delete payload.password;
+    if (editing?._id) await api.put(`/users/${editing._id}`, payload);
+    else await api.post('/users', payload);
+    onSaved?.();
+    onClose();
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <DialogTitle>{editing ? `Edit ${title}` : `Add ${title}`}</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ pt: 1 }}>
+          <TextField label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <TextField label="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+          <TextField label={editing ? 'New Password (optional)' : 'Password'} type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, sm: 6 }}><TextField label="Mobile" value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} /></Grid>
+            <Grid size={{ xs: 12, sm: 6 }}><TextField label="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></Grid>
+          </Grid>
+          <TextField select label="Role" value={form.roleId} onChange={(e) => setForm({ ...form, roleId: e.target.value })}>
+            {roles.map((r) => <MenuItem key={r._id} value={r._id}>{r.name}</MenuItem>)}
+          </TextField>
+          {!fixedDutyType ? (
+            <TextField select label="Duty" value={form.eventDutyType} onChange={(e) => setForm({ ...form, eventDutyType: e.target.value })}>
+              {DUTY_OPTIONS.map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+            </TextField>
+          ) : null}
+          <TextField select label="Status" value={String(form.isActive)} onChange={(e) => setForm({ ...form, isActive: e.target.value === 'true' })}>
+            <MenuItem value="true">Active</MenuItem>
+            <MenuItem value="false">Inactive</MenuItem>
+          </TextField>
+          <Stack direction="row" justifyContent="flex-end" spacing={1}>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button variant="contained" onClick={save}>{editing ? 'Update' : 'Save'}</Button>
+          </Stack>
+        </Stack>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function UsersTab({ roles, users, reload, title, subtitle, fixedDutyType = null, enableBulkGuestImport = false, openSignal = 0 }) {
   const [open, setOpen] = useState(false);
   const [viewMode, setViewMode] = useState('card');
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ name: '', username: '', password: '', roleId: '', eventDutyType: 'ADMIN', isActive: true });
+  const [bulkMessage, setBulkMessage] = useState('');
+  const [bulkError, setBulkError] = useState('');
+  const [selectedRoleId, setSelectedRoleId] = useState('');
 
-  const openAdd = () => { setEditing(null); setForm({ name: '', username: '', password: '', roleId: '', eventDutyType: 'ADMIN', isActive: true }); setOpen(true); };
-  const openEdit = (u) => { setEditing(u); setForm({ name: u.name || '', username: u.username || '', password: '', roleId: u.roleId?._id || u.roleId || '', eventDutyType: u.eventDutyType || 'ADMIN', isActive: u.isActive !== false }); setOpen(true); };
-  const save = async () => {
-    const payload = { ...form };
-    if (!payload.password) delete payload.password;
-    if (editing?._id) await api.put(`/users/${editing._id}`, payload); else await api.post('/users', payload);
-    setOpen(false); reload();
+  useEffect(() => {
+    if (openSignal) {
+      setEditing(null);
+      setOpen(true);
+    }
+  }, [openSignal]);
+
+  useEffect(() => {
+    if (!selectedRoleId && roles[0]?._id) setSelectedRoleId(roles[0]._id);
+  }, [roles, selectedRoleId]);
+
+  const visibleUsers = useMemo(() => {
+    if (!fixedDutyType) return users;
+    if (fixedDutyType === 'TEAM_MEMBER') {
+      return users.filter((u) => ['TEAM_LEADER', 'SENIOR_TEAM', 'CERTIFICATE_TEAM'].includes(u.eventDutyType));
+    }
+    return users.filter((u) => u.eventDutyType === fixedDutyType);
+  }, [users, fixedDutyType]);
+
+  const defaultDuty = fixedDutyType === 'TEAM_MEMBER' ? 'TEAM_LEADER' : (fixedDutyType || 'ADMIN');
+
+  const openAdd = () => { setEditing(null); setOpen(true); };
+  const openEdit = (u) => { setEditing(u); setOpen(true); };
+
+  const handleGuestFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setBulkError('');
+    setBulkMessage('');
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      const normalized = rows.map((row) => ({
+        name: row.name || row.Name || row.fullName || row['Full Name'] || '',
+        username: row.username || row.Username || '',
+        password: row.password || row.Password || '',
+        mobile: row.mobile || row.Mobile || '',
+        email: row.email || row.Email || '',
+      })).filter((row) => row.name && row.username);
+
+      const { data } = await api.post('/users/bulk-import-guests', {
+        rows: normalized,
+        roleId: selectedRoleId,
+      });
+      setBulkMessage(`${data.message}${data.errors?.length ? ` · ${data.errors.length} error(s)` : ''}`);
+      if (data.errors?.length) {
+        setBulkError(data.errors.map((item) => `Row ${item.row}: ${item.message}`).join(' | '));
+      }
+      reload();
+    } catch (error) {
+      setBulkError(error.response?.data?.message || 'Failed to import guest Excel file');
+    } finally {
+      event.target.value = '';
+    }
   };
 
-  const rows = users.map((u) => ({
+  const rows = visibleUsers.map((u) => ({
     title: u.name,
     name: u.name,
     username: u.username,
+    mobile: u.mobile || '-',
     role: u.roleId?.name || '-',
-    access: (u.roleId?.permissions || []).length ? `${u.roleId.permissions.length} modules` : 'All',
     status: () => <StatusChip label={u.isActive ? 'Active' : 'Inactive'} />,
-    action: () => <Button size="small" variant="contained" onClick={() => openEdit(u)}>Edit</Button>
+    action: () => <Button size="small" variant="contained" onClick={() => openEdit(u)}>Edit</Button>,
   }));
 
   return (
     <Stack spacing={2}>
-      <Card><CardContent><Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} spacing={2}><Box><Typography variant="h6" fontWeight={800}>Users</Typography><Typography color="text.secondary">Super admin can assign role-based access for each user.</Typography></Box><Stack direction="row" spacing={1}><ToggleButtonGroup exclusive size="small" value={viewMode} onChange={(_, v) => v && setViewMode(v)}><ToggleButton value="card"><ViewModuleIcon fontSize="small" /></ToggleButton><ToggleButton value="table"><TableRowsIcon fontSize="small" /></ToggleButton></ToggleButtonGroup><Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Add User</Button></Stack></Stack></CardContent></Card>
-      {viewMode === 'card' ? <Grid container spacing={2}>{users.map((u) => <Grid key={u._id} size={{ xs: 12, md: 6, xl: 4 }}><Card><CardContent><Stack spacing={1.2}><Stack direction="row" justifyContent="space-between" alignItems="flex-start"><Box><Typography variant="h6" fontWeight={800}>{u.name}</Typography><Typography color="text.secondary">{u.username}</Typography></Box><StatusChip label={u.isActive ? 'Active' : 'Inactive'} /></Stack><Typography variant="body2">Role: <strong>{u.roleId?.name || '-'}</strong></Typography><Typography variant="body2">Duty: <strong>{u.eventDutyType || '-'}</strong></Typography><Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>{(u.roleId?.permissions || []).length ? u.roleId.permissions.slice(0, 3).map((p) => <Chip key={p} label={p} size="small" />) : <Chip label="All modules" size="small" color="success" variant="outlined" />}</Stack><Stack direction="row" justifyContent="flex-end"><Button size="small" startIcon={<EditIcon />} onClick={() => openEdit(u)}>Edit</Button></Stack></Stack></CardContent></Card></Grid>)}</Grid> : <ResponsiveTable columns={[{ key: 'name', label: 'Name' },{ key: 'username', label: 'Username' },{ key: 'role', label: 'Role' },{ key: 'access', label: 'Access' },{ key: 'status', label: 'Status' },{ key: 'action', label: 'Action' }]} rows={rows} mobileTitleKey="title" />}
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm"><DialogTitle>{editing ? 'Edit user' : 'Add user'}</DialogTitle><DialogContent><Stack spacing={2} sx={{ pt: 1 }}><TextField label="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /><TextField label="Username" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} /><TextField label={editing ? 'New Password (optional)' : 'Password'} type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /><TextField select label="Role" value={form.roleId} onChange={(e) => setForm({ ...form, roleId: e.target.value })}>{roles.map((r) => <MenuItem key={r._id} value={r._id}>{r.name}</MenuItem>)}</TextField><TextField select label="Duty" value={form.eventDutyType} onChange={(e) => setForm({ ...form, eventDutyType: e.target.value })}>{['NONE','HOST','SUPER_ADMIN','ADMIN','SENIOR_TEAM','TEAM_LEADER','VOLUNTEER','ANCHOR','GUEST','STUDENT','CERTIFICATE_TEAM'].map((d) => <MenuItem key={d} value={d}>{d}</MenuItem>)}</TextField><TextField select label="Status" value={String(form.isActive)} onChange={(e) => setForm({ ...form, isActive: e.target.value === 'true' })}><MenuItem value="true">Active</MenuItem><MenuItem value="false">Inactive</MenuItem></TextField><Stack direction="row" justifyContent="flex-end" spacing={1}><Button onClick={() => setOpen(false)}>Cancel</Button><Button variant="contained" onClick={save}>{editing ? 'Update User' : 'Save User'}</Button></Stack></Stack></DialogContent></Dialog>
+      <Card>
+        <CardContent>
+          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} spacing={2}>
+            <Box>
+              <Typography variant="h6" fontWeight={800}>{title}</Typography>
+              <Typography color="text.secondary">{subtitle}</Typography>
+            </Box>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+              {enableBulkGuestImport ? (
+                <>
+                  <TextField select size="small" label="Default Role" value={selectedRoleId} onChange={(e) => setSelectedRoleId(e.target.value)} sx={{ minWidth: 180 }}>
+                    {roles.map((r) => <MenuItem key={r._id} value={r._id}>{r.name}</MenuItem>)}
+                  </TextField>
+                  <Button component="label" variant="outlined" startIcon={<UploadFileIcon />}>
+                    Bulk Excel
+                    <input hidden type="file" accept=".xlsx,.xls,.csv" onChange={handleGuestFile} />
+                  </Button>
+                </>
+              ) : null}
+              <ToggleButtonGroup exclusive size="small" value={viewMode} onChange={(_, v) => v && setViewMode(v)}>
+                <ToggleButton value="card"><ViewModuleIcon fontSize="small" /></ToggleButton>
+                <ToggleButton value="table"><TableRowsIcon fontSize="small" /></ToggleButton>
+              </ToggleButtonGroup>
+              <Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Add</Button>
+            </Stack>
+          </Stack>
+          {enableBulkGuestImport ? <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>Excel columns: name, username, password, mobile, email</Typography> : null}
+          {bulkMessage ? <Alert severity="success" sx={{ mt: 1.5 }}>{bulkMessage}</Alert> : null}
+          {bulkError ? <Alert severity="warning" sx={{ mt: 1.5 }}>{bulkError}</Alert> : null}
+        </CardContent>
+      </Card>
+
+      {viewMode === 'card' ? (
+        <Grid container spacing={2}>
+          {visibleUsers.map((u) => (
+            <Grid key={u._id} size={{ xs: 12, md: 6, xl: 4 }}>
+              <Card>
+                <CardContent>
+                  <Stack spacing={1.2}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                      <Box>
+                        <Typography variant="h6" fontWeight={800}>{u.name}</Typography>
+                        <Typography color="text.secondary">{u.username}</Typography>
+                      </Box>
+                      <StatusChip label={u.isActive ? 'Active' : 'Inactive'} />
+                    </Stack>
+                    <Typography variant="body2">Role: <strong>{u.roleId?.name || '-'}</strong></Typography>
+                    <Typography variant="body2">Duty: <strong>{u.eventDutyType || '-'}</strong></Typography>
+                    <Typography variant="body2">Mobile: <strong>{u.mobile || '-'}</strong></Typography>
+                    <Stack direction="row" justifyContent="flex-end"><Button size="small" startIcon={<EditIcon />} onClick={() => openEdit(u)}>Edit</Button></Stack>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      ) : (
+        <ResponsiveTable columns={[{ key: 'name', label: 'Name' }, { key: 'username', label: 'Username' }, { key: 'mobile', label: 'Mobile' }, { key: 'role', label: 'Role' }, { key: 'status', label: 'Status' }, { key: 'action', label: 'Action' }]} rows={rows} mobileTitleKey="title" />
+      )}
+
+      <UserDialog open={open} onClose={() => setOpen(false)} onSaved={reload} roles={roles} editing={editing} fixedDutyType={fixedDutyType ? defaultDuty : null} title={title} />
     </Stack>
   );
 }
@@ -81,7 +272,7 @@ function RolesTab({ roles, reload }) {
     code: r.code,
     permissions: r.permissions?.length ? r.permissions.join(', ') : 'All modules',
     status: () => <StatusChip label={r.isActive ? 'Active' : 'Inactive'} />,
-    action: () => <Button size="small" variant="contained" onClick={() => openEdit(r)}>Edit</Button>
+    action: () => <Button size="small" variant="contained" onClick={() => openEdit(r)}>Edit</Button>,
   }));
 
   return (
@@ -107,11 +298,14 @@ function SimpleCrudTab({ title, subtitle, items, fields, endpoint, reload }) {
 }
 
 export default function AdminPage() {
-  const [tab, setTab] = useState('users');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'users';
+  const [tab, setTab] = useState(initialTab);
   const [roles, setRoles] = useState([]);
   const [users, setUsers] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [rules, setRules] = useState([]);
+  const [openSignal, setOpenSignal] = useState(0);
 
   const load = async () => {
     const [r, u, t, a] = await Promise.all([api.get('/roles'), api.get('/users'), api.get('/certificate-templates'), api.get('/automation-rules')]);
@@ -123,11 +317,26 @@ export default function AdminPage() {
 
   useEffect(() => { load(); }, []);
 
+  useEffect(() => {
+    const nextTab = searchParams.get('tab');
+    const action = searchParams.get('action');
+    if (nextTab) setTab(nextTab);
+    if (action === 'add') {
+      setOpenSignal(Date.now());
+      const next = new URLSearchParams(searchParams);
+      next.delete('action');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams]);
+
   return (
     <>
-      <PageHeader title="Admin & Access" subtitle="Super admin can control users, roles, automation and templates from one place." chips={[{ label: `${users.length} Users` }, { label: `${roles.length} Roles` }, { label: `${templates.length} Templates` }]} />
-      <Card sx={{ mb: 2 }}><CardContent><Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto"><Tab value="users" label="Users" /><Tab value="roles" label="Roles & Access" /><Tab value="automation" label="Automation" /><Tab value="templates" label="Templates" /></Tabs></CardContent></Card>
-      {tab === 'users' && <UsersTab roles={roles} users={users} reload={load} />}
+      <PageHeader title="Admin" subtitle="Manage users, guests, volunteers, team members and access in one place." chips={[{ label: `${users.length} Users` }, { label: `${roles.length} Roles` }, { label: `${templates.length} Templates` }]} />
+      <Card sx={{ mb: 2 }}><CardContent><Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto"><Tab value="users" label="All Users" /><Tab value="guests" label="Guests" /><Tab value="team" label="Team" /><Tab value="volunteers" label="Volunteers" /><Tab value="roles" label="Roles & Access" /><Tab value="automation" label="Automation" /><Tab value="templates" label="Templates" /></Tabs></CardContent></Card>
+      {tab === 'users' && <UsersTab roles={roles} users={users} reload={load} title="Users" subtitle="Role-based access for each user." openSignal={openSignal} />}
+      {tab === 'guests' && <UsersTab roles={roles} users={users} reload={load} title="Guests" subtitle="Add single guest or bulk import from Excel." fixedDutyType="GUEST" enableBulkGuestImport openSignal={openSignal} />}
+      {tab === 'team' && <UsersTab roles={roles} users={users} reload={load} title="Team Members" subtitle="Manage team users in card or table view." fixedDutyType="TEAM_MEMBER" openSignal={openSignal} />}
+      {tab === 'volunteers' && <UsersTab roles={roles} users={users} reload={load} title="Volunteer Users" subtitle="Create volunteer login users for app access." fixedDutyType="VOLUNTEER" openSignal={openSignal} />}
       {tab === 'roles' && <RolesTab roles={roles} reload={load} />}
       {tab === 'automation' && <SimpleCrudTab title="Automation Rules" subtitle="Create and edit automation rules." items={rules} endpoint="/automation-rules" reload={load} fields={[{ key: 'name', label: 'Rule Name' }, { key: 'triggerKey', label: 'Trigger Key' }, { key: 'templateName', label: 'Template Name' }, { key: 'recipientType', label: 'Recipient Type', defaultValue: 'Student' }, { key: 'conditionText', label: 'Condition', multiline: true }]} />}
       {tab === 'templates' && <SimpleCrudTab title="Certificate Templates" subtitle="Manage template records and type mapping." items={templates} endpoint="/certificate-templates" reload={load} fields={[{ key: 'name', label: 'Template Name' }, { key: 'type', label: 'Type', type: 'select', options: ['STUDENT_AWARD','GUEST_THANK_YOU','VOLUNTEER_APPRECIATION','TEAM_APPRECIATION'].map((v) => ({ value: v, label: v })) }, { key: 'backgroundUrl', label: 'Background URL' }]} />}

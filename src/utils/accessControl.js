@@ -7,8 +7,7 @@ export const MODULE_PERMISSIONS = {
   responsibilities: 'task:manage',
   notifications: 'notifications:view',
   admin: 'users:manage',
-  whatsapp: 'whatsapp:send',
-  systemFlow: 'dashboard:view'
+  whatsapp: 'whatsapp:send'
 };
 
 export const APP_ROUTES = [
@@ -16,12 +15,11 @@ export const APP_ROUTES = [
   { label: 'Students', to: '/students', permission: MODULE_PERMISSIONS.students },
   { label: 'Categories', to: '/categories', permission: MODULE_PERMISSIONS.categories },
   { label: 'Live Stage', to: '/stage', permission: MODULE_PERMISSIONS.stage },
-  { label: 'Budget & Vendors', to: '/budget', permission: MODULE_PERMISSIONS.budget },
-  { label: 'Responsibilities', to: '/responsibilities', permission: MODULE_PERMISSIONS.responsibilities },
+  { label: 'Budget', to: '/budget', permission: MODULE_PERMISSIONS.budget },
+  { label: 'Tasks', to: '/responsibilities', permission: MODULE_PERMISSIONS.responsibilities },
   { label: 'Notifications', to: '/notifications', permission: MODULE_PERMISSIONS.notifications },
   { label: 'WhatsApp', to: '/whatsapp', permission: MODULE_PERMISSIONS.whatsapp },
-  { label: 'Admin', to: '/admin', permission: MODULE_PERMISSIONS.admin },
-  { label: 'System Flow', to: '/system-flow', permission: MODULE_PERMISSIONS.systemFlow }
+  { label: 'Admin', to: '/admin', permission: MODULE_PERMISSIONS.admin }
 ];
 
 export function getPermissions(user) {

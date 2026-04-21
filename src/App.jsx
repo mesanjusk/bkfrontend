@@ -17,7 +17,6 @@ import BudgetPage from './pages/BudgetPage';
 import ResponsibilitiesPage from './pages/ResponsibilitiesPage';
 import NotificationsPage from './pages/NotificationsPage';
 import AdminPage from './pages/AdminPage';
-import SystemFlowPage from './pages/SystemFlowPage';
 import WhatsAppPage from './pages/WhatsAppPage';
 import PublicStudentFormPage from './pages/PublicStudentFormPage';
 import PublicVolunteerFormPage from './pages/PublicVolunteerFormPage';
@@ -35,7 +34,6 @@ const protectedPages = [
   ['/responsibilities', <ResponsibilitiesPage />, MODULE_PERMISSIONS.responsibilities],
   ['/notifications', <NotificationsPage />, MODULE_PERMISSIONS.notifications],
   ['/admin', <AdminPage />, MODULE_PERMISSIONS.admin],
-  ['/system-flow', <SystemFlowPage />, MODULE_PERMISSIONS.systemFlow],
   ['/whatsapp', <WhatsAppPage />, MODULE_PERMISSIONS.whatsapp]
 ];
 

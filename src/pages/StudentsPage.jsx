@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Box,
@@ -87,6 +88,7 @@ function mapStudentToForm(student) {
 }
 
 export default function StudentsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [students, setStudents] = useState([]);
   const [categories, setCategories] = useState([]);
   const [form, setForm] = useState(createInitialStudentForm());
@@ -105,6 +107,15 @@ export default function StudentsPage() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (searchParams.get('action') === 'add') {
+      handleAdd();
+      const next = new URLSearchParams(searchParams);
+      next.delete('action');
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams]);
 
   const handleAdd = () => {
     setEditStudent(null);
