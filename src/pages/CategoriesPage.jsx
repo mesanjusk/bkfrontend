@@ -1,69 +1,347 @@
-import { useEffect, useState } from 'react';
-import { Button, Card, CardContent, Grid, MenuItem, Stack, TextField, Typography } from '@mui/material';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  MenuItem,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Typography,
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import TableRowsIcon from '@mui/icons-material/TableRows';
 import api from '../api';
 import PageHeader from '../components/PageHeader';
 import ResponsiveTable from '../components/ResponsiveTable';
 import StatusChip from '../components/StatusChip';
 
+const defaultForm = {
+  title: '',
+  categoryType: 'AWARD',
+  className: '',
+  minPercentage: 0,
+  calculationMethod: 'DIRECT_PERCENTAGE',
+  notes: '',
+};
+
+function CategoryCard({ item }) {
+  const isVolunteer = item.categoryType === 'VOLUNTEER_TEAM';
+
+  return (
+    <Card sx={{ height: '100%', borderRadius: 3 }}>
+      <CardContent>
+        <Stack spacing={1.5}>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+            <Box>
+              <Typography variant="h6" fontWeight={700}>
+                {item.title}
+              </Typography>
+              <Chip
+                size="small"
+                label={isVolunteer ? 'Volunteer / Team' : 'Award'}
+                color={isVolunteer ? 'secondary' : 'primary'}
+                variant="outlined"
+                sx={{ mt: 0.5 }}
+              />
+            </Box>
+            <StatusChip label={item.isActive ? 'Active' : 'Inactive'} />
+          </Stack>
+
+          {!isVolunteer && (
+            <Stack spacing={0.75}>
+              <Typography variant="body2" color="text.secondary">
+                Class: <strong>{item.className || '-'}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Min %: <strong>{item.minPercentage || 0}</strong>
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Method: <strong>{item.calculationMethod || '-'}</strong>
+              </Typography>
+            </Stack>
+          )}
+
+          {item.notes ? (
+            <Typography variant="body2" color="text.secondary">
+              {item.notes}
+            </Typography>
+          ) : null}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AddCategoryDialog({ open, onClose, onSaved }) {
+  const [form, setForm] = useState(defaultForm);
+  const [saving, setSaving] = useState(false);
+
+  const isAwardCategory = form.categoryType === 'AWARD';
+
+  const resetForm = () => setForm(defaultForm);
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const save = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const payload = {
+        title: form.title,
+        categoryType: form.categoryType,
+        className: isAwardCategory ? form.className : '',
+        minPercentage: isAwardCategory ? Number(form.minPercentage || 0) : 0,
+        calculationMethod: isAwardCategory ? form.calculationMethod : 'DIRECT_PERCENTAGE',
+        notes: form.notes || '',
+      };
+
+      await api.post('/categories', payload);
+      resetForm();
+      onSaved?.();
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+      <DialogTitle>Add category</DialogTitle>
+      <DialogContent>
+        <Box component="form" onSubmit={save} sx={{ pt: 1 }}>
+          <Stack spacing={2}>
+            <TextField
+              select
+              label="Category Type"
+              value={form.categoryType}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  categoryType: e.target.value,
+                  className: e.target.value === 'AWARD' ? prev.className : '',
+                  minPercentage: e.target.value === 'AWARD' ? prev.minPercentage : 0,
+                  calculationMethod:
+                    e.target.value === 'AWARD' ? prev.calculationMethod : 'DIRECT_PERCENTAGE',
+                }))
+              }
+              fullWidth
+            >
+              <MenuItem value="AWARD">Award Category</MenuItem>
+              <MenuItem value="VOLUNTEER_TEAM">Volunteer / Team Category</MenuItem>
+            </TextField>
+
+            <TextField
+              label={isAwardCategory ? 'Category Title' : 'Volunteer / Team Title'}
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              required
+              fullWidth
+            />
+
+            {isAwardCategory && (
+              <>
+                <TextField
+                  label="Class"
+                  value={form.className}
+                  onChange={(e) => setForm({ ...form, className: e.target.value })}
+                  fullWidth
+                />
+
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      type="number"
+                      label="Min %"
+                      value={form.minPercentage}
+                      onChange={(e) =>
+                        setForm({ ...form, minPercentage: Number(e.target.value) })
+                      }
+                      fullWidth
+                    />
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <TextField
+                      select
+                      label="Calculation Method"
+                      value={form.calculationMethod}
+                      onChange={(e) =>
+                        setForm({ ...form, calculationMethod: e.target.value })
+                      }
+                      fullWidth
+                    >
+                      <MenuItem value="DIRECT_PERCENTAGE">Direct %</MenuItem>
+                      <MenuItem value="BEST_5">Best 5</MenuItem>
+                    </TextField>
+                  </Grid>
+                </Grid>
+              </>
+            )}
+
+            <TextField
+              label="Notes"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              multiline
+              minRows={3}
+              fullWidth
+            />
+
+            <Stack direction="row" spacing={1} justifyContent="flex-end">
+              <Button onClick={handleClose}>Cancel</Button>
+              <Button type="submit" variant="contained" disabled={saving}>
+                {saving ? 'Saving...' : 'Save category'}
+              </Button>
+            </Stack>
+          </Stack>
+        </Box>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
-  const [users, setUsers] = useState([]);
-  const [form, setForm] = useState({ title: '', board: '', className: '', minPercentage: 0, calculationMethod: 'DIRECT_PERCENTAGE', anchorId: '', preferredGuestIds: [] });
+  const [tab, setTab] = useState('ALL');
+  const [viewMode, setViewMode] = useState('card');
+  const [openAdd, setOpenAdd] = useState(false);
 
   const load = async () => {
-    const [c, u] = await Promise.all([api.get('/categories'), api.get('/users')]);
-    setCategories(c.data);
-    setUsers(u.data);
+    const { data } = await api.get('/categories');
+    setCategories(Array.isArray(data) ? data : []);
   };
-  useEffect(() => { load(); }, []);
-  const save = async (e) => { e.preventDefault(); await api.post('/categories', { ...form, preferredGuestIds: form.preferredGuestIds ? [form.preferredGuestIds].flat().filter(Boolean) : [] }); setForm({ title: '', board: '', className: '', minPercentage: 0, calculationMethod: 'DIRECT_PERCENTAGE', anchorId: '', preferredGuestIds: [] }); load(); };
 
-  const anchors = users.filter((u) => u.eventDutyType === 'ANCHOR');
-  const guests = users.filter((u) => u.eventDutyType === 'GUEST');
-  const rows = categories.map((c) => ({
-    title: c.title,
-    board: c.board || '-',
-    className: c.className || '-',
-    minPercentage: c.minPercentage || 0,
-    calculationMethod: c.calculationMethod,
-    anchor: c.anchorId?.name || '-',
-    guest: (c.preferredGuestIds || []).map((g) => g.name).join(', ') || '-',
-    active: () => <StatusChip label={c.isActive ? 'Selected' : 'Pending'} />
-  }));
+  useEffect(() => {
+    load();
+  }, []);
+
+  const filteredCategories = useMemo(() => {
+    if (tab === 'AWARD') {
+      return categories.filter((c) => c.categoryType === 'AWARD');
+    }
+    if (tab === 'VOLUNTEER_TEAM') {
+      return categories.filter((c) => c.categoryType === 'VOLUNTEER_TEAM');
+    }
+    return categories;
+  }, [categories, tab]);
+
+  const rows = filteredCategories.map((c) => {
+    const isVolunteer = c.categoryType === 'VOLUNTEER_TEAM';
+
+    return {
+      title: c.title,
+      categoryType: isVolunteer ? 'Volunteer / Team' : 'Award',
+      className: isVolunteer ? '-' : c.className || '-',
+      minPercentage: isVolunteer ? '-' : c.minPercentage || 0,
+      calculationMethod: isVolunteer ? '-' : c.calculationMethod || '-',
+      notes: c.notes || '-',
+      active: () => <StatusChip label={c.isActive ? 'Active' : 'Inactive'} />,
+    };
+  });
 
   return (
     <>
-      <PageHeader title="Award categories" subtitle="Database-driven rules with fixed anchor and preferred guest mapping." />
-      <Grid container spacing={2}>
-        <Grid size={{ xs: 12, lg: 5 }}>
-          <Card component="form" onSubmit={save}>
-            <CardContent>
-              <Stack spacing={2}>
-                <Typography variant="h6">Create category</Typography>
-                <TextField label="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-                <Grid container spacing={2}>
-                  <Grid size={{ xs: 6 }}><TextField label="Board" value={form.board} onChange={(e) => setForm({ ...form, board: e.target.value })} /></Grid>
-                  <Grid size={{ xs: 6 }}><TextField label="Class" value={form.className} onChange={(e) => setForm({ ...form, className: e.target.value })} /></Grid>
-                  <Grid size={{ xs: 6 }}><TextField type="number" label="Min %" value={form.minPercentage} onChange={(e) => setForm({ ...form, minPercentage: Number(e.target.value) })} /></Grid>
-                  <Grid size={{ xs: 6 }}><TextField select label="Calculation" value={form.calculationMethod} onChange={(e) => setForm({ ...form, calculationMethod: e.target.value })}><MenuItem value="DIRECT_PERCENTAGE">Direct %</MenuItem><MenuItem value="BEST_5">Best 5</MenuItem></TextField></Grid>
-                </Grid>
-                <TextField select label="Fixed Anchor" value={form.anchorId} onChange={(e) => setForm({ ...form, anchorId: e.target.value })}>{anchors.map((u) => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}</TextField>
-                <TextField select label="Preferred Guest" value={form.preferredGuestIds[0] || ''} onChange={(e) => setForm({ ...form, preferredGuestIds: [e.target.value] })}>{guests.map((u) => <MenuItem key={u._id} value={u._id}>{u.name}</MenuItem>)}</TextField>
-                <Button variant="contained" type="submit">Save category</Button>
-              </Stack>
-            </CardContent>
-          </Card>
+      <PageHeader
+        title="Categories"
+        subtitle="Manage award categories and volunteer/team categories from one place."
+      />
+
+      <Card sx={{ mb: 2, borderRadius: 3 }}>
+        <CardContent>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            justifyContent="space-between"
+            alignItems={{ xs: 'stretch', md: 'center' }}
+          >
+            <Tabs
+              value={tab}
+              onChange={(_, value) => setTab(value)}
+              variant="scrollable"
+              scrollButtons="auto"
+            >
+              <Tab label={`All (${categories.length})`} value="ALL" />
+              <Tab
+                label={`Award (${categories.filter((c) => c.categoryType === 'AWARD').length})`}
+                value="AWARD"
+              />
+              <Tab
+                label={`Volunteer / Team (${categories.filter((c) => c.categoryType === 'VOLUNTEER_TEAM').length})`}
+                value="VOLUNTEER_TEAM"
+              />
+            </Tabs>
+
+            <Stack direction="row" spacing={1} alignItems="center">
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={viewMode}
+                onChange={(_, value) => value && setViewMode(value)}
+              >
+                <ToggleButton value="card">
+                  <ViewModuleIcon fontSize="small" />
+                </ToggleButton>
+                <ToggleButton value="table">
+                  <TableRowsIcon fontSize="small" />
+                </ToggleButton>
+              </ToggleButtonGroup>
+
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                onClick={() => setOpenAdd(true)}
+              >
+                Add Category
+              </Button>
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      {viewMode === 'card' ? (
+        <Grid container spacing={2}>
+          {filteredCategories.map((item) => (
+            <Grid key={item._id} size={{ xs: 12, sm: 6, lg: 4 }}>
+              <CategoryCard item={item} />
+            </Grid>
+          ))}
         </Grid>
-        <Grid size={{ xs: 12, lg: 7 }}>
-          <ResponsiveTable
-            columns={[
-              { key: 'title', label: 'Title' }, { key: 'board', label: 'Board' }, { key: 'className', label: 'Class' }, { key: 'minPercentage', label: 'Min %' }, { key: 'calculationMethod', label: 'Method' }, { key: 'anchor', label: 'Anchor' }, { key: 'guest', label: 'Preferred guest' }
-            ]}
-            rows={rows}
-            mobileTitleKey="title"
-          />
-        </Grid>
-      </Grid>
+      ) : (
+        <ResponsiveTable
+          columns={[
+            { key: 'title', label: 'Title' },
+            { key: 'categoryType', label: 'Type' },
+            { key: 'className', label: 'Class' },
+            { key: 'minPercentage', label: 'Min %' },
+            { key: 'calculationMethod', label: 'Method' },
+            { key: 'notes', label: 'Notes' },
+            { key: 'active', label: 'Status' },
+          ]}
+          rows={rows}
+          mobileTitleKey="title"
+        />
+      )}
+
+      <AddCategoryDialog
+        open={openAdd}
+        onClose={() => setOpenAdd(false)}
+        onSaved={load}
+      />
     </>
   );
 }
