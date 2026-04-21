@@ -19,6 +19,7 @@ import AdminPage from './pages/AdminPage';
 import SystemFlowPage from './pages/SystemFlowPage';
 import WhatsAppPage from './pages/WhatsAppPage';
 import PublicStudentFormPage from './pages/PublicStudentFormPage';
+import PublicVolunteerFormPage from './pages/PublicVolunteerFormPage';
 
 const theme = createTheme({
   palette: {
@@ -87,6 +88,7 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/student-register" element={<PublicStudentFormPage />} />
               <Route path="/student-edit/:token" element={<PublicStudentFormPage />} />
+              <Route path="/volunteer-register" element={<PublicVolunteerFormPage />} />
 
               {/* Protected routes */}
               {[

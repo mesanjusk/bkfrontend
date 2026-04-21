@@ -40,6 +40,8 @@ export function createInitialStudentForm() {
     marksheetFileUrl: '',
     resultImageUrl: '',
     studentPhotoUrl: '',
+    studentPhotoPreviewUrl: '',
+    studentPhotoFile: null,
     certificatePhotoUrl: '',
     certificateTemplateUrl: '',
     remarks: '',

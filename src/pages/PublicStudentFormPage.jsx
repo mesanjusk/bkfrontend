@@ -22,6 +22,7 @@ import {
 } from '@mui/icons-material';
 import api from '../api';
 import StudentFormWizard from '../components/students/StudentFormWizard';
+import { uploadPublicFile } from '../services/uploadService';
 import StudentCertificatePreviewSection from '../components/students/StudentCertificatePreviewSection';
 import {
   createInitialStudentForm,
@@ -156,6 +157,8 @@ function normalizeFormFromApi(data) {
       : (data.categoryId?._id || data.categoryId || ''),
     categoryOther: data.categoryOther || '',
     subjects: data.subjects?.length ? data.subjects : initial.subjects,
+    studentPhotoPreviewUrl: data.studentPhotoUrl || '',
+    studentPhotoFile: null,
     certificateAdjustments: {
       photoScale: data.certificateAdjustments?.photoScale ?? 1,
       photoX: data.certificateAdjustments?.photoX ?? 0,
@@ -243,7 +246,27 @@ export default function PublicStudentFormPage() {
     setSuccessMessage('');
 
     try {
-      const payload = buildPayload(form, categories);
+      let nextForm = form;
+
+      if (form.studentPhotoFile) {
+        const uploaded = await uploadPublicFile(
+          form.studentPhotoFile,
+          'bk_awards/student_photos',
+          { forcePng: true, removeBackground: true }
+        );
+
+        const uploadedUrl = uploaded?.url || '';
+        nextForm = {
+          ...form,
+          studentPhotoUrl: uploadedUrl,
+          certificatePhotoUrl: uploadedUrl,
+          studentPhotoPreviewUrl: uploadedUrl,
+          studentPhotoFile: null
+        };
+        setForm(nextForm);
+      }
+
+      const payload = buildPayload(nextForm, categories);
 
       if (editMode) {
         await api.put(`/students/public-edit/${token}`, payload);

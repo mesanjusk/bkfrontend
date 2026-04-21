@@ -38,6 +38,7 @@ import {
   calculateBest5Preview
 } from './studentFormConfig';
 import { uploadPublicFile } from '../../services/uploadService';
+import ImageCropDialog from '../common/ImageCropDialog';
 
 const steps = ['Profile', 'Academic', 'Uploads', ''];
 
@@ -420,31 +421,20 @@ export function StudentWizardStepAcademic({
 export function StudentWizardStepUploads({ form, setForm, errors }) {
   const [uploadingField, setUploadingField] = useState('');
   const [uploadError, setUploadError] = useState('');
+  const [cropOpen, setCropOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState('');
 
-  const handleFile = async (event, field) => {
+  const handleMarksheetFile = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setUploadError('');
-    setUploadingField(field);
+    setUploadingField('marksheetFileUrl');
 
     try {
-      const uploaded = await uploadPublicFile(
-        file,
-        field === 'marksheetFileUrl' ? 'bk_awards/marksheets' : 'bk_awards/student_photos'
-      );
-
+      const uploaded = await uploadPublicFile(file, 'bk_awards/marksheets');
       const url = uploaded?.url || '';
-
-      if (field === 'marksheetFileUrl') {
-        setForm((prev) => ({ ...prev, marksheetFileUrl: url, resultImageUrl: url }));
-      } else {
-        setForm((prev) => ({
-          ...prev,
-          studentPhotoUrl: url,
-          certificatePhotoUrl: url
-        }));
-      }
+      setForm((prev) => ({ ...prev, marksheetFileUrl: url, resultImageUrl: url }));
     } catch (error) {
       setUploadError(error?.response?.data?.message || 'File upload failed. Please try a smaller file.');
     } finally {
@@ -452,6 +442,35 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
       event.target.value = '';
     }
   };
+
+  const handlePhotoPick = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadError('');
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setRawImageSrc(reader.result);
+      setCropOpen(true);
+    };
+    reader.onerror = () => setUploadError('Unable to read selected image. Please try another file.');
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const handleCropDone = ({ file, previewUrl }) => {
+    setForm((prev) => ({
+      ...prev,
+      studentPhotoFile: file,
+      studentPhotoPreviewUrl: previewUrl,
+      studentPhotoUrl: '',
+      certificatePhotoUrl: ''
+    }));
+    setCropOpen(false);
+  };
+
+  const previewSrc = form.studentPhotoPreviewUrl || form.studentPhotoUrl || form.certificatePhotoUrl || '';
 
   return (
     <Stack spacing={1.75}>
@@ -485,7 +504,7 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
               : form.marksheetFileUrl || form.resultImageUrl
                 ? 'Marksheet Uploaded'
                 : 'Upload Marksheet *'}
-            <input hidden type="file" accept="image/*,.pdf" onChange={(e) => handleFile(e, 'marksheetFileUrl')} />
+            <input hidden type="file" accept="image/*,.pdf" onChange={handleMarksheetFile} />
           </Button>
 
           <Button
@@ -503,24 +522,20 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
             color={errors.studentPhotoUrl ? 'error' : 'primary'}
             disabled={Boolean(uploadingField)}
           >
-            {uploadingField === 'studentPhotoUrl'
-              ? 'Uploading student photo...'
-              : form.studentPhotoUrl || form.certificatePhotoUrl
-                ? 'Student Photo Uploaded'
-                : 'Upload Student Photo *'}
-            <input hidden type="file" accept="image/*" onChange={(e) => handleFile(e, 'studentPhotoUrl')} />
+            {previewSrc ? 'Student Photo Cropped' : 'Upload Student Photo *'}
+            <input hidden type="file" accept="image/*" onChange={handlePhotoPick} />
           </Button>
         </Stack>
       </Paper>
 
-      {form.studentPhotoUrl ? (
+      {previewSrc ? (
         <Paper sx={sectionPaperSx}>
           <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 1 }}>
             Photo Preview
           </Typography>
           <Box
             component="img"
-            src={form.studentPhotoUrl}
+            src={previewSrc}
             alt="Student preview"
             sx={{
               width: 84,
@@ -534,7 +549,15 @@ export function StudentWizardStepUploads({ form, setForm, errors }) {
         </Paper>
       ) : null}
 
-      
+      <ImageCropDialog
+        open={cropOpen}
+        imageSrc={rawImageSrc}
+        title="Crop student photo"
+        cropShape="round"
+        aspect={1}
+        onClose={() => setCropOpen(false)}
+        onDone={handleCropDone}
+      />
     </Stack>
   );
 }
@@ -584,7 +607,7 @@ export function StudentWizardStepReview({ form, categories = [] }) {
           Uploads
         </Typography>
         <DetailLine label="Marksheet" value={form.marksheetFileUrl || form.resultImageUrl ? 'Uploaded' : 'Missing'} />
-        <DetailLine label="Photo" value={form.studentPhotoUrl || form.certificatePhotoUrl ? 'Uploaded' : 'Missing'} />
+        <DetailLine label="Photo" value={form.studentPhotoFile || form.studentPhotoPreviewUrl || form.studentPhotoUrl || form.certificatePhotoUrl ? 'Uploaded' : 'Missing'} />
         <DetailLine label="Remarks" value={form.remarks || '-'} />
       </Paper>
 
@@ -652,8 +675,8 @@ export function StudentCertificatePreviewSection({ form, editable = false, onAdj
               fontWeight: 700
             }}
           >
-            {form.studentPhotoUrl ? (
-              <img src={form.studentPhotoUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {(form.studentPhotoPreviewUrl || form.studentPhotoUrl) ? (
+              <img src={form.studentPhotoPreviewUrl || form.studentPhotoUrl} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               'PHOTO'
             )}
@@ -751,7 +774,7 @@ export default function StudentFormWizard({
         field === 'marksheetFileUrl'
           ? form.marksheetFileUrl || form.resultImageUrl
           : field === 'studentPhotoUrl'
-            ? form.studentPhotoUrl || form.certificatePhotoUrl
+            ? form.studentPhotoFile || form.studentPhotoPreviewUrl || form.studentPhotoUrl || form.certificatePhotoUrl
             : form[field];
 
       if (!isPresent(value)) {

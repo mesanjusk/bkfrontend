@@ -1,0 +1,25 @@
+{
+  "id": "/?source=pwa",
+  "name": "Scholar Awards Event App",
+  "short_name": "ScholarAwards",
+  "description": "Live event operations, student registration, and real-time coordination for Scholar Awards.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#1a1a1a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/icons/pwa-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable any"
+    }
+  ]
+}
