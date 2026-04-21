@@ -38,20 +38,24 @@ function HeroCard({ editMode }) {
       sx={{
         bgcolor: '#2497d3',
         color: '#fff',
-        pt: { xs: 4, sm: 5 },
-        pb: { xs: 5, sm: 6 },
-        px: 2,
+        pt: { xs: 4, sm: 5, md: 6 },
+        pb: { xs: 5, sm: 6, md: 7 },
+        px: { xs: 2, md: 3 },
         textAlign: 'center',
-        borderRadius: '0 0 24px 24px',
-        mb: -2
+        borderRadius: '0 0 28px 28px',
+        mb: { xs: -2, md: -3 }
       }}
     >
-      <EmojiEvents sx={{ fontSize: 38, mb: 1.2, color: '#fff' }} />
+      <EmojiEvents sx={{ fontSize: { xs: 38, md: 44 }, mb: 1.2, color: '#fff' }} />
 
       <Typography
         variant="h5"
         fontWeight={800}
-        sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' }, textTransform: 'uppercase' }}
+        sx={{
+          fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
+          textTransform: 'uppercase',
+          letterSpacing: 0.5
+        }}
       >
         BADTE KADAM
       </Typography>
@@ -61,10 +65,10 @@ function HeroCard({ editMode }) {
         sx={{
           mt: 1,
           opacity: 0.95,
-          fontSize: { xs: '0.82rem', sm: '0.92rem' }
+          fontSize: { xs: '0.82rem', sm: '0.92rem', md: '1rem' }
         }}
       >
-        {editMode ? 'Update your submitted details' : 'Scholar Awrads 2026' }
+        {editMode ? 'Update your submitted details' : 'Scholar Awards 2026'}
       </Typography>
     </Box>
   );
@@ -74,7 +78,7 @@ function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
   return (
     <Box
       sx={{
-        minHeight: '50vh',
+        minHeight: { xs: '50vh', md: '58vh' },
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
@@ -84,9 +88,9 @@ function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
         elevation={0}
         sx={{
           width: '100%',
-          maxWidth: 520,
+          maxWidth: 560,
           textAlign: 'center',
-          borderRadius: 2,
+          borderRadius: 3,
           border: '1px solid #d9d9d9',
           p: { xs: 3, sm: 4 },
           bgcolor: '#fff'
@@ -104,7 +108,34 @@ function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
             : 'Your registration has been submitted successfully. Confirmation will be sent on WhatsApp.'}
         </Typography>
 
-       
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent="center">
+          {!editMode && (
+            <Button
+              variant="contained"
+              onClick={onBackToForm}
+              sx={{
+                borderRadius: 2.5,
+                textTransform: 'none',
+                fontWeight: 700,
+                bgcolor: '#2497d3',
+                '&:hover': { bgcolor: '#1e88c0' }
+              }}
+            >
+              Add Another
+            </Button>
+          )}
+          <Button
+            variant="outlined"
+            onClick={onGoList}
+            sx={{
+              borderRadius: 2.5,
+              textTransform: 'none',
+              fontWeight: 700
+            }}
+          >
+            Go Back
+          </Button>
+        </Stack>
       </Paper>
     </Box>
   );
@@ -249,8 +280,8 @@ export default function PublicStudentFormPage() {
 
   if (loading) {
     return (
-      <Container maxWidth="sm" sx={{ py: 4 }}>
-        <Skeleton variant="rounded" height={480} sx={{ borderRadius: 2 }} />
+      <Container maxWidth="md" sx={{ py: 4 }}>
+        <Skeleton variant="rounded" height={560} sx={{ borderRadius: 3 }} />
       </Container>
     );
   }
@@ -260,136 +291,179 @@ export default function PublicStudentFormPage() {
       <HeroCard editMode={editMode} />
 
       <Container
-        maxWidth="md"
+        maxWidth={false}
         sx={{
-          mt: { xs: 1.5, sm: 2 },
-          px: { xs: 1.25, sm: 2 }
+          mt: { xs: 1.5, sm: 2, md: 3 },
+          px: { xs: 1.25, sm: 2, md: 3, lg: 4, xl: 6 }
         }}
       >
-        <Stack spacing={1.5}>
-          {!submitted && successMessage && (
-            <Fade in>
-              <Alert severity="success" variant="filled" sx={{ borderRadius: 2 }}>
-                {successMessage}
+        <Box sx={{ maxWidth: editMode ? '1600px' : '1100px', mx: 'auto' }}>
+          <Stack spacing={2}>
+            {!submitted && successMessage && (
+              <Fade in>
+                <Alert severity="success" variant="filled" sx={{ borderRadius: 2.5 }}>
+                  {successMessage}
+                </Alert>
+              </Fade>
+            )}
+
+            {!editMode && !submitted && !successMessage && (
+              <Alert
+                severity="info"
+                icon={<School />}
+                sx={{
+                  borderRadius: 2.5,
+                  bgcolor: '#fff',
+                  border: '1px solid #d9d9d9',
+                  color: '#111827'
+                }}
+              >
+                Fill the form carefully and upload a clear student photo for certificate preview.
               </Alert>
-            </Fade>
-          )}
+            )}
 
-          {!editMode && !submitted && !successMessage && (
-            <Alert
-              severity="info"
-              icon={<School />}
+            {editMode && !submitted && (
+              <Tabs
+                value={tab}
+                onChange={(_, v) => setTab(v)}
+                centered
+                sx={{
+                  minHeight: 46,
+                  bgcolor: '#fff',
+                  borderRadius: 2.5,
+                  p: 0.5,
+                  border: '1px solid #d9d9d9',
+                  '& .MuiTabs-indicator': {
+                    height: 'calc(100% - 8px)',
+                    margin: '4px',
+                    borderRadius: 2,
+                    bgcolor: '#e8f4fb',
+                    zIndex: 0
+                  },
+                  '& .MuiTab-root': {
+                    minHeight: 40,
+                    zIndex: 1,
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    fontSize: { xs: '0.82rem', sm: '0.9rem' },
+                    borderRadius: 2
+                  }
+                }}
+              >
+                <Tab label="Form Details" />
+                <Tab label="Preview & Adjust" />
+              </Tabs>
+            )}
+
+            <Card
               sx={{
-                borderRadius: 2,
-                bgcolor: '#fff',
+                borderRadius: 3,
+                boxShadow: '0 10px 30px rgba(15, 23, 42, 0.05)',
                 border: '1px solid #d9d9d9',
-                color: '#111827'
+                overflow: 'hidden',
+                bgcolor: '#fff'
               }}
             >
-              
-            </Alert>
-          )}
+              <CardContent
+                sx={{
+                  p: { xs: 1.5, sm: 2.5, md: 3 }
+                }}
+              >
+                {submitted ? (
+                  <SubmissionSuccess
+                    editMode={editMode}
+                    onBackToForm={handleAddAnother}
+                    onGoList={handleBack}
+                  />
+                ) : editMode ? (
+                  <>
+                    {tab === 0 ? (
+                      <StudentFormWizard
+                        mode="public"
+                        form={form}
+                        setForm={setForm}
+                        categories={categories}
+                        onSubmit={handleSubmit}
+                        saving={saving}
+                        successMessage={successMessage}
+                        topInfo={{
+                          title: 'REGISTRATION FORM',
+                          description: 'Update your details below.'
+                        }}
+                      />
+                    ) : (
+                      <Fade in>
+                        <Box sx={{ minHeight: { md: 'calc(100vh - 260px)' } }}>
+                          <StudentCertificatePreviewSection
+                            form={form}
+                            setForm={setForm}
+                            categories={categories}
+                          />
 
-          {editMode && !submitted && (
-            <Tabs
-              value={tab}
-              onChange={(_, v) => setTab(v)}
-              centered
-              sx={{
-                minHeight: 42,
-                bgcolor: '#fff',
-                borderRadius: 2,
-                p: 0.5,
-                border: '1px solid #d9d9d9',
-                '& .MuiTabs-indicator': {
-                  height: 'calc(100% - 8px)',
-                  margin: '4px',
-                  borderRadius: 2,
-                  bgcolor: '#e8f4fb',
-                  zIndex: 0
-                },
-                '& .MuiTab-root': {
-                  minHeight: 38,
-                  zIndex: 1,
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  fontSize: { xs: '0.82rem', sm: '0.9rem' },
-                  borderRadius: 2
-                }
-              }}
-            >
-              <Tab label="Form Details" />
-              <Tab label="Preview & Adjust" />
-            </Tabs>
-          )}
+                          <Button
+                            fullWidth
+                            variant="contained"
+                            onClick={handleSubmit}
+                            disabled={saving}
+                            sx={{
+                              mt: 2,
+                              py: 1.2,
+                              borderRadius: 2,
+                              textTransform: 'none',
+                              fontWeight: 700,
+                              bgcolor: '#2497d3',
+                              '&:hover': { bgcolor: '#1e88c0' }
+                            }}
+                          >
+                            {saving ? 'Saving...' : 'Save Adjustments'}
+                          </Button>
+                        </Box>
+                      </Fade>
+                    )}
+                  </>
+                ) : (
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', xl: 'minmax(0, 1.05fr) minmax(380px, 520px)' },
+                      gap: { xs: 2, md: 3 },
+                      alignItems: 'start'
+                    }}
+                  >
+                    <Box sx={{ minWidth: 0 }}>
+                      <StudentFormWizard
+                        mode="public"
+                        form={form}
+                        setForm={setForm}
+                        categories={categories}
+                        onSubmit={handleSubmit}
+                        saving={saving}
+                        successMessage={successMessage}
+                        topInfo={{
+                          title: 'REGISTRATION FORM',
+                          description: 'Fill the form carefully and submit.'
+                        }}
+                      />
+                    </Box>
 
-          <Card
-            sx={{
-              borderRadius: 2,
-              boxShadow: 'none',
-              border: '1px solid #d9d9d9',
-              overflow: 'hidden',
-              bgcolor: '#fff'
-            }}
-          >
-            <CardContent
-              sx={{
-                p: { xs: 1.5, sm: 2.5 }
-              }}
-            >
-              {submitted ? (
-                <SubmissionSuccess
-                  editMode={editMode}
-                  onBackToForm={handleAddAnother}
-                  onGoList={handleBack}
-                />
-              ) : !editMode || tab === 0 ? (
-                <StudentFormWizard
-                  mode="public"
-                  form={form}
-                  setForm={setForm}
-                  categories={categories}
-                  onSubmit={handleSubmit}
-                  saving={saving}
-                  successMessage={successMessage}
-                  topInfo={{
-                    title: 'REGISTRATION FORM',
-                    description: editMode
-                      ? 'Update your details below.'
-                      : 'Fill the form carefully and submit.'
-                  }}
-                />
-              ) : (
-                <Fade in>
-                  <Box>
-                    <StudentCertificatePreviewSection
-                      form={form}
-                      setForm={setForm}
-                      categories={categories}
-                    />
-
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      onClick={handleSubmit}
-                      disabled={saving}
+                    <Box
                       sx={{
-                        mt: 2,
-                        py: 1.2,
-                        borderRadius: 1.5,
-                        textTransform: 'none',
-                        fontWeight: 700,
-                        bgcolor: '#2497d3'
+                        display: { xs: 'block', xl: 'block' },
+                        minWidth: 0
                       }}
                     >
-                      {saving ? 'Saving...' : 'Save Adjustments'}
-                    </Button>
+                      <StudentCertificatePreviewSection
+                        form={form}
+                        setForm={setForm}
+                        categories={categories}
+                      />
+                    </Box>
                   </Box>
-                </Fade>
-              )}
-            </CardContent>
-          </Card>
-        </Stack>
+                )}
+              </CardContent>
+            </Card>
+          </Stack>
+        </Box>
       </Container>
     </Box>
   );
