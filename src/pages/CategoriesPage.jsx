@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogTitle,
   Grid,
-  IconButton,
   MenuItem,
   Stack,
   Tab,
@@ -20,6 +19,7 @@ import {
   Typography,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import TableRowsIcon from '@mui/icons-material/TableRows';
 import api from '../api';
@@ -34,9 +34,10 @@ const defaultForm = {
   minPercentage: 0,
   calculationMethod: 'DIRECT_PERCENTAGE',
   notes: '',
+  isActive: true,
 };
 
-function CategoryCard({ item }) {
+function CategoryCard({ item, onEdit }) {
   const isVolunteer = item.categoryType === 'VOLUNTEER_TEAM';
 
   return (
@@ -78,22 +79,43 @@ function CategoryCard({ item }) {
               {item.notes}
             </Typography>
           ) : null}
+
+          <Stack direction="row" justifyContent="flex-end">
+            <Button size="small" startIcon={<EditIcon />} onClick={() => onEdit(item)}>
+              Edit
+            </Button>
+          </Stack>
         </Stack>
       </CardContent>
     </Card>
   );
 }
 
-function AddCategoryDialog({ open, onClose, onSaved }) {
+function CategoryFormDialog({ open, onClose, onSaved, editItem }) {
   const [form, setForm] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
 
-  const isAwardCategory = form.categoryType === 'AWARD';
+  useEffect(() => {
+    if (editItem) {
+      setForm({
+        title: editItem.title || '',
+        categoryType: editItem.categoryType || 'AWARD',
+        className: editItem.className || '',
+        minPercentage: editItem.minPercentage || 0,
+        calculationMethod: editItem.calculationMethod || 'DIRECT_PERCENTAGE',
+        notes: editItem.notes || '',
+        isActive: editItem.isActive !== undefined ? editItem.isActive : true,
+      });
+    } else {
+      setForm(defaultForm);
+    }
+  }, [editItem, open]);
 
-  const resetForm = () => setForm(defaultForm);
+  const isAwardCategory = form.categoryType === 'AWARD';
+  const isEditMode = Boolean(editItem);
 
   const handleClose = () => {
-    resetForm();
+    setForm(defaultForm);
     onClose();
   };
 
@@ -108,12 +130,17 @@ function AddCategoryDialog({ open, onClose, onSaved }) {
         minPercentage: isAwardCategory ? Number(form.minPercentage || 0) : 0,
         calculationMethod: isAwardCategory ? form.calculationMethod : 'DIRECT_PERCENTAGE',
         notes: form.notes || '',
+        isActive: form.isActive,
       };
 
-      await api.post('/categories', payload);
-      resetForm();
+      if (isEditMode) {
+        await api.put(`/categories/${editItem._id}`, payload);
+      } else {
+        await api.post('/categories', payload);
+      }
+
       onSaved?.();
-      onClose();
+      handleClose();
     } finally {
       setSaving(false);
     }
@@ -121,7 +148,7 @@ function AddCategoryDialog({ open, onClose, onSaved }) {
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>Add category</DialogTitle>
+      <DialogTitle>{isEditMode ? 'Edit category' : 'Add category'}</DialogTitle>
       <DialogContent>
         <Box component="form" onSubmit={save} sx={{ pt: 1 }}>
           <Stack spacing={2}>
@@ -194,6 +221,19 @@ function AddCategoryDialog({ open, onClose, onSaved }) {
             )}
 
             <TextField
+              select
+              label="Status"
+              value={form.isActive ? 'true' : 'false'}
+              onChange={(e) =>
+                setForm({ ...form, isActive: e.target.value === 'true' })
+              }
+              fullWidth
+            >
+              <MenuItem value="true">Active</MenuItem>
+              <MenuItem value="false">Inactive</MenuItem>
+            </TextField>
+
+            <TextField
               label="Notes"
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
@@ -205,7 +245,7 @@ function AddCategoryDialog({ open, onClose, onSaved }) {
             <Stack direction="row" spacing={1} justifyContent="flex-end">
               <Button onClick={handleClose}>Cancel</Button>
               <Button type="submit" variant="contained" disabled={saving}>
-                {saving ? 'Saving...' : 'Save category'}
+                {saving ? 'Saving...' : isEditMode ? 'Update category' : 'Save category'}
               </Button>
             </Stack>
           </Stack>
@@ -219,7 +259,8 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
   const [tab, setTab] = useState('ALL');
   const [viewMode, setViewMode] = useState('card');
-  const [openAdd, setOpenAdd] = useState(false);
+  const [openForm, setOpenForm] = useState(false);
+  const [editItem, setEditItem] = useState(null);
 
   const load = async () => {
     const { data } = await api.get('/categories');
@@ -240,6 +281,16 @@ export default function CategoriesPage() {
     return categories;
   }, [categories, tab]);
 
+  const handleAdd = () => {
+    setEditItem(null);
+    setOpenForm(true);
+  };
+
+  const handleEdit = (item) => {
+    setEditItem(item);
+    setOpenForm(true);
+  };
+
   const rows = filteredCategories.map((c) => {
     const isVolunteer = c.categoryType === 'VOLUNTEER_TEAM';
 
@@ -251,6 +302,11 @@ export default function CategoriesPage() {
       calculationMethod: isVolunteer ? '-' : c.calculationMethod || '-',
       notes: c.notes || '-',
       active: () => <StatusChip label={c.isActive ? 'Active' : 'Inactive'} />,
+      action: () => (
+        <Button size="small" startIcon={<EditIcon />} onClick={() => handleEdit(c)}>
+          Edit
+        </Button>
+      ),
     };
   });
 
@@ -304,7 +360,7 @@ export default function CategoriesPage() {
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
-                onClick={() => setOpenAdd(true)}
+                onClick={handleAdd}
               >
                 Add Category
               </Button>
@@ -317,7 +373,7 @@ export default function CategoriesPage() {
         <Grid container spacing={2}>
           {filteredCategories.map((item) => (
             <Grid key={item._id} size={{ xs: 12, sm: 6, lg: 4 }}>
-              <CategoryCard item={item} />
+              <CategoryCard item={item} onEdit={handleEdit} />
             </Grid>
           ))}
         </Grid>
@@ -331,16 +387,21 @@ export default function CategoriesPage() {
             { key: 'calculationMethod', label: 'Method' },
             { key: 'notes', label: 'Notes' },
             { key: 'active', label: 'Status' },
+            { key: 'action', label: 'Action' },
           ]}
           rows={rows}
           mobileTitleKey="title"
         />
       )}
 
-      <AddCategoryDialog
-        open={openAdd}
-        onClose={() => setOpenAdd(false)}
+      <CategoryFormDialog
+        open={openForm}
+        onClose={() => {
+          setOpenForm(false);
+          setEditItem(null);
+        }}
         onSaved={load}
+        editItem={editItem}
       />
     </>
   );
