@@ -104,34 +104,7 @@ function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
             : 'Your registration has been submitted successfully. Confirmation will be sent on WhatsApp.'}
         </Typography>
 
-        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} justifyContent="center">
-          <Button
-            variant="contained"
-            onClick={onBackToForm}
-            sx={{
-              borderRadius: 1.5,
-              textTransform: 'none',
-              fontWeight: 700,
-              minWidth: 170,
-              bgcolor: '#2497d3'
-            }}
-          >
-            {editMode ? 'Edit Again' : 'Add Another'}
-          </Button>
-
-          <Button
-            variant="outlined"
-            onClick={onGoList}
-            sx={{
-              borderRadius: 1.5,
-              textTransform: 'none',
-              fontWeight: 700,
-              minWidth: 170
-            }}
-          >
-            Back
-          </Button>
-        </Stack>
+       
       </Paper>
     </Box>
   );

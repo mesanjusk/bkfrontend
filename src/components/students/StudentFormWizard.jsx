@@ -170,10 +170,7 @@ export function StudentWizardStepPersonal({ form, setForm, errors }) {
 
       <Box>
         <Typography sx={{ mb: 0.8, fontSize: '0.92rem', color: errors.gender ? 'error.main' : 'text.secondary' }}>
-          Gender :
-        </Typography>
-
-        <RadioGroup
+          Gender :  <RadioGroup
           row
           value={form.gender || ''}
           onChange={(e) => updateField('gender', e.target.value)}
@@ -181,6 +178,9 @@ export function StudentWizardStepPersonal({ form, setForm, errors }) {
           <FormControlLabel value="Female" control={<Radio size="small" />} label="Female" />
           <FormControlLabel value="Male" control={<Radio size="small" />} label="Male" />
         </RadioGroup>
+        </Typography>
+
+       
 
         {errors.gender ? (
           <Typography sx={{ mt: 0.4, fontSize: '0.75rem', color: 'error.main' }}>
