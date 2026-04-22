@@ -18,7 +18,8 @@ import {
 import {
   CheckCircle,
   EmojiEvents,
-  School
+  School,
+  WhatsApp
 } from '@mui/icons-material';
 import api from '../api';
 import StudentFormWizard from '../components/students/StudentFormWizard';
@@ -75,7 +76,12 @@ function HeroCard({ editMode }) {
   );
 }
 
-function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
+function SubmissionSuccess({
+  editMode,
+  onBackToForm,
+  onGoList,
+  whatsappLink = 'https://wa.me/919370195000'
+}) {
   return (
     <Box
       sx={{
@@ -109,7 +115,61 @@ function SubmissionSuccess({ editMode, onBackToForm, onGoList }) {
             : 'Your registration has been submitted successfully. Confirmation will be sent on WhatsApp.'}
         </Typography>
 
-        
+        <Stack spacing={1.5}>
+          {!editMode && (
+            <Button
+              fullWidth
+              variant="contained"
+              startIcon={<WhatsApp />}
+              component="a"
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{
+                py: 1.2,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 700,
+                bgcolor: '#25D366',
+                '&:hover': { bgcolor: '#1ebe5d' }
+              }}
+            >
+              Open WhatsApp Chat
+            </Button>
+          )}
+
+          {!editMode && (
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={onBackToForm}
+              sx={{
+                py: 1.1,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 700
+              }}
+            >
+              Add Another Registration
+            </Button>
+          )}
+
+          {editMode && (
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={onGoList}
+              sx={{
+                py: 1.1,
+                borderRadius: 2,
+                textTransform: 'none',
+                fontWeight: 700
+              }}
+            >
+              Go Back
+            </Button>
+          )}
+        </Stack>
       </Paper>
     </Box>
   );
@@ -195,6 +255,8 @@ export default function PublicStudentFormPage() {
   const [successMessage, setSuccessMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [tab, setTab] = useState(0);
+
+  const whatsappLink = 'https://wa.me/919370195000';
 
   useEffect(() => {
     api.get('/students/public-categories').then((r) => setCategories(r.data || []));
@@ -370,6 +432,7 @@ export default function PublicStudentFormPage() {
                     editMode={editMode}
                     onBackToForm={handleAddAnother}
                     onGoList={handleBack}
+                    whatsappLink={whatsappLink}
                   />
                 ) : editMode ? (
                   <>
