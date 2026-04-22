@@ -152,11 +152,19 @@ export default function WhatsAppPage() {
     body.append('file', file);
     body.append('folder', 'bk_award/invitations');
     setUploadingImage(true);
+    setResultMessage(null);
     try {
       const response = await api.post('/uploads/public', body, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      handleInvitationField('imageUrl', response.data?.url || '');
+      const url = response?.data?.url || response?.data?.secure_url || '';
+      if (!url) {
+        throw new Error('Upload failed - no URL returned');
+      }
+      handleInvitationField('imageUrl', url);
+      setResultMessage({ type: 'success', text: 'Invitation image uploaded successfully.' });
+    } catch (error) {
+      setResultMessage({ type: 'error', text: error?.response?.data?.message || error.message || 'Image upload failed' });
     } finally {
       setUploadingImage(false);
     }
@@ -184,7 +192,24 @@ export default function WhatsAppPage() {
     try {
       const recipients = invitationForm.recipientMode === 'single'
         ? [{ name: invitationForm.singleName || 'Guest', mobile: invitationForm.singleNumber, source: 'SINGLE' }]
-        : selectedRecipients.filter((item) => item.checked !== false).map((item) => ({ name: item.name, mobile: item.mobile, source: item.source }));
+        : selectedRecipients
+            .filter((item) => item.checked !== false)
+            .map((item) => ({ name: item.name, mobile: item.mobile, source: item.source }));
+
+      if (!invitationForm.imageUrl) {
+        setResultMessage({ type: 'error', text: 'Please upload invitation image first.' });
+        return;
+      }
+
+      if (!invitationForm.eventName || !invitationForm.date || !invitationForm.time || !invitationForm.venue) {
+        setResultMessage({ type: 'error', text: 'Please fill event name, date, time and venue.' });
+        return;
+      }
+
+      if (!recipients.length) {
+        setResultMessage({ type: 'error', text: 'No valid recipients selected.' });
+        return;
+      }
 
       const response = await api.post('/whatsapp/send-invitation', {
         imageUrl: invitationForm.imageUrl,
@@ -201,7 +226,13 @@ export default function WhatsAppPage() {
       });
       load();
     } catch (error) {
-      setResultMessage({ type: 'error', text: error?.response?.data?.message || error.message });
+      const data = error?.response?.data;
+      setResultMessage({
+        type: 'error',
+        text: data?.missingFields?.length
+          ? `Missing fields: ${data.missingFields.join(', ')}`
+          : data?.message || error.message
+      });
     } finally {
       setSendingInvitation(false);
     }
