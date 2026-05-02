@@ -16,7 +16,8 @@ import {
   Typography,
   Paper,
   Divider,
-  Chip
+  Chip,
+  Collapse
 } from '@mui/material';
 import {
   CheckCircle,
@@ -26,7 +27,9 @@ import {
   Share,
   Edit,
   Download,
-  WarningAmber
+  WarningAmber,
+  PhotoCamera,
+  TaskAlt
 } from '@mui/icons-material';
 import api from '../api';
 import StudentFormWizard from '../components/students/StudentFormWizard';
@@ -78,21 +81,69 @@ function HeroCard({ editMode }) {
 }
 
 /**
- * ConfirmationCard — shown after successful registration.
+ * PhotoUploadBadge — shown inline in the form area when a photo has been selected.
+ * Gives clear visual feedback that the photo is ready to upload.
+ */
+function PhotoUploadBadge({ previewUrl }) {
+  if (!previewUrl) return null;
+  return (
+    <Fade in>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          p: 1.5,
+          borderRadius: 2.5,
+          border: '2px solid #25D366',
+          bgcolor: '#f0fff4',
+          mt: 1
+        }}
+      >
+        <Box
+          component="img"
+          src={previewUrl}
+          alt="Uploaded photo"
+          sx={{
+            width: 64,
+            height: 64,
+            borderRadius: '50%',
+            objectFit: 'cover',
+            border: '2px solid #25D366',
+            flexShrink: 0
+          }}
+        />
+        <Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.6 }}>
+            <CheckCircle sx={{ color: '#25D366', fontSize: 18 }} />
+            <Typography fontWeight={700} color="#1a7a3a" fontSize="0.95rem">
+              Photo Uploaded Successfully
+            </Typography>
+          </Box>
+          <Typography variant="caption" color="text.secondary">
+            Your photo has been attached to the registration.
+          </Typography>
+        </Box>
+      </Box>
+    </Fade>
+  );
+}
+
+
  * Shows a visual "Registration Proof" card that the student can screenshot and share.
  * Also has a WhatsApp share button that opens WhatsApp with a pre-filled message to
  * the org's number, so they have proof on their own phone too.
  */
-function ConfirmationCard({ studentName, studentId, editToken, categoryName, mobile, onBackToForm }) {
+function ConfirmationCard({ studentName, studentId, editToken, categoryName, mobile, percentage, onBackToForm }) {
   const confirmRef = useRef(null);
-  const registrationId = editToken ? editToken.slice(-8).toUpperCase() : (studentId || '').slice(-8).toUpperCase();
+  const percentageDisplay = percentage ? `${percentage}%` : null;
 
   // WhatsApp share message — opens on student's own WhatsApp to the org number
   const shareMessage = encodeURIComponent(
     `✅ *My BK Scholar Awards 2026 Registration*\n\n` +
     `*Name:* ${studentName}\n` +
-    `*Category:* ${categoryName || 'Scholar Award'}\n` +
-    `*Registration ID:* ${registrationId}\n` +
+    `*Selected Category:* ${categoryName || 'Scholar Award'}\n` +
+    (percentageDisplay ? `*Percentage:* ${percentageDisplay}\n` : '') +
     `*Mobile:* ${mobile}\n\n` +
     `I have successfully registered for BK Scholar Awards 2026.\n` +
     `Please confirm my registration. 🙏`
@@ -145,10 +196,12 @@ function ConfirmationCard({ studentName, studentId, editToken, categoryName, mob
                   <Typography fontWeight={700}>{categoryName}</Typography>
                 </Box>
               )}
-              <Box sx={{ bgcolor: '#fffbf0', borderRadius: 2, p: 1.2 }}>
-                <Typography variant="caption" color="text.secondary" fontWeight={600}>REGISTRATION ID</Typography>
-                <Typography fontWeight={800} sx={{ letterSpacing: 2, fontSize: '1.1rem' }}>{registrationId}</Typography>
-              </Box>
+              {percentageDisplay && (
+                <Box sx={{ bgcolor: '#fffbf0', borderRadius: 2, p: 1.2 }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>PERCENTAGE</Typography>
+                  <Typography fontWeight={800} sx={{ letterSpacing: 1, fontSize: '1.1rem', color: '#b45309' }}>{percentageDisplay}</Typography>
+                </Box>
+              )}
               <Box sx={{ bgcolor: '#f8f8f8', borderRadius: 2, p: 1.2 }}>
                 <Typography variant="caption" color="text.secondary" fontWeight={600}>MOBILE</Typography>
                 <Typography fontWeight={700}>{mobile}</Typography>
@@ -366,7 +419,8 @@ export default function PublicStudentFormPage() {
           studentId:   data.studentId || '',
           editToken:   data.editToken  || '',
           categoryName,
-          mobile:      String(form.mobile || '').replace(/\D/g, '')
+          mobile:      String(form.mobile || '').replace(/\D/g, ''),
+          percentage:  form.percentage || null
         });
         setSuccessMessage(data?.message || 'Registration submitted successfully.');
         setSubmitted(true);
@@ -451,10 +505,34 @@ export default function PublicStudentFormPage() {
         <Box sx={{ maxWidth: editMode ? '1600px' : '1100px', mx: 'auto' }}>
           <Stack spacing={2}>
 
+            {/* Success banner — prominent full-width */}
+            {successMessage && !submitted && (
+              <Fade in>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    p: 2,
+                    borderRadius: 2.5,
+                    bgcolor: '#1a7a3a',
+                    color: '#fff',
+                    boxShadow: '0 4px 16px rgba(37,211,102,0.25)'
+                  }}
+                >
+                  <TaskAlt sx={{ fontSize: 30, flexShrink: 0 }} />
+                  <Box>
+                    <Typography fontWeight={800} fontSize="1rem">{successMessage}</Typography>
+                    <Typography fontSize="0.82rem" sx={{ opacity: 0.88 }}>Your details have been saved successfully.</Typography>
+                  </Box>
+                </Box>
+              </Fade>
+            )}
+
             {/* Error */}
             {errorMessage && (
               <Fade in>
-                <Alert severity="error" variant="filled" sx={{ borderRadius: 2.5 }}>
+                <Alert severity="error" variant="filled" sx={{ borderRadius: 2.5, fontSize: '1rem', fontWeight: 600, py: 1.5 }}>
                   {errorMessage}
                 </Alert>
               </Fade>
@@ -474,6 +552,11 @@ export default function PublicStudentFormPage() {
               >
                 Fill the form carefully and upload a clear student photo for certificate preview.
               </Alert>
+            )}
+
+            {/* Photo upload confirmation badge */}
+            {!submitted && form.studentPhotoPreviewUrl && (
+              <PhotoUploadBadge previewUrl={form.studentPhotoPreviewUrl} />
             )}
 
             {/* Form tabs */}
