@@ -6,12 +6,18 @@ import {
   List, ListItemButton, ListItemText, MenuItem, Stack, Switch,
   Tab, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
-import AddIcon       from '@mui/icons-material/Add';
-import SendIcon      from '@mui/icons-material/Send';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import LinkIcon      from '@mui/icons-material/Link';
-import LinkOffIcon   from '@mui/icons-material/LinkOff';
-import QrCode2Icon   from '@mui/icons-material/QrCode2';
+import AddIcon          from '@mui/icons-material/Add';
+import SendIcon         from '@mui/icons-material/Send';
+import UploadFileIcon   from '@mui/icons-material/UploadFile';
+import LinkIcon         from '@mui/icons-material/Link';
+import LinkOffIcon      from '@mui/icons-material/LinkOff';
+import QrCode2Icon      from '@mui/icons-material/QrCode2';
+import PauseIcon        from '@mui/icons-material/Pause';
+import PlayArrowIcon    from '@mui/icons-material/PlayArrow';
+import StopIcon         from '@mui/icons-material/Stop';
+import DownloadIcon     from '@mui/icons-material/Download';
+import NavigateNextIcon     from '@mui/icons-material/NavigateNext';
+import NavigateBeforeIcon   from '@mui/icons-material/NavigateBefore';
 import PageHeader    from '../components/PageHeader';
 import PageSurface   from '../components/PageSurface';
 import ResponsiveDialog from '../components/ResponsiveDialog';
@@ -46,6 +52,17 @@ const emptyInvitationForm = {
   imageUrl: '', eventName: '', date: '', time: '', venue: '',
 };
 
+// Default font style — replaces the old simple 'bottom' string
+const emptyFontStyle = {
+  verticalPos: 'bottom',   // 'top' | 'middle' | 'bottom'
+  fontFamily:  'serif',
+  fontSize:    48,
+  color:       '#ffffff',
+  fontWeight:  'bold',     // 'bold' | 'normal'
+  textAlign:   'center',   // 'left' | 'center' | 'right'
+  shadow:      true,
+};
+
 const recipientModeOptions = [
   { value: 'students',    label: 'Students'     },
   { value: 'parents',     label: 'Parents'      },
@@ -63,11 +80,31 @@ const emptyRule = {
   templateLanguage: 'en_US', isActive: true, priority: 100, stopAfterMatch: true,
 };
 
+const FONT_FAMILIES = [
+  { value: 'serif',           label: 'Serif'           },
+  { value: 'sans-serif',      label: 'Sans-serif'      },
+  { value: 'cursive',         label: 'Cursive'         },
+  { value: 'monospace',       label: 'Monospace'       },
+  { value: 'Arial',           label: 'Arial'           },
+  { value: 'Georgia',         label: 'Georgia'         },
+  { value: 'Times New Roman', label: 'Times New Roman' },
+  { value: 'Verdana',         label: 'Verdana'         },
+  { value: 'Impact',          label: 'Impact'          },
+];
+
+const MAX_RECIPIENTS = 999;
+// Random delay between MIN and MAX seconds
+const DELAY_MIN_S = 4;
+const DELAY_MAX_S = 8;
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const normalizePhone   = (v) => String(v || '').replace(/[^\d]/g, '').trim();
 const formatWhen       = (v) => v ? new Date(v).toLocaleString() : '-';
 const conversationName = (item) => item?.contactName || item?.name || item?.phone || 'Unknown';
+const sleep            = (ms) => new Promise(r => setTimeout(r, ms));
+const randDelay        = () =>
+  (Math.floor(Math.random() * (DELAY_MAX_S - DELAY_MIN_S + 1)) + DELAY_MIN_S) * 1000;
 
 function parseRowsToRecipients(rows = []) {
   return rows.map(row => ({
@@ -80,6 +117,67 @@ function parseRowsToRecipients(rows = []) {
     ),
     source: 'FILE',
   })).filter(item => item.mobile);
+}
+
+// Format seconds to mm:ss
+function fmtSecs(s) {
+  if (!s || s < 0) return '0s';
+  if (s < 60) return `${s}s`;
+  return `${Math.floor(s / 60)}m ${s % 60}s`;
+}
+
+// ── Canvas drawing helper ─────────────────────────────────────────────────────
+
+function drawNameOnCanvas(canvas, imageEl, name, fontStyle) {
+  if (!canvas || !imageEl) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width;
+  const H = canvas.height;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(imageEl, 0, 0, W, H);
+
+  if (!name) return;
+
+  const {
+    verticalPos = 'bottom',
+    fontFamily  = 'serif',
+    fontSize    = 48,
+    color       = '#ffffff',
+    fontWeight  = 'bold',
+    textAlign   = 'center',
+    shadow      = true,
+  } = fontStyle;
+
+  // Scale font size relative to canvas width (canvas is 600px wide by design)
+  const scaledSize = Math.round(fontSize * (W / 600));
+
+  ctx.font       = `${fontWeight} ${scaledSize}px ${fontFamily}`;
+  ctx.fillStyle  = color;
+  ctx.textAlign  = textAlign;
+  ctx.textBaseline = 'middle';
+
+  if (shadow) {
+    ctx.shadowColor   = 'rgba(0,0,0,0.75)';
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    ctx.shadowBlur    = 6;
+  } else {
+    ctx.shadowColor = 'transparent';
+    ctx.shadowBlur  = 0;
+  }
+
+  // Determine X based on textAlign
+  const x = textAlign === 'left' ? 24
+           : textAlign === 'right' ? W - 24
+           : W / 2;
+
+  // Determine Y based on verticalPos
+  const y = verticalPos === 'top'    ? scaledSize + 16
+           : verticalPos === 'middle' ? H / 2
+           : H - scaledSize - 16;
+
+  ctx.fillText(name, x, y);
 }
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
@@ -395,13 +493,65 @@ function AutoReplyPanel({ rules, onAdd, onEdit, isBaileys }) {
   );
 }
 
-// ── Invitation panel ──────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Invitation Panel (Enhanced) ───────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
 
 function InvitationPanel({
-  isBaileys, invitationForm, setInvitationForm, selectedRecipients, setSelectedRecipients,
-  textPosition, setTextPosition, onUploadImage, uploadingImage, onSend, sending,
+  isBaileys,
+  invitationForm, setInvitationForm,
+  selectedRecipients, setSelectedRecipients,
+  fontStyle, setFontStyle,           // renamed from textPosition
+  onUploadImage, uploadingImage,
+  sendServiceFn,                     // the actual service call: whatsappService.sendInvitation or baileysSendInvitation
   fileName, setFileName,
 }) {
+  // ── Canvas preview state ────────────────────────────────────────────────────
+  const canvasRef     = useRef(null);
+  const imageElRef    = useRef(null);  // holds the loaded Image object
+  const [previewIdx,  setPreviewIdx]  = useState(0);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  // ── Queue state ─────────────────────────────────────────────────────────────
+  // Each queue item: { name, mobile, source, status: 'pending'|'sending'|'delivered'|'failed', error }
+  const [queue,       setQueue]       = useState([]);   // [] = not started
+  const [queueActive, setQueueActive] = useState(false);
+  const [queuePaused, setQueuePaused] = useState(false);
+  const [queueDone,   setQueueDone]   = useState(false);
+  const [queueIdx,    setQueueIdx]    = useState(0);    // current sending index
+  const pauseRef    = useRef(false);
+  const cancelRef   = useRef(false);
+
+  // ── Load image into hidden Image element whenever URL changes ───────────────
+  useEffect(() => {
+    const url = invitationForm.imageUrl;
+    if (!url) { setImageLoaded(false); imageElRef.current = null; return; }
+    setImageLoaded(false);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { imageElRef.current = img; setImageLoaded(true); };
+    img.onerror = () => { imageElRef.current = null; setImageLoaded(false); };
+    img.src = url;
+  }, [invitationForm.imageUrl]);
+
+  // ── Redraw canvas whenever image, previewIdx, or fontStyle changes ──────────
+  useEffect(() => {
+    if (!imageLoaded || !canvasRef.current || !imageElRef.current) return;
+    const recipients = getCheckedRecipients();
+    const name = invitationForm.recipientMode === 'single'
+      ? invitationForm.singleName || 'Guest'
+      : recipients[previewIdx]?.name || '';
+    drawNameOnCanvas(canvasRef.current, imageElRef.current, name, fontStyle);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imageLoaded, previewIdx, fontStyle, invitationForm.singleName,
+      invitationForm.recipientMode, selectedRecipients]);
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  const getCheckedRecipients = () =>
+    invitationForm.recipientMode === 'single'
+      ? [{ name: invitationForm.singleName || 'Guest', mobile: invitationForm.singleNumber, source: 'MANUAL' }]
+      : selectedRecipients.filter(r => r.checked !== false);
+
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -410,117 +560,506 @@ function InvitationPanel({
     const workbook = XLSX.read(buffer, { type: 'array' });
     const rows     = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: '' });
     setSelectedRecipients(parseRowsToRecipients(rows).map(r => ({ ...r, checked: true })));
+    setPreviewIdx(0);
   };
 
+  const handleDownloadPreview = () => {
+    if (!canvasRef.current) return;
+    const link = document.createElement('a');
+    link.download = `invite_preview_${previewIdx + 1}.png`;
+    link.href = canvasRef.current.toDataURL('image/png');
+    link.click();
+  };
+
+  const checkedRecipients = getCheckedRecipients();
+  const totalCount        = checkedRecipients.length;
+  const overLimit         = totalCount > MAX_RECIPIENTS;
+
+  // ── Queue logic ─────────────────────────────────────────────────────────────
+  const startQueue = () => {
+    const recipients = getCheckedRecipients().slice(0, MAX_RECIPIENTS);
+    if (!recipients.length) return;
+    pauseRef.current  = false;
+    cancelRef.current = false;
+    setQueue(recipients.map(r => ({ ...r, status: 'pending', error: '' })));
+    setQueueIdx(0);
+    setQueueActive(true);
+    setQueuePaused(false);
+    setQueueDone(false);
+  };
+
+  const pauseQueue  = () => { pauseRef.current = true;  setQueuePaused(true);  };
+  const resumeQueue = () => { pauseRef.current = false; setQueuePaused(false); };
+  const cancelQueue = () => { cancelRef.current = true; pauseRef.current = false; };
+
+  const resetQueue  = () => {
+    setQueue([]); setQueueActive(false); setQueuePaused(false);
+    setQueueDone(false); setQueueIdx(0);
+    pauseRef.current = false; cancelRef.current = false;
+  };
+
+  // ── The sending loop — runs as a useEffect watching queueActive/queueIdx ───
+  useEffect(() => {
+    if (!queueActive || queueDone) return;
+
+    const run = async () => {
+      const recipients = queue;
+      let i = queueIdx;
+
+      while (i < recipients.length) {
+        // Cancelled
+        if (cancelRef.current) {
+          setQueueActive(false);
+          setQueueDone(true);
+          return;
+        }
+        // Paused — wait until resumed
+        while (pauseRef.current) {
+          await sleep(500);
+          if (cancelRef.current) {
+            setQueueActive(false);
+            setQueueDone(true);
+            return;
+          }
+        }
+
+        // Mark as sending
+        setQueue(prev => prev.map((item, idx) =>
+          idx === i ? { ...item, status: 'sending' } : item));
+        setQueueIdx(i);
+
+        try {
+          await sendServiceFn({
+            ...invitationForm,
+            recipients: [{ name: recipients[i].name, mobile: recipients[i].mobile, source: recipients[i].source }],
+            textPosition: fontStyle,   // send full fontStyle as textPosition for backend
+          });
+          setQueue(prev => prev.map((item, idx) =>
+            idx === i ? { ...item, status: 'delivered' } : item));
+        } catch (err) {
+          setQueue(prev => prev.map((item, idx) =>
+            idx === i ? { ...item, status: 'failed', error: err?.response?.data?.message || 'Failed' } : item));
+        }
+
+        i++;
+
+        // Delay between messages (skip delay after last one)
+        if (i < recipients.length && !cancelRef.current) {
+          const delay = randDelay();
+          await sleep(delay);
+        }
+      }
+
+      setQueueActive(false);
+      setQueueDone(true);
+    };
+
+    run();
+  // We intentionally run this only when queueActive flips to true
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queueActive]);
+
+  // ── Queue stats ──────────────────────────────────────────────────────────────
+  const delivered   = queue.filter(r => r.status === 'delivered').length;
+  const failed      = queue.filter(r => r.status === 'failed').length;
+  const pending     = queue.filter(r => r.status === 'pending').length;
+  const progress    = queue.length ? Math.round(((delivered + failed) / queue.length) * 100) : 0;
+  const avgDelay    = (DELAY_MIN_S + DELAY_MAX_S) / 2;
+  const etaSecs     = Math.round(pending * avgDelay);
+
+  const accentColor = isBaileys ? 'warning' : 'primary';
+
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <PageSurface>
-      <Card><CardContent>
-        <Typography variant="h6" fontWeight={800} sx={{ mb: 2 }}>
-          {isBaileys ? '🐝 Baileys Invitation Blast' : '📨 Invitation Blast'}
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <TextField label="Event Name" value={invitationForm.eventName}
-              onChange={e => setInvitationForm(p => ({ ...p, eventName: e.target.value }))} />
-          </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <TextField type="date" label="Date" InputLabelProps={{ shrink: true }}
-              value={invitationForm.date}
-              onChange={e => setInvitationForm(p => ({ ...p, date: e.target.value }))} />
-          </Grid>
-          <Grid size={{ xs: 12, md: 3 }}>
-            <TextField type="time" label="Time" InputLabelProps={{ shrink: true }}
-              value={invitationForm.time}
-              onChange={e => setInvitationForm(p => ({ ...p, time: e.target.value }))} />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField label="Venue" value={invitationForm.venue}
-              onChange={e => setInvitationForm(p => ({ ...p, venue: e.target.value }))} />
-          </Grid>
-          <Grid size={{ xs: 12, md: 8 }}>
-            <TextField label="Image URL" value={invitationForm.imageUrl}
-              onChange={e => setInvitationForm(p => ({ ...p, imageUrl: e.target.value }))}
-              helperText="Paste URL or upload below." />
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Button component="label" variant="outlined" fullWidth sx={{ height: 56 }}
-              startIcon={uploadingImage ? <CircularProgress size={16} /> : <UploadFileIcon />}
-              disabled={uploadingImage}>
-              Upload Image
-              <input hidden accept="image/*" type="file" onChange={onUploadImage} />
-            </Button>
-          </Grid>
-          {invitationForm.imageUrl && (
-            <Grid size={{ xs: 12 }}>
-              <Box component="img" src={invitationForm.imageUrl} alt="preview"
-                sx={{ maxHeight: 160, borderRadius: 2, objectFit: 'contain',
-                  border: '1px solid', borderColor: 'divider' }} />
+      <Stack spacing={2}>
+
+        {/* ── Header card ── */}
+        <Card><CardContent>
+          <Typography variant="h6" fontWeight={800}>
+            {isBaileys ? '🐝 Baileys Invitation Blast' : '📨 Invitation Blast'}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Sends one message at a time with a {DELAY_MIN_S}–{DELAY_MAX_S}s random delay to protect your number. Max {MAX_RECIPIENTS} recipients per blast.
+          </Typography>
+        </CardContent></Card>
+
+        {/* ── Event details ── */}
+        <Card><CardContent>
+          <Typography fontWeight={700} sx={{ mb: 2 }}>Event Details</Typography>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField fullWidth label="Event Name" value={invitationForm.eventName}
+                onChange={e => setInvitationForm(p => ({ ...p, eventName: e.target.value }))} />
             </Grid>
-          )}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <TextField select label="Text Position" value={textPosition}
-              onChange={e => setTextPosition(e.target.value)}>
-              {['top', 'bottom', 'none'].map(v => <MenuItem key={v} value={v}>{v}</MenuItem>)}
-            </TextField>
-          </Grid>
-          <Grid size={{ xs: 12, md: 8 }}>
-            <TextField select label="Recipients" value={invitationForm.recipientMode}
-              onChange={e => setInvitationForm(p => ({ ...p, recipientMode: e.target.value }))}>
-              {recipientModeOptions.map(o =>
-                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
-            </TextField>
-          </Grid>
-          {invitationForm.recipientMode === 'single' && (
-            <>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField label="Name" value={invitationForm.singleName}
-                  onChange={e => setInvitationForm(p => ({ ...p, singleName: e.target.value }))} />
-              </Grid>
-              <Grid size={{ xs: 12, md: 6 }}>
-                <TextField label="Phone" value={invitationForm.singleNumber}
-                  onChange={e => setInvitationForm(p => ({ ...p, singleNumber: e.target.value }))}
-                  helperText="With country code e.g. 919876543210" />
-              </Grid>
-            </>
-          )}
-          {['csv', 'excel'].includes(invitationForm.recipientMode) && (
+            <Grid size={{ xs: 12, md: 3 }}>
+              <TextField fullWidth type="date" label="Date" InputLabelProps={{ shrink: true }}
+                value={invitationForm.date}
+                onChange={e => setInvitationForm(p => ({ ...p, date: e.target.value }))} />
+            </Grid>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <TextField fullWidth type="time" label="Time" InputLabelProps={{ shrink: true }}
+                value={invitationForm.time}
+                onChange={e => setInvitationForm(p => ({ ...p, time: e.target.value }))} />
+            </Grid>
             <Grid size={{ xs: 12 }}>
-              <Button component="label" variant="outlined" startIcon={<UploadFileIcon />}>
-                Upload {invitationForm.recipientMode.toUpperCase()}
-                <input hidden type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} />
+              <TextField fullWidth label="Venue" value={invitationForm.venue}
+                onChange={e => setInvitationForm(p => ({ ...p, venue: e.target.value }))} />
+            </Grid>
+          </Grid>
+        </CardContent></Card>
+
+        {/* ── Image + Canvas Preview ── */}
+        <Card><CardContent>
+          <Typography fontWeight={700} sx={{ mb: 2 }}>Invitation Image & Preview</Typography>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 8 }}>
+              <TextField fullWidth label="Image URL" value={invitationForm.imageUrl}
+                onChange={e => setInvitationForm(p => ({ ...p, imageUrl: e.target.value }))}
+                helperText="Paste a public image URL, or upload below." />
+            </Grid>
+            <Grid size={{ xs: 12, md: 4 }}>
+              <Button component="label" variant="outlined" fullWidth sx={{ height: 56 }}
+                startIcon={uploadingImage ? <CircularProgress size={16} /> : <UploadFileIcon />}
+                disabled={uploadingImage}>
+                {uploadingImage ? 'Uploading…' : 'Upload Image'}
+                <input hidden accept="image/*" type="file" onChange={onUploadImage} />
               </Button>
-              {fileName && (
-                <Typography variant="caption" sx={{ ml: 1 }}>
-                  {fileName} — {selectedRecipients.length} recipients
-                </Typography>
-              )}
             </Grid>
-          )}
-          {selectedRecipients.length > 0 && (
-            <Grid size={{ xs: 12 }}>
-              <Typography fontWeight={700} sx={{ mb: 1 }}>
-                Recipients ({selectedRecipients.length})
-              </Typography>
-              <Stack spacing={0.5} sx={{ maxHeight: 200, overflow: 'auto' }}>
-                {selectedRecipients.map((r, idx) => (
-                  <FormControlLabel key={idx} label={`${r.name} — ${r.mobile}`}
-                    control={<Checkbox checked={r.checked !== false} size="small"
-                      onChange={() => setSelectedRecipients(prev =>
-                        prev.map((x, i) => i === idx ? { ...x, checked: x.checked === false } : x)
-                      )} />} />
+
+            {/* Canvas preview */}
+            {invitationForm.imageUrl && (
+              <Grid size={{ xs: 12 }}>
+                <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: '#111', display: 'inline-block', maxWidth: '100%' }}>
+                  <canvas
+                    ref={canvasRef}
+                    width={600}
+                    height={400}
+                    style={{ display: 'block', maxWidth: '100%', height: 'auto' }}
+                  />
+                </Box>
+
+                {/* Preview nav */}
+                {invitationForm.recipientMode !== 'single' && checkedRecipients.length > 0 && (
+                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
+                    <Button size="small" variant="outlined" startIcon={<NavigateBeforeIcon />}
+                      disabled={previewIdx === 0}
+                      onClick={() => setPreviewIdx(i => Math.max(0, i - 1))}>
+                      Prev
+                    </Button>
+                    <Typography variant="body2" color="text.secondary">
+                      Preview {previewIdx + 1} of {checkedRecipients.length} — <strong>{checkedRecipients[previewIdx]?.name}</strong>
+                    </Typography>
+                    <Button size="small" variant="outlined" endIcon={<NavigateNextIcon />}
+                      disabled={previewIdx >= checkedRecipients.length - 1}
+                      onClick={() => setPreviewIdx(i => Math.min(checkedRecipients.length - 1, i + 1))}>
+                      Next
+                    </Button>
+                    <Button size="small" variant="outlined" startIcon={<DownloadIcon />}
+                      onClick={handleDownloadPreview}>
+                      Download
+                    </Button>
+                  </Stack>
+                )}
+                {invitationForm.recipientMode === 'single' && (
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                    <Button size="small" variant="outlined" startIcon={<DownloadIcon />}
+                      onClick={handleDownloadPreview}>
+                      Download Preview
+                    </Button>
+                  </Stack>
+                )}
+                {!imageLoaded && invitationForm.imageUrl && (
+                  <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                    ⚠️ Image could not be loaded. Make sure the URL is publicly accessible.
+                  </Typography>
+                )}
+              </Grid>
+            )}
+          </Grid>
+        </CardContent></Card>
+
+        {/* ── Font / Text Style Controls ── */}
+        <Card><CardContent>
+          <Typography fontWeight={700} sx={{ mb: 2 }}>Text Style on Image</Typography>
+          <Grid container spacing={2} alignItems="center">
+            <Grid size={{ xs: 12, md: 3 }}>
+              <TextField fullWidth select label="Font Family" value={fontStyle.fontFamily}
+                onChange={e => setFontStyle(p => ({ ...p, fontFamily: e.target.value }))}>
+                {FONT_FAMILIES.map(f => <MenuItem key={f.value} value={f.value}>{f.label}</MenuItem>)}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 6, md: 2 }}>
+              <TextField fullWidth type="number" label="Font Size (px)" value={fontStyle.fontSize}
+                inputProps={{ min: 10, max: 200 }}
+                onChange={e => setFontStyle(p => ({ ...p, fontSize: Number(e.target.value) }))} />
+            </Grid>
+            <Grid size={{ xs: 6, md: 2 }}>
+              <Box>
+                <Typography variant="caption" color="text.secondary">Font Color</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                  <input
+                    type="color"
+                    value={fontStyle.color}
+                    onChange={e => setFontStyle(p => ({ ...p, color: e.target.value }))}
+                    style={{ width: 48, height: 40, border: 'none', cursor: 'pointer', borderRadius: 4 }}
+                  />
+                  <Typography variant="body2">{fontStyle.color}</Typography>
+                </Box>
+              </Box>
+            </Grid>
+            <Grid size={{ xs: 12, md: 2 }}>
+              <TextField fullWidth select label="Vertical Position" value={fontStyle.verticalPos}
+                onChange={e => setFontStyle(p => ({ ...p, verticalPos: e.target.value }))}>
+                {['top', 'middle', 'bottom'].map(v =>
+                  <MenuItem key={v} value={v}>{v.charAt(0).toUpperCase() + v.slice(1)}</MenuItem>)}
+              </TextField>
+            </Grid>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {/* Font Weight */}
+                <Button size="small"
+                  variant={fontStyle.fontWeight === 'bold' ? 'contained' : 'outlined'}
+                  color={accentColor}
+                  onClick={() => setFontStyle(p => ({ ...p, fontWeight: p.fontWeight === 'bold' ? 'normal' : 'bold' }))}>
+                  <strong>B</strong>
+                </Button>
+                {/* Text Align */}
+                {['left', 'center', 'right'].map(a => (
+                  <Button key={a} size="small"
+                    variant={fontStyle.textAlign === a ? 'contained' : 'outlined'}
+                    color={accentColor}
+                    onClick={() => setFontStyle(p => ({ ...p, textAlign: a }))}>
+                    {a === 'left' ? '⬅' : a === 'center' ? '↔' : '➡'}
+                  </Button>
                 ))}
+                {/* Shadow toggle */}
+                <Tooltip title="Text shadow (improves readability on busy backgrounds)">
+                  <Button size="small"
+                    variant={fontStyle.shadow ? 'contained' : 'outlined'}
+                    color={accentColor}
+                    onClick={() => setFontStyle(p => ({ ...p, shadow: !p.shadow }))}>
+                    Shadow
+                  </Button>
+                </Tooltip>
               </Stack>
             </Grid>
+          </Grid>
+        </CardContent></Card>
+
+        {/* ── Recipients ── */}
+        <Card><CardContent>
+          <Typography fontWeight={700} sx={{ mb: 2 }}>Recipients</Typography>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField fullWidth select label="Recipient Source" value={invitationForm.recipientMode}
+                onChange={e => { setInvitationForm(p => ({ ...p, recipientMode: e.target.value })); setPreviewIdx(0); }}>
+                {recipientModeOptions.map(o =>
+                  <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>)}
+              </TextField>
+            </Grid>
+
+            {invitationForm.recipientMode === 'single' && (
+              <>
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <TextField fullWidth label="Name" value={invitationForm.singleName}
+                    onChange={e => setInvitationForm(p => ({ ...p, singleName: e.target.value }))} />
+                </Grid>
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <TextField fullWidth label="Phone" value={invitationForm.singleNumber}
+                    onChange={e => setInvitationForm(p => ({ ...p, singleNumber: e.target.value }))}
+                    helperText="With country code e.g. 919876543210" />
+                </Grid>
+              </>
+            )}
+
+            {['csv', 'excel'].includes(invitationForm.recipientMode) && (
+              <Grid size={{ xs: 12 }}>
+                <Stack direction="row" alignItems="center" spacing={2}>
+                  <Button component="label" variant="outlined" startIcon={<UploadFileIcon />}>
+                    Upload {invitationForm.recipientMode.toUpperCase()}
+                    <input hidden type="file" accept=".csv,.xlsx,.xls" onChange={handleFileUpload} />
+                  </Button>
+                  {fileName && (
+                    <Typography variant="body2" color="text.secondary">
+                      📄 {fileName} — <strong>{selectedRecipients.length}</strong> recipients found
+                    </Typography>
+                  )}
+                </Stack>
+              </Grid>
+            )}
+          </Grid>
+
+          {/* Checklist */}
+          {selectedRecipients.length > 0 && invitationForm.recipientMode !== 'single' && (
+            <Box sx={{ mt: 2 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                <Typography fontWeight={700}>
+                  Recipients ({checkedRecipients.length} selected of {selectedRecipients.length})
+                  {overLimit && (
+                    <Chip label={`Max ${MAX_RECIPIENTS} — first ${MAX_RECIPIENTS} will be used`}
+                      color="warning" size="small" sx={{ ml: 1 }} />
+                  )}
+                </Typography>
+                <Stack direction="row" spacing={1}>
+                  <Button size="small" onClick={() =>
+                    setSelectedRecipients(prev => prev.map(r => ({ ...r, checked: true })))}>
+                    All
+                  </Button>
+                  <Button size="small" onClick={() =>
+                    setSelectedRecipients(prev => prev.map(r => ({ ...r, checked: false })))}>
+                    None
+                  </Button>
+                </Stack>
+              </Stack>
+              <Box sx={{ maxHeight: 220, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 1 }}>
+                <Grid container>
+                  {selectedRecipients.map((r, idx) => (
+                    <Grid key={idx} size={{ xs: 12, md: 6, xl: 4 }}>
+                      <FormControlLabel
+                        label={
+                          <Typography variant="body2">
+                            <strong>{r.name}</strong> — {r.mobile}
+                          </Typography>
+                        }
+                        control={
+                          <Checkbox size="small" checked={r.checked !== false}
+                            onChange={() => setSelectedRecipients(prev =>
+                              prev.map((x, i) => i === idx ? { ...x, checked: x.checked === false } : x)
+                            )} />
+                        }
+                      />
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            </Box>
           )}
-        </Grid>
-        <Stack direction="row" justifyContent="flex-end" sx={{ mt: 2 }}>
-          <Button variant="contained" color={isBaileys ? 'warning' : 'primary'}
-            startIcon={sending ? <CircularProgress size={16} /> : <SendIcon />}
-            disabled={sending} onClick={onSend}>
-            {sending ? 'Sending…' : 'Send Invitation'}
-          </Button>
-        </Stack>
-      </CardContent></Card>
+        </CardContent></Card>
+
+        {/* ── Queue status (shown after Send is clicked) ── */}
+        {queue.length > 0 && (
+          <Card><CardContent>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+              <Typography fontWeight={700}>
+                📬 Sending Queue — {delivered} delivered · {failed} failed · {pending} pending
+              </Typography>
+              <Stack direction="row" spacing={1}>
+                {queueActive && !queuePaused && (
+                  <Button size="small" variant="outlined" color="warning" startIcon={<PauseIcon />}
+                    onClick={pauseQueue}>Pause</Button>
+                )}
+                {queueActive && queuePaused && (
+                  <Button size="small" variant="outlined" color="success" startIcon={<PlayArrowIcon />}
+                    onClick={resumeQueue}>Resume</Button>
+                )}
+                {queueActive && (
+                  <Button size="small" variant="outlined" color="error" startIcon={<StopIcon />}
+                    onClick={cancelQueue}>Cancel</Button>
+                )}
+                {queueDone && (
+                  <Button size="small" variant="outlined" onClick={resetQueue}>Clear Queue</Button>
+                )}
+              </Stack>
+            </Stack>
+
+            {/* Progress bar */}
+            <Box sx={{ mb: 1 }}>
+              <Stack direction="row" justifyContent="space-between">
+                <Typography variant="caption" color="text.secondary">
+                  {progress}% complete
+                </Typography>
+                {queueActive && !queueDone && (
+                  <Typography variant="caption" color="text.secondary">
+                    ETA ~{fmtSecs(etaSecs)} · delay {DELAY_MIN_S}–{DELAY_MAX_S}s per message
+                  </Typography>
+                )}
+                {queueDone && (
+                  <Typography variant="caption" color={failed > 0 ? 'error' : 'success.main'} fontWeight={700}>
+                    {cancelRef.current ? 'Cancelled' : 'Done'} — {delivered} sent, {failed} failed
+                  </Typography>
+                )}
+              </Stack>
+              <LinearProgress
+                variant="determinate" value={progress}
+                color={failed > 0 ? 'error' : queueDone ? 'success' : accentColor}
+                sx={{ mt: 0.5, height: 8, borderRadius: 4 }}
+              />
+            </Box>
+
+            {/* Queue table */}
+            <Box sx={{ maxHeight: 280, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+              {queue.map((item, idx) => (
+                <Stack key={idx} direction="row" alignItems="center" spacing={1.5}
+                  sx={{
+                    px: 1.5, py: 0.75,
+                    borderBottom: idx < queue.length - 1 ? '1px solid' : 'none',
+                    borderColor: 'divider',
+                    bgcolor: item.status === 'sending' ? (isBaileys ? '#fffde7' : '#e3f2fd') : 'transparent',
+                  }}>
+                  <Typography variant="body2" sx={{ minWidth: 24, color: 'text.secondary' }}>
+                    {idx + 1}
+                  </Typography>
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="body2" fontWeight={item.status === 'sending' ? 700 : 400}>
+                      {item.name}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">{item.mobile}</Typography>
+                  </Box>
+                  <Chip
+                    size="small"
+                    label={
+                      item.status === 'pending'   ? '⏳ Pending'   :
+                      item.status === 'sending'   ? '🔄 Sending'   :
+                      item.status === 'delivered' ? '✅ Delivered' : '❌ Failed'
+                    }
+                    color={
+                      item.status === 'delivered' ? 'success' :
+                      item.status === 'failed'    ? 'error'   :
+                      item.status === 'sending'   ? (isBaileys ? 'warning' : 'primary') : 'default'
+                    }
+                  />
+                  {item.status === 'failed' && item.error && (
+                    <Tooltip title={item.error}>
+                      <Typography variant="caption" color="error" sx={{ maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.error}
+                      </Typography>
+                    </Tooltip>
+                  )}
+                </Stack>
+              ))}
+            </Box>
+          </CardContent></Card>
+        )}
+
+        {/* ── Send button ── */}
+        {!queueActive && !queueDone && (
+          <Stack direction="row" justifyContent="space-between" alignItems="center">
+            <Typography color="text.secondary" variant="body2">
+              {totalCount} recipient{totalCount !== 1 ? 's' : ''} selected
+              {overLimit && ` — only first ${MAX_RECIPIENTS} will be sent`}
+            </Typography>
+            <Button
+              variant="contained" color={accentColor}
+              size="large"
+              startIcon={<SendIcon />}
+              disabled={totalCount === 0 || !invitationForm.imageUrl}
+              onClick={startQueue}>
+              Start Sending {totalCount > 0 ? `(${Math.min(totalCount, MAX_RECIPIENTS)})` : ''}
+            </Button>
+          </Stack>
+        )}
+
+        {/* After queue done — option to send again */}
+        {queueDone && (
+          <Stack direction="row" justifyContent="flex-end">
+            <Button variant="outlined" color={accentColor} onClick={resetQueue}>
+              Send Another Blast
+            </Button>
+          </Stack>
+        )}
+
+      </Stack>
     </PageSurface>
   );
 }
@@ -571,15 +1110,11 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }
   const isQrPending    = status?.status === 'QR_PENDING';
   const isDisconnected = !isConnected && !isQrPending;
 
-  // Stable onRefresh (useCallback with []) means this effect runs exactly once.
-  // Without this, every setBaileysStatus re-render would recreate the function,
-  // fire the effect again, and stack infinite intervals — causing QR to never appear.
   useEffect(() => {
     const id = setInterval(onRefresh, 2000);
     return () => clearInterval(id);
   }, [onRefresh]);
 
-  // QR age countdown — resets whenever a new QR data-URL arrives
   const [qrAge,  setQrAge]  = useState(0);
   const prevQrRef           = useRef(null);
 
@@ -630,7 +1165,6 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }
             <Chip size="small" label="● LIVE" color="info" variant="outlined" />
           </Stack>
 
-          {/* Show QR whenever status has it — not gated on connecting flag */}
           {isQrPending && status?.qr && (
             <Box>
               <Alert severity={qrExpired ? 'error' : 'info'} sx={{ mb: 2 }}>
@@ -665,7 +1199,6 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }
             </Box>
           )}
 
-          {/* Spinner: only when truly connecting AND no QR yet */}
           {connecting && !isQrPending && (
             <Stack direction="row" spacing={1.5} alignItems="center">
               <CircularProgress size={22} color="warning" />
@@ -845,8 +1378,7 @@ export default function WhatsAppPage() {
   const [ruleForm,                setRuleForm]                = useState(emptyRule);
   const [invitationForm,          setInvitationForm]          = useState(emptyInvitationForm);
   const [selectedRecipients,      setSelectedRecipients]      = useState([]);
-  const [textPosition,            setTextPosition]            = useState('bottom');
-  const [sendingInvitation,       setSendingInvitation]       = useState(false);
+  const [fontStyle,               setFontStyle]               = useState(emptyFontStyle);   // replaces textPosition
   const [uploadingImage,          setUploadingImage]          = useState(false);
   const [fileName,                setFileName]                = useState('');
 
@@ -863,8 +1395,7 @@ export default function WhatsAppPage() {
   const [baileysRuleForm,    setBaileysRuleForm]    = useState(emptyRule);
   const [baileysInvitationForm,     setBaileysInvitationForm]     = useState(emptyInvitationForm);
   const [baileysSelectedRecipients, setBaileysSelectedRecipients] = useState([]);
-  const [baileysTextPosition,       setBaileysTextPosition]       = useState('bottom');
-  const [baileysSendingInvitation,  setBaileysSendingInvitation]  = useState(false);
+  const [baileysFontStyle,          setBaileysFontStyle]          = useState(emptyFontStyle);  // replaces baileysTextPosition
   const [baileysUploadingImage,     setBaileysUploadingImage]     = useState(false);
   const [baileysFileName,           setBaileysFileName]           = useState('');
   const [baileysLogs,               setBaileysLogs]               = useState([]);
@@ -937,26 +1468,22 @@ export default function WhatsAppPage() {
   const handleToggle = () => {
     setUseBaileys(v => {
       const next = !v;
-      if (next) {
-        localStorage.removeItem('wa_provider');
-      } else {
-        localStorage.setItem('wa_provider', 'official');
-      }
+      if (next) localStorage.removeItem('wa_provider');
+      else      localStorage.setItem('wa_provider', 'official');
       return next;
     });
     setTab('inbox');
     setResultMessage(null);
   };
 
-  // ── Baileys status refresh — stable callback so BaileysSetup interval runs once ──
+  // ── Baileys status refresh ────────────────────────────────────────────────
   const handleBaileysRefreshStatus = useCallback(async () => {
     try {
       const res = await whatsappService.baileysGetStatus();
       setBaileysStatus(res.data || { status: 'DISCONNECTED' });
     } catch (_) {}
-  }, []); // empty deps = stable forever — critical for preventing interval stacking
+  }, []);
 
-  // Connect poller — polls every 1s after Connect is clicked
   const connectPollerRef = useRef(null);
   const stopConnectPoller = () => {
     if (connectPollerRef.current) { clearInterval(connectPollerRef.current); connectPollerRef.current = null; }
@@ -975,11 +1502,7 @@ export default function WhatsAppPage() {
           const res = await whatsappService.baileysGetStatus();
           const s   = res.data || {};
           setBaileysStatus(s);
-          // Stop spinner as soon as QR arrives OR connected — don't block QR display
-          if (s.status === 'QR_PENDING' || s.status === 'CONNECTED') {
-            setBaileysConnecting(false);
-          }
-          // Stop polling once connected or after 90s timeout
+          if (s.status === 'QR_PENDING' || s.status === 'CONNECTED') setBaileysConnecting(false);
           if (s.status === 'CONNECTED' || attempts >= 90) {
             stopConnectPoller();
             setBaileysConnecting(false);
@@ -1054,21 +1577,6 @@ export default function WhatsAppPage() {
     } finally { setUploadingImage(false); }
   };
 
-  const sendInvitation = async () => {
-    const recipients = invitationForm.recipientMode === 'single'
-      ? [{ name: invitationForm.singleName || 'Guest', mobile: invitationForm.singleNumber, source: 'MANUAL' }]
-      : selectedRecipients.filter(item => item.checked !== false);
-    if (!recipients.length) return;
-    setSendingInvitation(true);
-    try {
-      const response = await whatsappService.sendInvitation({ ...invitationForm, recipients, textPosition });
-      setResultMessage({ type: 'success', text: `Sent ${response.data?.success || 0} of ${response.data?.total || recipients.length}` });
-      await loadOfficial();
-    } catch (error) {
-      setResultMessage({ type: 'error', text: error?.response?.data?.message || 'Invitation send failed' });
-    } finally { setSendingInvitation(false); }
-  };
-
   // ── Baileys handlers ──────────────────────────────────────────────────────
   const handleBaileysReplySend = async () => {
     if (!baileysSelectedKey || !baileysReplyForm.text.trim()) return;
@@ -1115,21 +1623,6 @@ export default function WhatsAppPage() {
       const response = await api.post('/uploads/public', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       setBaileysInvitationForm(p => ({ ...p, imageUrl: response?.data?.url || '' }));
     } finally { setBaileysUploadingImage(false); }
-  };
-
-  const sendBaileysInvitation = async () => {
-    const recipients = baileysInvitationForm.recipientMode === 'single'
-      ? [{ name: baileysInvitationForm.singleName || 'Guest', mobile: baileysInvitationForm.singleNumber, source: 'MANUAL' }]
-      : baileysSelectedRecipients.filter(item => item.checked !== false);
-    if (!recipients.length) return;
-    setBaileysSendingInvitation(true);
-    try {
-      const response = await whatsappService.baileysSendInvitation({ ...baileysInvitationForm, recipients, textPosition: baileysTextPosition });
-      setResultMessage({ type: 'success', text: `Sent ${response.data?.success || 0} of ${response.data?.total || recipients.length}` });
-      await loadBaileys();
-    } catch (error) {
-      setResultMessage({ type: 'error', text: error?.response?.data?.message || 'Invitation send failed' });
-    } finally { setBaileysSendingInvitation(false); }
   };
 
   // ── Table rows ────────────────────────────────────────────────────────────
@@ -1236,12 +1729,12 @@ export default function WhatsAppPage() {
       {useBaileys && tab === 'invite' && (
         <InvitationPanel
           isBaileys
-          invitationForm={baileysInvitationForm} setInvitationForm={setBaileysInvitationForm}
+          invitationForm={baileysInvitationForm}   setInvitationForm={setBaileysInvitationForm}
           selectedRecipients={baileysSelectedRecipients} setSelectedRecipients={setBaileysSelectedRecipients}
-          textPosition={baileysTextPosition} setTextPosition={setBaileysTextPosition}
+          fontStyle={baileysFontStyle}             setFontStyle={setBaileysFontStyle}
           onUploadImage={handleBaileysUploadImage} uploadingImage={baileysUploadingImage}
-          onSend={sendBaileysInvitation} sending={baileysSendingInvitation}
-          fileName={baileysFileName} setFileName={setBaileysFileName}
+          sendServiceFn={whatsappService.baileysSendInvitation}
+          fileName={baileysFileName}               setFileName={setBaileysFileName}
         />
       )}
       {useBaileys && tab === 'logs'  && <LogsPanel logs={baileysLogs} isBaileys />}
@@ -1288,12 +1781,12 @@ export default function WhatsAppPage() {
       {!useBaileys && tab === 'invite' && (
         <InvitationPanel
           isBaileys={false}
-          invitationForm={invitationForm} setInvitationForm={setInvitationForm}
+          invitationForm={invitationForm}         setInvitationForm={setInvitationForm}
           selectedRecipients={selectedRecipients} setSelectedRecipients={setSelectedRecipients}
-          textPosition={textPosition} setTextPosition={setTextPosition}
-          onUploadImage={handleUploadImage} uploadingImage={uploadingImage}
-          onSend={sendInvitation} sending={sendingInvitation}
-          fileName={fileName} setFileName={setFileName}
+          fontStyle={fontStyle}                   setFontStyle={setFontStyle}
+          onUploadImage={handleUploadImage}       uploadingImage={uploadingImage}
+          sendServiceFn={whatsappService.sendInvitation}
+          fileName={fileName}                     setFileName={setFileName}
         />
       )}
       {!useBaileys && tab === 'templates' && (
