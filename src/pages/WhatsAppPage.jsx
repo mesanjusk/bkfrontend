@@ -223,7 +223,7 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting }) {
               Install in backend: <code>npm install @whiskeysockets/baileys qrcode pino</code>
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{mt:0.5}}>
-              Auth credentials stored in <code>baileys_auth/</code> in backend root. Delete folder to reset/logout.
+              Auth credentials are stored in <strong>MongoDB</strong> (collection: <code>baileysauthstates</code>) — safe on Render, Railway, and any ephemeral host. Click <strong>Disconnect</strong> to wipe credentials and start fresh with a new QR.
             </Typography>
           </Box>
         </Stack>
