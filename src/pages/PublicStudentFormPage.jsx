@@ -186,7 +186,7 @@ function ConfirmationCard({ studentName, studentId, editToken, categoryName, mob
               '&:hover': { bgcolor: '#1ebe5d' }
             }}
           >
-            Share Confirmation via WhatsApp
+            Click here for Confirmation
           </Button>
 
           
