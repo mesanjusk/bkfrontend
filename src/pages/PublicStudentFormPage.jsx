@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Alert,
@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  CircularProgress,
   Container,
   Fade,
   Skeleton,
@@ -13,13 +14,19 @@ import {
   Tabs,
   Tab,
   Typography,
-  Paper
+  Paper,
+  Divider,
+  Chip
 } from '@mui/material';
 import {
   CheckCircle,
   EmojiEvents,
   School,
-  WhatsApp
+  WhatsApp,
+  Share,
+  Edit,
+  Download,
+  WarningAmber
 } from '@mui/icons-material';
 import api from '../api';
 import StudentFormWizard from '../components/students/StudentFormWizard';
@@ -30,9 +37,16 @@ import {
   toStudentPayload
 } from '../components/students/studentFormConfig';
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function buildFullName(data) {
   return [data.firstName, data.lastName].filter(Boolean).join(' ').trim();
 }
+
+// Phone number for sharing confirmation (the org's number)
+const ORG_WHATSAPP = '917020955501';
+
+// ─── Components ───────────────────────────────────────────────────────────────
 
 function HeroCard({ editMode }) {
   return (
@@ -49,115 +63,190 @@ function HeroCard({ editMode }) {
       }}
     >
       <EmojiEvents sx={{ fontSize: { xs: 38, md: 44 }, mb: 1.2, color: '#fff' }} />
-
       <Typography
         variant="h5"
         fontWeight={800}
-        sx={{
-          fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
-          textTransform: 'uppercase',
-          letterSpacing: 0.5
-        }}
+        sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' }, textTransform: 'uppercase', letterSpacing: 0.5 }}
       >
         BADTE KADAM
       </Typography>
-
-      <Typography
-        variant="body2"
-        sx={{
-          mt: 1,
-          opacity: 0.95,
-          fontSize: { xs: '0.82rem', sm: '0.92rem', md: '1rem' }
-        }}
-      >
+      <Typography variant="body2" sx={{ mt: 1, opacity: 0.95, fontSize: { xs: '0.82rem', sm: '0.92rem', md: '1rem' } }}>
         {editMode ? 'Update your submitted details' : 'Scholar Awards 2026'}
       </Typography>
     </Box>
   );
 }
 
-function SubmissionSuccess({
-  editMode,
-  onBackToForm,
-  onGoList,
-  whatsappLink = 'https://wa.me/917020955501'
-}) {
+/**
+ * ConfirmationCard — shown after successful registration.
+ * Shows a visual "Registration Proof" card that the student can screenshot and share.
+ * Also has a WhatsApp share button that opens WhatsApp with a pre-filled message to
+ * the org's number, so they have proof on their own phone too.
+ */
+function ConfirmationCard({ studentName, studentId, editToken, categoryName, mobile, onBackToForm }) {
+  const confirmRef = useRef(null);
+  const registrationId = editToken ? editToken.slice(-8).toUpperCase() : (studentId || '').slice(-8).toUpperCase();
+
+  // WhatsApp share message — opens on student's own WhatsApp to the org number
+  const shareMessage = encodeURIComponent(
+    `✅ *My BK Scholar Awards 2026 Registration*\n\n` +
+    `*Name:* ${studentName}\n` +
+    `*Category:* ${categoryName || 'Scholar Award'}\n` +
+    `*Registration ID:* ${registrationId}\n` +
+    `*Mobile:* ${mobile}\n\n` +
+    `I have successfully registered for BK Scholar Awards 2026.\n` +
+    `Please confirm my registration. 🙏`
+  );
+  const waShareLink = `https://wa.me/${ORG_WHATSAPP}?text=${shareMessage}`;
+
+  // Edit link
+  const editLink = editToken
+    ? `${window.location.origin}/register/edit/${editToken}`
+    : null;
+
   return (
-    <Box
-      sx={{
-        minHeight: { xs: '50vh', md: '58vh' },
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center'
-      }}
-    >
-      <Paper
-        elevation={0}
-        sx={{
-          width: '100%',
-          maxWidth: 560,
-          textAlign: 'center',
-          borderRadius: 3,
-          border: '1px solid #d9d9d9',
-          p: { xs: 3, sm: 4 },
-          bgcolor: '#fff'
-        }}
-      >
-        <CheckCircle sx={{ fontSize: 70, color: 'success.main', mb: 1.5 }} />
+    <Box sx={{ minHeight: { xs: '50vh', md: '58vh' }, display: 'flex', alignItems: 'center', justifyContent: 'center', py: 2 }}>
+      <Stack spacing={2} sx={{ width: '100%', maxWidth: 520 }}>
 
-        <Typography variant="h5" fontWeight={800} sx={{ mb: 1 }}>
-          {editMode ? 'Changes Saved Successfully' : 'Registration Submitted Successfully'}
-        </Typography>
+        {/* ── Main Confirmation Card (the "proof" image) ── */}
+        <Paper
+          ref={confirmRef}
+          elevation={0}
+          sx={{
+            width: '100%',
+            textAlign: 'center',
+            borderRadius: 3,
+            border: '2px solid #25D366',
+            overflow: 'hidden',
+            bgcolor: '#fff'
+          }}
+        >
+          {/* Header */}
+          <Box sx={{ bgcolor: '#25D366', py: 2, px: 3 }}>
+            <CheckCircle sx={{ fontSize: 44, color: '#fff', mb: 0.5 }} />
+            <Typography variant="h6" fontWeight={800} sx={{ color: '#fff' }}>
+              Registration Confirmed!
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#e6fff0' }}>
+              BK Scholar Awards 2026
+            </Typography>
+          </Box>
 
-        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-          {editMode
-            ? 'Your student details have been updated successfully.'
-            : 'Your registration has been submitted successfully. Confirmation will be sent on WhatsApp.'}
-        </Typography>
+          {/* Details */}
+          <Box sx={{ p: 3 }}>
+            <Stack spacing={1.2}>
+              <Box sx={{ bgcolor: '#f0fff4', borderRadius: 2, p: 1.5 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>STUDENT NAME</Typography>
+                <Typography variant="h6" fontWeight={800} sx={{ color: '#111' }}>{studentName}</Typography>
+              </Box>
+              {categoryName && (
+                <Box sx={{ bgcolor: '#f0f7fc', borderRadius: 2, p: 1.2 }}>
+                  <Typography variant="caption" color="text.secondary" fontWeight={600}>CATEGORY</Typography>
+                  <Typography fontWeight={700}>{categoryName}</Typography>
+                </Box>
+              )}
+              <Box sx={{ bgcolor: '#fffbf0', borderRadius: 2, p: 1.2 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>REGISTRATION ID</Typography>
+                <Typography fontWeight={800} sx={{ letterSpacing: 2, fontSize: '1.1rem' }}>{registrationId}</Typography>
+              </Box>
+              <Box sx={{ bgcolor: '#f8f8f8', borderRadius: 2, p: 1.2 }}>
+                <Typography variant="caption" color="text.secondary" fontWeight={600}>MOBILE</Typography>
+                <Typography fontWeight={700}>{mobile}</Typography>
+              </Box>
+            </Stack>
 
-        <Stack spacing={1.5}>
-          {!editMode && (
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<WhatsApp />}
-              component="a"
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                py: 1.2,
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 700,
-                bgcolor: '#25D366',
-                '&:hover': { bgcolor: '#1ebe5d' }
-              }}
-            >
-              Open WhatsApp Chat
-            </Button>
-          )}
+            <Divider sx={{ my: 2 }} />
 
-          {editMode && (
+            <Alert severity="info" icon={<WhatsApp />} sx={{ textAlign: 'left', fontSize: '0.82rem', borderRadius: 2 }}>
+              <strong>WhatsApp confirmation</strong> will be sent to your mobile number shortly.
+              If not received within 5 minutes, use the <em>"Share via WhatsApp"</em> button below
+              as your proof of registration.
+            </Alert>
+          </Box>
+        </Paper>
+
+        {/* ── Action Buttons ── */}
+        <Stack spacing={1.2}>
+          {/* Share via WhatsApp — opens WA with pre-filled message TO org number */}
+          <Button
+            fullWidth
+            variant="contained"
+            startIcon={<WhatsApp />}
+            component="a"
+            href={waShareLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            sx={{
+              py: 1.4,
+              borderRadius: 2,
+              textTransform: 'none',
+              fontWeight: 700,
+              fontSize: '1rem',
+              bgcolor: '#25D366',
+              '&:hover': { bgcolor: '#1ebe5d' }
+            }}
+          >
+            Share Confirmation via WhatsApp
+          </Button>
+
+          <Typography variant="caption" color="text.secondary" textAlign="center">
+            ↑ This sends your registration details to our WhatsApp number so you have proof on your phone.
+          </Typography>
+
+          {/* Edit registration link */}
+          {editLink && (
             <Button
               fullWidth
               variant="outlined"
-              onClick={onGoList}
-              sx={{
-                py: 1.1,
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 700
-              }}
+              startIcon={<Edit />}
+              component="a"
+              href={editLink}
+              sx={{ py: 1.1, borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
             >
-              Go Back
+              Edit My Registration
             </Button>
           )}
+
+          {/* Add another */}
+          <Button
+            fullWidth
+            variant="text"
+            onClick={onBackToForm}
+            sx={{ py: 1.1, borderRadius: 2, textTransform: 'none', color: 'text.secondary' }}
+          >
+            Add Another Registration
+          </Button>
         </Stack>
-      </Paper>
+      </Stack>
     </Box>
   );
 }
+
+// ─── Duplicate Alert ──────────────────────────────────────────────────────────
+
+function DuplicateAlert({ message, editToken }) {
+  const editLink = editToken ? `${window.location.origin}/register/edit/${editToken}` : null;
+  return (
+    <Fade in>
+      <Alert
+        severity="warning"
+        icon={<WarningAmber />}
+        sx={{ borderRadius: 2.5 }}
+        action={
+          editLink ? (
+            <Button color="inherit" size="small" href={editLink} component="a" startIcon={<Edit />}>
+              Edit
+            </Button>
+          ) : null
+        }
+      >
+        <strong>Already Registered!</strong> {message}
+      </Alert>
+    </Fade>
+  );
+}
+
+// ─── Form payload builder ─────────────────────────────────────────────────────
 
 function normalizeFormFromApi(data) {
   const initial = createInitialStudentForm();
@@ -167,7 +256,7 @@ function normalizeFormFromApi(data) {
     ...initial,
     ...data,
     firstName: data.firstName || '',
-    lastName: data.lastName || '',
+    lastName:  data.lastName  || '',
     fatherName: data.fatherName || '',
     categoryId: hasOtherCategory
       ? 'OTHER'
@@ -177,70 +266,71 @@ function normalizeFormFromApi(data) {
     studentPhotoPreviewUrl: data.studentPhotoUrl || '',
     studentPhotoFile: null,
     certificateAdjustments: {
-      photoScale: data.certificateAdjustments?.photoScale ?? 1,
-      photoX: data.certificateAdjustments?.photoX ?? 0,
-      photoY: data.certificateAdjustments?.photoY ?? 0,
+      photoScale:    data.certificateAdjustments?.photoScale    ?? 1,
+      photoX:        data.certificateAdjustments?.photoX        ?? 0,
+      photoY:        data.certificateAdjustments?.photoY        ?? 0,
       photoRotation: data.certificateAdjustments?.photoRotation ?? 0
     }
   };
 
   next.fullName = data.fullName || buildFullName(next);
-
   return next;
 }
 
 function buildPayload(form, categories) {
-  const isOther = String(form.categoryId) === 'OTHER';
-
-  const category = categories.find(
-    (c) => String(c._id) === String(form.categoryId)
-  );
-
+  const isOther  = String(form.categoryId) === 'OTHER';
+  const category = categories.find((c) => String(c._id) === String(form.categoryId));
   const fullName = buildFullName(form);
 
   const payload = toStudentPayload({
     ...form,
     fullName,
-    categoryId: isOther ? 'OTHER' : (form.categoryId || ''),
+    categoryId:   isOther ? 'OTHER' : (form.categoryId || ''),
     categoryOther: isOther ? String(form.categoryOther || '').trim() : '',
-    board: isOther ? (form.board || '') : (category?.board || form.board || ''),
+    board:        isOther ? (form.board || '') : (category?.board || form.board || ''),
     categoryName: isOther
       ? (form.categoryOther || form.categoryName || 'Other')
       : (category?.name || category?.title || form.categoryName || ''),
-    resultImageUrl: form.resultImageUrl || form.marksheetFileUrl || '',
-    certificatePhotoUrl: form.certificatePhotoUrl || form.studentPhotoUrl || ''
+    resultImageUrl:      form.resultImageUrl      || form.marksheetFileUrl  || '',
+    certificatePhotoUrl: form.certificatePhotoUrl || form.studentPhotoUrl   || ''
   });
 
-  payload.firstName = form.firstName || '';
-  payload.lastName = form.lastName || '';
+  payload.firstName  = form.firstName  || '';
+  payload.lastName   = form.lastName   || '';
   payload.fatherName = form.fatherName || '';
-  payload.fullName = fullName;
+  payload.fullName   = fullName;
 
   if (isOther) {
-    payload.categoryId = 'OTHER';
+    payload.categoryId    = 'OTHER';
     payload.categoryOther = String(form.categoryOther || '').trim();
   } else {
-    payload.categoryId = form.categoryId || '';
+    payload.categoryId    = form.categoryId || '';
     payload.categoryOther = '';
   }
 
   return payload;
 }
 
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function PublicStudentFormPage() {
-  const { token } = useParams();
-  const navigate = useNavigate();
-  const editMode = Boolean(token);
+  const { token }  = useParams();
+  const navigate   = useNavigate();
+  const editMode   = Boolean(token);
 
-  const [form, setForm] = useState(createInitialStudentForm());
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(editMode);
-  const [saving, setSaving] = useState(false);
+  const [form, setForm]               = useState(createInitialStudentForm());
+  const [categories, setCategories]   = useState([]);
+  const [loading, setLoading]         = useState(editMode);
+  const [saving, setSaving]           = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [tab, setTab] = useState(0);
+  const [errorMessage, setErrorMessage]     = useState('');
+  const [submitted, setSubmitted]     = useState(false);
+  const [tab, setTab]                 = useState(0);
 
-  const whatsappLink = 'https://wa.me/917020955501';
+  // Registration result (for confirmation card)
+  const [registrationResult, setRegistrationResult] = useState(null);
+  // Duplicate info
+  const [duplicateInfo, setDuplicateInfo] = useState(null);
 
   useEffect(() => {
     api.get('/students/public-categories').then((r) => setCategories(r.data || []));
@@ -248,21 +338,16 @@ export default function PublicStudentFormPage() {
 
   useEffect(() => {
     if (!editMode) return;
-
     api.get(`/students/public-edit/${token}`)
-      .then((r) => {
-        const data = r.data || {};
-        setForm(normalizeFormFromApi(data));
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
+      .then((r) => { setForm(normalizeFormFromApi(r.data || {})); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [editMode, token]);
 
   const handleSubmit = async () => {
     setSaving(true);
     setSuccessMessage('');
+    setErrorMessage('');
+    setDuplicateInfo(null);
 
     try {
       let nextForm = form;
@@ -273,14 +358,13 @@ export default function PublicStudentFormPage() {
           'bk_awards/student_photos',
           { forcePng: true, removeBackground: true }
         );
-
         const uploadedUrl = uploaded?.url || '';
         nextForm = {
           ...form,
-          studentPhotoUrl: uploadedUrl,
-          certificatePhotoUrl: uploadedUrl,
+          studentPhotoUrl:        uploadedUrl,
+          certificatePhotoUrl:    uploadedUrl,
           studentPhotoPreviewUrl: uploadedUrl,
-          studentPhotoFile: null
+          studentPhotoFile:       null
         };
         setForm(nextForm);
       }
@@ -293,13 +377,38 @@ export default function PublicStudentFormPage() {
         setSubmitted(true);
       } else {
         const { data } = await api.post('/students/public-register', payload);
+
+        // Build category name for confirmation card
+        const isOther    = String(form.categoryId) === 'OTHER';
+        const catObj     = categories.find((c) => String(c._id) === String(form.categoryId));
+        const categoryName = isOther
+          ? (form.categoryOther || 'Other')
+          : (catObj?.title || catObj?.name || '');
+
+        setRegistrationResult({
+          studentName: buildFullName(form) || form.fullName || '',
+          studentId:   data.studentId || '',
+          editToken:   data.editToken  || '',
+          categoryName,
+          mobile:      String(form.mobile || '').replace(/\D/g, '')
+        });
         setSuccessMessage(data?.message || 'Registration submitted successfully.');
         setSubmitted(true);
       }
     } catch (error) {
-      setSuccessMessage(
-        error?.response?.data?.message || 'Something went wrong. Please try again.'
-      );
+      const data = error?.response?.data;
+
+      // ── Duplicate registration ─────────────────────────────────────────────
+      if (error?.response?.status === 409 && data?.duplicate) {
+        setDuplicateInfo({
+          message:   data.message || 'You have already registered for this category.',
+          editToken: data.editToken || null
+        });
+        setSaving(false);
+        return;
+      }
+
+      setErrorMessage(data?.message || 'Something went wrong. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -308,16 +417,11 @@ export default function PublicStudentFormPage() {
   const handleAddAnother = () => {
     setForm(createInitialStudentForm());
     setSuccessMessage('');
+    setErrorMessage('');
+    setDuplicateInfo(null);
+    setRegistrationResult(null);
     setSubmitted(false);
     setTab(0);
-  };
-
-  const handleBack = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate('/');
-    }
   };
 
   if (loading) {
@@ -328,161 +432,108 @@ export default function PublicStudentFormPage() {
     );
   }
 
+  // ── Edit-mode success ──────────────────────────────────────────────────────
+  if (editMode && submitted) {
+    return (
+      <Box sx={{ bgcolor: '#f0f7fc', minHeight: '100vh', pb: { xs: 4, sm: 6 } }}>
+        <HeroCard editMode />
+        <Container maxWidth="sm" sx={{ mt: 4 }}>
+          <Paper elevation={0} sx={{ p: 4, borderRadius: 3, border: '1px solid #d9d9d9', textAlign: 'center' }}>
+            <CheckCircle sx={{ fontSize: 70, color: 'success.main', mb: 1.5 }} />
+            <Typography variant="h5" fontWeight={800} sx={{ mb: 1 }}>Changes Saved Successfully</Typography>
+            <Typography color="text.secondary" sx={{ mb: 3 }}>Your student details have been updated.</Typography>
+            <Button variant="outlined" onClick={() => navigate(-1)}>Go Back</Button>
+          </Paper>
+        </Container>
+      </Box>
+    );
+  }
+
+  // ── New registration success — show confirmation card ─────────────────────
+  if (!editMode && submitted && registrationResult) {
+    return (
+      <Box sx={{ bgcolor: '#f0f7fc', minHeight: '100vh', pb: { xs: 4, sm: 6 } }}>
+        <HeroCard editMode={false} />
+        <Container maxWidth="sm" sx={{ mt: 4, px: { xs: 1.5, sm: 3 } }}>
+          <ConfirmationCard
+            {...registrationResult}
+            onBackToForm={handleAddAnother}
+          />
+        </Container>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ bgcolor: '#f0f7fc', minHeight: '100vh', pb: { xs: 4, sm: 6 } }}>
       <HeroCard editMode={editMode} />
 
       <Container
         maxWidth={false}
-        sx={{
-          mt: { xs: 1.5, sm: 2, md: 3 },
-          px: { xs: 1.25, sm: 2, md: 3, lg: 4, xl: 6 }
-        }}
+        sx={{ mt: { xs: 1.5, sm: 2, md: 3 }, px: { xs: 1.25, sm: 2, md: 3, lg: 4, xl: 6 } }}
       >
         <Box sx={{ maxWidth: editMode ? '1600px' : '1100px', mx: 'auto' }}>
           <Stack spacing={2}>
-            {!submitted && successMessage && (
+
+            {/* Error */}
+            {errorMessage && (
               <Fade in>
-                <Alert severity="success" variant="filled" sx={{ borderRadius: 2.5 }}>
-                  {successMessage}
+                <Alert severity="error" variant="filled" sx={{ borderRadius: 2.5 }}>
+                  {errorMessage}
                 </Alert>
               </Fade>
             )}
 
-            {!editMode && !submitted && !successMessage && (
+            {/* Duplicate warning */}
+            {duplicateInfo && (
+              <DuplicateAlert message={duplicateInfo.message} editToken={duplicateInfo.editToken} />
+            )}
+
+            {/* Info banner */}
+            {!editMode && !submitted && !duplicateInfo && (
               <Alert
                 severity="info"
                 icon={<School />}
-                sx={{
-                  borderRadius: 2.5,
-                  bgcolor: '#fff',
-                  border: '1px solid #d9d9d9',
-                  color: '#111827'
-                }}
+                sx={{ borderRadius: 2.5, bgcolor: '#fff', border: '1px solid #d9d9d9', color: '#111827' }}
               >
                 Fill the form carefully and upload a clear student photo for certificate preview.
               </Alert>
             )}
 
-            {editMode && !submitted && (
-              <Tabs
-                value={tab}
-                onChange={(_, v) => setTab(v)}
-                centered
-                sx={{
-                  minHeight: 46,
-                  bgcolor: '#fff',
-                  borderRadius: 2.5,
-                  p: 0.5,
-                  border: '1px solid #d9d9d9',
-                  '& .MuiTabs-indicator': {
-                    height: 'calc(100% - 8px)',
-                    margin: '4px',
-                    borderRadius: 2,
-                    bgcolor: '#e8f4fb',
-                    zIndex: 0
-                  },
-                  '& .MuiTab-root': {
-                    minHeight: 40,
-                    zIndex: 1,
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    fontSize: { xs: '0.82rem', sm: '0.9rem' },
-                    borderRadius: 2
-                  }
-                }}
-              >
-                <Tab label="Form Details" />
-                <Tab label="Preview & Adjust" />
-              </Tabs>
-            )}
+            {/* Form tabs */}
+            {!submitted && (
+              <>
+                {editMode && (
+                  <Card sx={{ borderRadius: 2.5 }}>
+                    <CardContent sx={{ pb: '8px !important' }}>
+                      <Tabs value={tab} onChange={(_, v) => setTab(v)} variant="scrollable" scrollButtons="auto">
+                        <Tab label="📝 Edit Form" value={0} />
+                        <Tab label="🎓 Certificate Preview" value={1} />
+                      </Tabs>
+                    </CardContent>
+                  </Card>
+                )}
 
-            <Card
-              sx={{
-                borderRadius: 3,
-                boxShadow: '0 10px 30px rgba(15, 23, 42, 0.05)',
-                border: '1px solid #d9d9d9',
-                overflow: 'hidden',
-                bgcolor: '#fff'
-              }}
-            >
-              <CardContent
-                sx={{
-                  p: { xs: 1.5, sm: 2.5, md: 3 }
-                }}
-              >
-                {submitted ? (
-                  <SubmissionSuccess
-                    editMode={editMode}
-                    onBackToForm={handleAddAnother}
-                    onGoList={handleBack}
-                    whatsappLink={whatsappLink}
-                  />
-                ) : editMode ? (
-                  <>
-                    {tab === 0 ? (
+                {tab === 0 && (
+                  <Card sx={{ borderRadius: 2.5 }}>
+                    <CardContent>
                       <StudentFormWizard
-                        mode="public"
                         form={form}
                         setForm={setForm}
                         categories={categories}
-                        onSubmit={handleSubmit}
                         saving={saving}
-                        successMessage={successMessage}
-                        topInfo={{
-                          title: 'REGISTRATION FORM',
-                          description: 'Update your details below.'
-                        }}
+                        onSubmit={handleSubmit}
+                        editMode={editMode}
                       />
-                    ) : (
-                      <Fade in>
-                        <Box sx={{ minHeight: { md: 'calc(100vh - 260px)' } }}>
-                          <StudentCertificatePreviewSection
-                            form={form}
-                            setForm={setForm}
-                            categories={categories}
-                          />
-
-                          <Button
-                            fullWidth
-                            variant="contained"
-                            onClick={handleSubmit}
-                            disabled={saving}
-                            sx={{
-                              mt: 2,
-                              py: 1.2,
-                              borderRadius: 2,
-                              textTransform: 'none',
-                              fontWeight: 700,
-                              bgcolor: '#2497d3',
-                              '&:hover': { bgcolor: '#1e88c0' }
-                            }}
-                          >
-                            {saving ? 'Saving...' : 'Save Adjustments'}
-                          </Button>
-                        </Box>
-                      </Fade>
-                    )}
-                  </>
-                ) : (
-                  <Box sx={{ minWidth: 0 }}>
-                    <StudentFormWizard
-                      mode="public"
-                      form={form}
-                      setForm={setForm}
-                      categories={categories}
-                      onSubmit={handleSubmit}
-                      saving={saving}
-                      successMessage={successMessage}
-                      topInfo={{
-                        title: 'REGISTRATION FORM',
-                        description: 'Fill the form carefully and submit. Certificate preview becomes available on edit only.'
-                      }}
-                    />
-                  </Box>
+                    </CardContent>
+                  </Card>
                 )}
-              </CardContent>
-            </Card>
+
+                {tab === 1 && editMode && (
+                  <StudentCertificatePreviewSection form={form} setForm={setForm} categories={categories} />
+                )}
+              </>
+            )}
           </Stack>
         </Box>
       </Container>
