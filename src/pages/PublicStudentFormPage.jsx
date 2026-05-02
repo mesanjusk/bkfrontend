@@ -159,7 +159,7 @@ function ConfirmationCard({ studentName, studentId, editToken, categoryName, mob
 
             <Alert severity="info" icon={<WhatsApp />} sx={{ textAlign: 'left', fontSize: '0.82rem', borderRadius: 2 }}>
               <strong>WhatsApp confirmation</strong> will be sent to your mobile number shortly.
-              If not received within 5 minutes, use the <em>"Share via WhatsApp"</em> button below
+              Use the <em>"Share via WhatsApp"</em> button below
               as your proof of registration.
             </Alert>
           </Box>
@@ -189,33 +189,9 @@ function ConfirmationCard({ studentName, studentId, editToken, categoryName, mob
             Share Confirmation via WhatsApp
           </Button>
 
-          <Typography variant="caption" color="text.secondary" textAlign="center">
-            ↑ This sends your registration details to our WhatsApp number so you have proof on your phone.
-          </Typography>
+          
 
-          {/* Edit registration link */}
-          {editLink && (
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<Edit />}
-              component="a"
-              href={editLink}
-              sx={{ py: 1.1, borderRadius: 2, textTransform: 'none', fontWeight: 700 }}
-            >
-              Edit My Registration
-            </Button>
-          )}
-
-          {/* Add another */}
-          <Button
-            fullWidth
-            variant="text"
-            onClick={onBackToForm}
-            sx={{ py: 1.1, borderRadius: 2, textTransform: 'none', color: 'text.secondary' }}
-          >
-            Add Another Registration
-          </Button>
+          
         </Stack>
       </Stack>
     </Box>
