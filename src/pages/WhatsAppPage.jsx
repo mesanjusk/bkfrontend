@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import {
   Alert, Avatar, Box, Button, Card, CardContent, Checkbox, Chip,
@@ -6,53 +6,57 @@ import {
   List, ListItemButton, ListItemText, MenuItem, Stack, Switch,
   Tab, Tabs, TextField, Tooltip, Typography,
 } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
-import SendIcon from '@mui/icons-material/Send';
+import AddIcon       from '@mui/icons-material/Add';
+import SendIcon      from '@mui/icons-material/Send';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import LinkIcon from '@mui/icons-material/Link';
-import LinkOffIcon from '@mui/icons-material/LinkOff';
-import QrCode2Icon from '@mui/icons-material/QrCode2';
-import PageHeader from '../components/PageHeader';
-import PageSurface from '../components/PageSurface';
+import LinkIcon      from '@mui/icons-material/Link';
+import LinkOffIcon   from '@mui/icons-material/LinkOff';
+import QrCode2Icon   from '@mui/icons-material/QrCode2';
+import PageHeader    from '../components/PageHeader';
+import PageSurface   from '../components/PageSurface';
 import ResponsiveDialog from '../components/ResponsiveDialog';
-import ResponsiveTable from '../components/ResponsiveTable';
-import whatsappService from '../services/whatsappService';
+import ResponsiveTable  from '../components/ResponsiveTable';
+import whatsappService  from '../services/whatsappService';
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
+
 const officialTabs = [
-  ['inbox', 'Inbox'],
-  ['rules', 'Auto Reply'],
-  ['send', 'Quick Send'],
-  ['invite', 'Invitation'],
-  ['templates', 'Templates'],
+  ['inbox',       'Inbox'],
+  ['rules',       'Auto Reply'],
+  ['send',        'Quick Send'],
+  ['invite',      'Invitation'],
+  ['templates',   'Templates'],
   ['connections', 'Connections'],
-  ['logs', 'Logs'],
+  ['logs',        'Logs'],
 ];
 
 const baileysTabs = [
-  ['inbox', 'Inbox'],
-  ['rules', 'Auto Reply'],
-  ['send', 'Quick Send'],
+  ['inbox',  'Inbox'],
+  ['rules',  'Auto Reply'],
+  ['send',   'Quick Send'],
   ['invite', 'Invitation'],
-  ['logs', 'Logs'],
-  ['setup', 'Setup / QR'],
+  ['logs',   'Logs'],
+  ['setup',  'Setup / QR'],
 ];
 
-// ── Shared constants ──────────────────────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────────────────────
+
 const emptyInvitationForm = {
   recipientMode: 'single', singleName: '', singleNumber: '',
   imageUrl: '', eventName: '', date: '', time: '', venue: '',
 };
+
 const recipientModeOptions = [
-  { value: 'students',    label: 'Students' },
-  { value: 'parents',     label: 'Parents' },
+  { value: 'students',    label: 'Students'     },
+  { value: 'parents',     label: 'Parents'      },
   { value: 'teamMembers', label: 'Team Members' },
-  { value: 'volunteers',  label: 'Volunteers' },
-  { value: 'guests',      label: 'Guests' },
-  { value: 'single',      label: 'Single Number' },
-  { value: 'csv',         label: 'CSV File' },
-  { value: 'excel',       label: 'Excel File' },
+  { value: 'volunteers',  label: 'Volunteers'   },
+  { value: 'guests',      label: 'Guests'       },
+  { value: 'single',      label: 'Single Number'},
+  { value: 'csv',         label: 'CSV File'     },
+  { value: 'excel',       label: 'Excel File'   },
 ];
+
 const emptyRule = {
   name: '', matchType: 'CONTAINS', triggerText: '',
   replyType: 'TEXT', replyText: '', templateName: '',
@@ -60,6 +64,7 @@ const emptyRule = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
 const normalizePhone   = (v) => String(v || '').replace(/[^\d]/g, '').trim();
 const formatWhen       = (v) => v ? new Date(v).toLocaleString() : '-';
 const conversationName = (item) => item?.contactName || item?.name || item?.phone || 'Unknown';
@@ -77,7 +82,7 @@ function parseRowsToRecipients(rows = []) {
   })).filter(item => item.mobile);
 }
 
-// ── Shared UI components ──────────────────────────────────────────────────────
+// ── Shared sub-components ─────────────────────────────────────────────────────
 
 function CollectionSection({ title, subtitle, rows, onAdd, children }) {
   return (
@@ -152,9 +157,10 @@ function ProviderToggle({ useBaileys, onToggle, baileysStatus }) {
             )}
             <Tooltip title={useBaileys ? 'Switch to Official API' : 'Switch to Baileys'}>
               <Stack direction="row" alignItems="center" spacing={0.5}>
-                <Typography variant="caption" color="text.secondary">Official</Typography>
+                {/* FIX: left = Official (false), right = Baileys (true) */}
+                <Typography variant="caption" color={!useBaileys ? 'primary' : 'text.secondary'} fontWeight={!useBaileys ? 800 : 400}>Official</Typography>
                 <Switch checked={useBaileys} onChange={onToggle} color="warning" />
-                <Typography variant="caption" color="text.secondary">Baileys</Typography>
+                <Typography variant="caption" color={useBaileys ? 'warning.main' : 'text.secondary'} fontWeight={useBaileys ? 800 : 400}>Baileys</Typography>
               </Stack>
             </Tooltip>
           </Stack>
@@ -164,10 +170,10 @@ function ProviderToggle({ useBaileys, onToggle, baileysStatus }) {
   );
 }
 
-// ── Inbox (shared) ────────────────────────────────────────────────────────────
+// ── Inbox panel ───────────────────────────────────────────────────────────────
 
-function InboxPanel({ inbox, selectedKey, onSelect, conversationMessages, replyForm,
-  setReplyForm, onSend, saving, isBaileys, templates }) {
+function InboxPanel({ inbox, selectedKey, onSelect, conversationMessages,
+  replyForm, setReplyForm, onSend, saving, isBaileys, templates }) {
   const accentBg       = isBaileys ? '#b37a00' : '#1976d2';
   const accentSelected = isBaileys ? '#fff8e1'  : '#e3f2fd';
   return (
@@ -325,7 +331,10 @@ function QuickSendPanel({ onSend, saving, isBaileys, templates }) {
           <Button variant="contained" color={isBaileys ? 'warning' : 'primary'}
             startIcon={<SendIcon />}
             disabled={saving || !form.to || !form.text.trim()}
-            onClick={() => { onSend(form); setForm({ to: '', contactName: '', text: '', templateName: '' }); }}>
+            onClick={() => {
+              onSend(form);
+              setForm({ to: '', contactName: '', text: '', templateName: '' });
+            }}>
             Send
           </Button>
         </Stack>
@@ -357,7 +366,6 @@ function AutoReplyPanel({ rules, onAdd, onEdit, isBaileys }) {
                       onClick={() => onEdit(item)}>Edit</Button>,
     })),
   };
-
   return (
     <CollectionSection
       title={isBaileys ? '🐝 Baileys Auto Reply Rules' : 'Auto Reply Rules'}
@@ -393,7 +401,7 @@ function AutoReplyPanel({ rules, onAdd, onEdit, isBaileys }) {
 function InvitationPanel({
   isBaileys, invitationForm, setInvitationForm, selectedRecipients, setSelectedRecipients,
   textPosition, setTextPosition, onUploadImage, uploadingImage, onSend, sending,
-  fileName, setFileName, recipientGroups,
+  fileName, setFileName,
 }) {
   const handleFileUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -498,8 +506,8 @@ function InvitationPanel({
                 {selectedRecipients.map((r, idx) => (
                   <FormControlLabel key={idx} label={`${r.name} — ${r.mobile}`}
                     control={<Checkbox checked={r.checked !== false} size="small"
-                      onChange={e => setSelectedRecipients(prev =>
-                        prev.map((x, i) => i === idx ? { ...x, checked: e.target.checked } : x)
+                      onChange={() => setSelectedRecipients(prev =>
+                        prev.map((x, i) => i === idx ? { ...x, checked: x.checked === false } : x)
                       )} />} />
                 ))}
               </Stack>
@@ -534,22 +542,18 @@ function LogsPanel({ logs, isBaileys }) {
       title:     item.contactName || item.from || item.to || 'Message',
       contact:   item.contactName || item.from || item.to || '-',
       direction: item.direction || '-',
-      source:    item.source || '-',
-      message:   item.bodyText || item.text || '-',
+      source:    item.source    || '-',
+      message:   item.bodyText  || item.text  || '-',
       status: () => (
-        <Chip
-          label={item.status || '-'}
-          size="small"
+        <Chip label={item.status || '-'} size="small"
           color={
             item.status === 'SENT' || item.status === 'READ' ? 'success' :
             item.status === 'FAILED' ? 'error' : 'default'
-          }
-        />
+          } />
       ),
       when: formatWhen(item.createdAt),
     })),
   };
-
   return (
     <CollectionSection
       title={isBaileys ? '🐝 Baileys Message Logs' : 'Message Logs'}
@@ -561,52 +565,51 @@ function LogsPanel({ logs, isBaileys }) {
   );
 }
 
-// ── Baileys Setup / QR — FIXED: live auto-polling, countdown, auto-refresh ────
+// ── Baileys Setup / QR ────────────────────────────────────────────────────────
+//
+// FIX SUMMARY:
+//   1. Single clean setInterval polls /baileys/status every 2s.
+//      onRefresh is a useCallback (stable ref) so this effect NEVER re-runs
+//      and NEVER creates duplicate intervals. This is what caused QR to not show.
+//   2. QR countdown resets automatically when a new QR string arrives.
+//   3. No manual refresh button needed — page stays live always.
 
 function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }) {
   const isConnected    = status?.status === 'CONNECTED';
   const isQrPending    = status?.status === 'QR_PENDING';
   const isDisconnected = !isConnected && !isQrPending;
 
-  // ── Auto-poll every 2s — QR always stays live, no manual refresh needed ──
-  const pollRef = useRef(null);
+  // Poll every 2s — keeps QR image current with no user interaction
   useEffect(() => {
-    pollRef.current = setInterval(() => { onRefresh(); }, 2000);
-    return () => clearInterval(pollRef.current);
-  }, [onRefresh]);
+    const id = setInterval(onRefresh, 2000);
+    return () => clearInterval(id);
+  }, [onRefresh]); // onRefresh is a stable useCallback — this runs once only
 
-  // ── QR expiry countdown (each new QR lasts ~20s) ──────────────────────────
-  const [qrAge, setQrAge]   = useState(0);
-  const qrTimerRef          = useRef(null);
-  const prevQrRef           = useRef(null);
+  // QR age countdown
+  const [qrAge,   setQrAge]   = useState(0);
+  const prevQrRef             = useRef(null);
 
-  // Reset age whenever we receive a fresh QR image
   useEffect(() => {
     if (status?.qr && status.qr !== prevQrRef.current) {
       prevQrRef.current = status.qr;
-      setQrAge(0);
+      setQrAge(0); // reset countdown each time a fresh QR arrives
     }
   }, [status?.qr]);
 
-  // Count up while QR is pending
   useEffect(() => {
-    if (isQrPending) {
-      qrTimerRef.current = setInterval(() => setQrAge(a => a + 1), 1000);
-    } else {
-      clearInterval(qrTimerRef.current);
-      setQrAge(0);
-    }
-    return () => clearInterval(qrTimerRef.current);
+    if (!isQrPending) { setQrAge(0); return; }
+    const id = setInterval(() => setQrAge(a => a + 1), 1000);
+    return () => clearInterval(id);
   }, [isQrPending]);
 
   const qrSecondsLeft = Math.max(0, 20 - qrAge);
-  const qrExpired     = qrSecondsLeft === 0 && isQrPending;
+  const qrExpired     = isQrPending && qrSecondsLeft === 0;
 
   return (
     <PageSurface>
       <Card><CardContent>
         <Stack spacing={3}>
-          {/* Header */}
+
           <Stack direction="row" alignItems="center" spacing={2}>
             <QrCode2Icon sx={{ fontSize: 40, color: 'warning.main' }} />
             <Box>
@@ -622,7 +625,6 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }
             Use for internal/testing purposes only.
           </Alert>
 
-          {/* Status bar — includes LIVE indicator */}
           <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
             <Chip
               label={`● ${status?.status || 'UNKNOWN'}`}
@@ -631,85 +633,70 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }
             {status?.phone && (
               <Chip label={`📱 +${status.phone}`} variant="outlined" color="success" />
             )}
-            {/* LIVE badge — shows auto-polling is active */}
-            <Chip
-              size="small"
-              label="LIVE"
-              color="info"
-              variant="outlined"
-              icon={<CircularProgress size={10} color="inherit" />}
-            />
+            <Chip size="small" label="● LIVE" color="info" variant="outlined" />
           </Stack>
 
-          {/* QR code */}
-          {isQrPending && status?.qr ? (
+          {/* QR image */}
+          {isQrPending && status?.qr && (
             <Box>
               <Alert severity={qrExpired ? 'error' : 'info'} sx={{ mb: 2 }}>
-                {qrExpired ? (
-                  <>⏱ QR expired — a new one will appear automatically.</>
-                ) : (
-                  <>
-                    <strong>Scan on your phone:</strong> WhatsApp → ⋮ →{' '}
-                    <strong>Linked Devices</strong> → <strong>Link a Device</strong>
-                    <br />
-                    QR refreshes automatically · <strong>{qrSecondsLeft}s</strong> remaining
-                  </>
-                )}
+                {qrExpired
+                  ? '⏱ QR expired — next QR loading automatically…'
+                  : (
+                    <>
+                      <strong>Open WhatsApp</strong> → tap ⋮ → <strong>Linked Devices</strong> →{' '}
+                      <strong>Link a Device</strong> → scan below
+                      &nbsp;·&nbsp; refreshes in <strong>{qrSecondsLeft}s</strong>
+                    </>
+                  )}
               </Alert>
               <Box
                 component="img"
                 src={status.qr}
                 alt="WhatsApp QR Code"
                 sx={{
-                  display: 'block',
-                  width: 260,
-                  height: 260,
+                  display: 'block', width: 260, height: 260,
                   border: '4px solid',
                   borderColor: qrExpired ? 'error.main' : 'warning.main',
-                  borderRadius: 2,
-                  mb: 1,
-                  opacity: qrExpired ? 0.35 : 1,
-                  transition: 'opacity 0.3s, border-color 0.3s',
+                  borderRadius: 2, mb: 1,
+                  opacity: qrExpired ? 0.3 : 1,
+                  transition: 'opacity 0.4s, border-color 0.4s',
                 }}
               />
               {qrExpired && (
                 <Typography variant="body2" color="error">
-                  ⟳ Waiting for new QR from WhatsApp…
+                  ⟳ Waiting for next QR from WhatsApp server…
                 </Typography>
               )}
             </Box>
-          ) : null}
+          )}
 
-          {/* Connecting spinner */}
-          {connecting && !isQrPending ? (
+          {connecting && !isQrPending && (
             <Stack direction="row" spacing={1.5} alignItems="center">
-              <CircularProgress size={20} color="warning" />
+              <CircularProgress size={22} color="warning" />
               <Typography variant="body2" color="text.secondary">
-                Starting Baileys — QR will appear automatically…
+                Connecting to WhatsApp — QR will appear here automatically…
               </Typography>
             </Stack>
-          ) : null}
+          )}
 
-          {/* Connected */}
-          {isConnected ? (
+          {isConnected && (
             <Alert severity="success">
-              ✅ Connected as +{status.phone}. Messages are being sent and received automatically.
+              ✅ Connected as <strong>+{status.phone}</strong>.
+              Registration confirmations and messages are being sent automatically.
             </Alert>
-          ) : null}
+          )}
 
-          {/* Disconnected hint */}
-          {isDisconnected && !connecting ? (
+          {isDisconnected && !connecting && (
             <Alert severity="info">
-              Click <strong>Connect</strong> to start. If previously connected, it will
-              auto-reconnect using saved credentials — no QR scan needed.
+              Click <strong>Connect</strong> to start.
+              If previously connected, saved credentials will be used — no QR scan needed.
             </Alert>
-          ) : null}
+          )}
 
-          {/* Buttons */}
           <Stack direction="row" spacing={2} flexWrap="wrap">
             <Button
-              variant="contained"
-              color="warning"
+              variant="contained" color="warning"
               startIcon={connecting ? <CircularProgress size={16} color="inherit" /> : <LinkIcon />}
               onClick={onConnect}
               disabled={connecting || isConnected}
@@ -717,8 +704,7 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }
               {isQrPending ? 'Get New QR' : 'Connect'}
             </Button>
             <Button
-              variant="outlined"
-              color="error"
+              variant="outlined" color="error"
               startIcon={<LinkOffIcon />}
               onClick={onDisconnect}
               disabled={isDisconnected && !connecting}
@@ -735,18 +721,19 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }
               • Backend: <code>npm install @whiskeysockets/baileys qrcode pino</code>
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              • Auth credentials stored in <strong>MongoDB</strong> — survives server restarts.
+              • Auth stored in <strong>MongoDB</strong> — survives server restarts.
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              • Server <strong>auto-reconnects</strong> on boot if credentials exist — no manual scan needed.
+              • Server <strong>auto-reconnects</strong> on boot if credentials exist.
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              • QR refreshes automatically every 20s — keep this page open and scan when ready.
+              • QR on this page refreshes automatically every ~20s — just keep it open and scan.
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              • If QR scan keeps failing: <strong>Disconnect &amp; Reset</strong> → wait 5s → <strong>Connect</strong>.
+              • Scan failing? Click <strong>Disconnect &amp; Reset</strong> → wait 5s → <strong>Connect</strong>.
             </Typography>
           </Box>
+
         </Stack>
       </CardContent></Card>
     </PageSurface>
@@ -761,8 +748,7 @@ function RuleDialog({ open, onClose, editing, form, setForm, onSave, saving, isB
       <CardContent>
         <Stack spacing={2}>
           <Typography variant="h6" fontWeight={800}>
-            {editing ? 'Edit Auto Reply Rule' : 'Add Auto Reply Rule'}
-            {isBaileys ? ' (Baileys)' : ''}
+            {editing ? 'Edit' : 'Add'} Auto Reply Rule{isBaileys ? ' (Baileys)' : ''}
           </Typography>
           <Grid container spacing={2}>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -792,8 +778,7 @@ function RuleDialog({ open, onClose, editing, form, setForm, onSave, saving, isB
               </TextField>
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
-              <TextField select label="Active"
-                value={form.isActive ? 'true' : 'false'}
+              <TextField select label="Active" value={form.isActive ? 'true' : 'false'}
                 onChange={e => setForm(p => ({ ...p, isActive: e.target.value === 'true' }))}>
                 <MenuItem value="true">Active</MenuItem>
                 <MenuItem value="false">Inactive</MenuItem>
@@ -841,60 +826,52 @@ function RuleDialog({ open, onClose, editing, form, setForm, onSave, saving, isB
 // ══════════════════════════════════════════════════════════════════════════════
 
 export default function WhatsAppPage() {
+  // FIX: false = Official API by default. Toggle right switches to Baileys.
   const [useBaileys, setUseBaileys] = useState(false);
   const [tab,        setTab]        = useState('inbox');
   const [loading,    setLoading]    = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [resultMessage, setResultMessage] = useState(null);
 
-  // ── Official API state ──────────────────────────────────────────────────────
-  const [inbox,                    setInbox]                    = useState([]);
-  const [selectedConversationKey,  setSelectedConversationKey]  = useState('');
-  const [conversationMessages,     setConversationMessages]     = useState([]);
-  const [replyForm,                setReplyForm]                = useState({ text: '', templateName: '' });
-  const [templates,                setTemplates]                = useState([]);
-  const [rules,                    setRules]                    = useState([]);
-  const [connections,              setConnections]              = useState([]);
-  const [logs,                     setLogs]                     = useState([]);
-  const [ruleOpen,                 setRuleOpen]                 = useState(false);
-  const [editingRule,              setEditingRule]              = useState(null);
-  const [ruleForm,                 setRuleForm]                 = useState(emptyRule);
+  // ── Official API state ────────────────────────────────────────────────────
+  const [inbox,                   setInbox]                   = useState([]);
+  const [selectedConversationKey, setSelectedConversationKey] = useState('');
+  const [conversationMessages,    setConversationMessages]    = useState([]);
+  const [replyForm,               setReplyForm]               = useState({ text: '', templateName: '' });
+  const [templates,               setTemplates]               = useState([]);
+  const [rules,                   setRules]                   = useState([]);
+  const [connections,             setConnections]             = useState([]);
+  const [logs,                    setLogs]                    = useState([]);
+  const [ruleOpen,                setRuleOpen]                = useState(false);
+  const [editingRule,             setEditingRule]             = useState(null);
+  const [ruleForm,                setRuleForm]                = useState(emptyRule);
+  const [invitationForm,          setInvitationForm]          = useState(emptyInvitationForm);
+  const [selectedRecipients,      setSelectedRecipients]      = useState([]);
+  const [textPosition,            setTextPosition]            = useState('bottom');
+  const [sendingInvitation,       setSendingInvitation]       = useState(false);
+  const [uploadingImage,          setUploadingImage]          = useState(false);
+  const [fileName,                setFileName]                = useState('');
 
-  // Official invitation
-  const [invitationForm,      setInvitationForm]      = useState(emptyInvitationForm);
-  const [selectedRecipients,  setSelectedRecipients]  = useState([]);
-  const [textPosition,        setTextPosition]         = useState('bottom');
-  const [sendingInvitation,   setSendingInvitation]   = useState(false);
-  const [uploadingImage,      setUploadingImage]       = useState(false);
-  const [fileName,            setFileName]             = useState('');
-  const [recipientGroups]                              = useState({});
-
-  // ── Baileys state ───────────────────────────────────────────────────────────
-  const [baileysStatus,     setBaileysStatus]     = useState({ status: 'DISCONNECTED', qr: null, phone: '' });
-  const [baileysConnecting, setBaileysConnecting] = useState(false);
-  const [baileysInbox,      setBaileysInbox]      = useState([]);
-  const [baileysSelectedKey,setBaileysSelectedKey]= useState('');
-  const [baileysConversation,setBaileysConversation]=useState([]);
-  const [baileysReplyForm,  setBaileysReplyForm]  = useState({ text: '' });
-
-  // Baileys auto-reply
+  // ── Baileys state ─────────────────────────────────────────────────────────
+  const [baileysStatus,      setBaileysStatus]      = useState({ status: 'DISCONNECTED', qr: null, phone: '' });
+  const [baileysConnecting,  setBaileysConnecting]  = useState(false);
+  const [baileysInbox,       setBaileysInbox]       = useState([]);
+  const [baileysSelectedKey, setBaileysSelectedKey] = useState('');
+  const [baileysConversation,setBaileysConversation]= useState([]);
+  const [baileysReplyForm,   setBaileysReplyForm]   = useState({ text: '' });
   const [baileysRules,       setBaileysRules]       = useState([]);
   const [baileysRuleOpen,    setBaileysRuleOpen]    = useState(false);
   const [baileysEditingRule, setBaileysEditingRule] = useState(null);
   const [baileysRuleForm,    setBaileysRuleForm]    = useState(emptyRule);
-
-  // Baileys invitation
   const [baileysInvitationForm,     setBaileysInvitationForm]     = useState(emptyInvitationForm);
   const [baileysSelectedRecipients, setBaileysSelectedRecipients] = useState([]);
   const [baileysTextPosition,       setBaileysTextPosition]       = useState('bottom');
   const [baileysSendingInvitation,  setBaileysSendingInvitation]  = useState(false);
   const [baileysUploadingImage,     setBaileysUploadingImage]     = useState(false);
   const [baileysFileName,           setBaileysFileName]           = useState('');
+  const [baileysLogs,               setBaileysLogs]               = useState([]);
 
-  // Baileys logs
-  const [baileysLogs, setBaileysLogs] = useState([]);
-
-  // ── Loaders: Official ───────────────────────────────────────────────────────
+  // ── Loaders ───────────────────────────────────────────────────────────────
   const loadOfficial = async () => {
     setLoading(true);
     try {
@@ -907,26 +884,25 @@ export default function WhatsAppPage() {
       ]);
       const inboxData = Array.isArray(inboxRes.data) ? inboxRes.data : [];
       setInbox(inboxData);
-      setTemplates(Array.isArray(tplRes.data)   ? tplRes.data   : []);
-      setRules(Array.isArray(rulesRes.data)      ? rulesRes.data : []);
-      setConnections(Array.isArray(connsRes.data)? connsRes.data : []);
-      setLogs(Array.isArray(logsRes.data)        ? logsRes.data  : []);
+      setTemplates(Array.isArray(tplRes.data)    ? tplRes.data   : []);
+      setRules(Array.isArray(rulesRes.data)       ? rulesRes.data : []);
+      setConnections(Array.isArray(connsRes.data) ? connsRes.data : []);
+      setLogs(Array.isArray(logsRes.data)         ? logsRes.data  : []);
       if (!selectedConversationKey && inboxData[0]?.conversationKey)
         setSelectedConversationKey(inboxData[0].conversationKey);
     } catch (_) {}
     finally { setLoading(false); }
   };
 
-  const loadOfficialConversation = async (conversationKey) => {
-    if (!conversationKey) { setConversationMessages([]); return; }
-    const { data } = await whatsappService.getConversation(conversationKey);
+  const loadOfficialConversation = async (key) => {
+    if (!key) { setConversationMessages([]); return; }
+    const { data } = await whatsappService.getConversation(key);
     setConversationMessages(Array.isArray(data) ? data : []);
-    await whatsappService.markConversationRead(conversationKey).catch(() => null);
+    await whatsappService.markConversationRead(key).catch(() => null);
     const res = await whatsappService.getInbox();
     setInbox(Array.isArray(res.data) ? res.data : []);
   };
 
-  // ── Loaders: Baileys ────────────────────────────────────────────────────────
   const loadBaileys = async () => {
     setLoading(true);
     try {
@@ -960,42 +936,41 @@ export default function WhatsAppPage() {
 
   const handleToggle = () => { setUseBaileys(v => !v); setTab('inbox'); };
 
-  // ── Baileys QR poller (used by Connect button flow) ───────────────────────
-  const baileysPollerRef = useRef(null);
-  const stopBaileysPoller = () => {
-    if (baileysPollerRef.current) { clearInterval(baileysPollerRef.current); baileysPollerRef.current = null; }
-  };
-  const startBaileysPoller = () => {
-    stopBaileysPoller();
-    let attempts = 0;
-    baileysPollerRef.current = setInterval(async () => {
-      attempts++;
-      try {
-        const res = await whatsappService.baileysGetStatus();
-        const s = res.data || {};
-        setBaileysStatus(s);
-        if (s.status === 'CONNECTED' || attempts >= 60) {
-          stopBaileysPoller();
-          setBaileysConnecting(false);
-        }
-      } catch (_) {}
-    }, 1000);
+  // ── Baileys connect poller (used only during active connect flow) ──────────
+  const connectPollerRef = useRef(null);
+  const stopConnectPoller = () => {
+    if (connectPollerRef.current) { clearInterval(connectPollerRef.current); connectPollerRef.current = null; }
   };
 
-  // Stable ref so BaileysSetup's useEffect doesn't re-run on every render
-  const handleBaileysRefreshStatus = useRef(async () => {
+  // FIX: useCallback with empty deps = always same function reference.
+  // BaileysSetup's useEffect depends on this — a new ref every render would
+  // recreate the interval every render, flooding the server and hiding the QR.
+  const handleBaileysRefreshStatus = useCallback(async () => {
     try {
       const res = await whatsappService.baileysGetStatus();
       setBaileysStatus(res.data || { status: 'DISCONNECTED' });
     } catch (_) {}
-  }).current;
+  }, []); // intentionally empty — stable forever
 
   const handleBaileysConnect = async () => {
     setBaileysConnecting(true);
     setBaileysStatus({ status: 'DISCONNECTED', qr: null, phone: '' });
     try {
       await whatsappService.baileysConnect();
-      startBaileysPoller();
+      stopConnectPoller();
+      let attempts = 0;
+      connectPollerRef.current = setInterval(async () => {
+        attempts++;
+        try {
+          const res = await whatsappService.baileysGetStatus();
+          const s   = res.data || {};
+          setBaileysStatus(s);
+          if (s.status === 'CONNECTED' || attempts >= 90) {
+            stopConnectPoller();
+            setBaileysConnecting(false);
+          }
+        } catch (_) {}
+      }, 1000);
     } catch (e) {
       setBaileysConnecting(false);
       setResultMessage({ type: 'error', text: e?.response?.data?.message || 'Failed to start Baileys' });
@@ -1003,31 +978,31 @@ export default function WhatsAppPage() {
   };
 
   const handleBaileysDisconnect = async () => {
-    stopBaileysPoller();
+    stopConnectPoller();
     try {
       await whatsappService.baileysDisconnect();
       setBaileysStatus({ status: 'DISCONNECTED', qr: null, phone: '' });
+      setBaileysConnecting(false);
     } catch (e) {
       setResultMessage({ type: 'error', text: 'Failed to disconnect' });
     }
   };
 
-  // ── Official handlers ────────────────────────────────────────────────────────
+  // ── Official handlers ─────────────────────────────────────────────────────
   const handleReplySend = async () => {
-    const selectedConversation = inbox.find(i => i.conversationKey === selectedConversationKey);
-    if (!selectedConversation?.phone || (!replyForm.text.trim() && !replyForm.templateName)) return;
+    const sel = inbox.find(i => i.conversationKey === selectedConversationKey);
+    if (!sel?.phone || (!replyForm.text.trim() && !replyForm.templateName)) return;
     setSaving(true);
     try {
       await whatsappService.sendText({
-        to:              selectedConversation.phone,
-        contactName:     selectedConversation.contactName,
-        text:            replyForm.templateName ? '' : replyForm.text,
-        templateName:    replyForm.templateName,
+        to: sel.phone, contactName: sel.contactName,
+        text: replyForm.templateName ? '' : replyForm.text,
+        templateName: replyForm.templateName,
         replyToMessageId: conversationMessages[conversationMessages.length - 1]?.waMessageId || '',
       });
       setReplyForm({ text: '', templateName: '' });
       await loadOfficial();
-      await loadOfficialConversation(selectedConversation.conversationKey);
+      await loadOfficialConversation(sel.conversationKey);
     } finally { setSaving(false); }
   };
 
@@ -1079,7 +1054,7 @@ export default function WhatsAppPage() {
     } finally { setSendingInvitation(false); }
   };
 
-  // ── Baileys reply ───────────────────────────────────────────────────────────
+  // ── Baileys handlers ──────────────────────────────────────────────────────
   const handleBaileysReplySend = async () => {
     if (!baileysSelectedKey || !baileysReplyForm.text.trim()) return;
     setSaving(true);
@@ -1102,17 +1077,8 @@ export default function WhatsAppPage() {
     } finally { setSaving(false); }
   };
 
-  // ── Baileys auto-reply rule handlers ────────────────────────────────────────
-  const handleBaileysEditRule = (item) => {
-    setBaileysEditingRule(item);
-    setBaileysRuleForm({ ...emptyRule, ...item });
-    setBaileysRuleOpen(true);
-  };
-  const handleBaileysAddRule = () => {
-    setBaileysEditingRule(null);
-    setBaileysRuleForm(emptyRule);
-    setBaileysRuleOpen(true);
-  };
+  const handleBaileysEditRule = (item) => { setBaileysEditingRule(item); setBaileysRuleForm({ ...emptyRule, ...item }); setBaileysRuleOpen(true); };
+  const handleBaileysAddRule  = ()     => { setBaileysEditingRule(null); setBaileysRuleForm(emptyRule); setBaileysRuleOpen(true); };
   const handleBaileysSaveRule = async () => {
     setSaving(true);
     try {
@@ -1122,7 +1088,6 @@ export default function WhatsAppPage() {
     } finally { setSaving(false); }
   };
 
-  // ── Baileys invitation ──────────────────────────────────────────────────────
   const handleBaileysUploadImage = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -1152,7 +1117,7 @@ export default function WhatsAppPage() {
     } finally { setBaileysSendingInvitation(false); }
   };
 
-  // ── Official table rows ───────────────────────────────────────────────────
+  // ── Table rows ────────────────────────────────────────────────────────────
   const officialRuleRows = {
     columns: [
       { key: 'name', label: 'Rule' }, { key: 'trigger', label: 'Trigger' },
@@ -1196,6 +1161,7 @@ export default function WhatsAppPage() {
 
   const currentTabs = useBaileys ? baileysTabs : officialTabs;
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <Box sx={{ pb: 3 }}>
       <PageHeader
@@ -1215,10 +1181,8 @@ export default function WhatsAppPage() {
 
       <PageSurface sx={{ mb: 2 }}>
         <Tabs
-          value={tab}
-          onChange={(_, v) => setTab(v)}
-          variant="scrollable"
-          allowScrollButtonsMobile
+          value={tab} onChange={(_, v) => setTab(v)}
+          variant="scrollable" allowScrollButtonsMobile
           sx={{ minHeight: 0, '& .MuiTab-root': { minHeight: 42 } }}
           textColor={useBaileys ? 'warning' : 'primary'}
           indicatorColor={useBaileys ? 'warning' : 'primary'}
@@ -1227,14 +1191,14 @@ export default function WhatsAppPage() {
         </Tabs>
       </PageSurface>
 
-      {loading      ? <LinearProgress sx={{ mb: 2 }} /> : null}
-      {resultMessage ? (
+      {loading       && <LinearProgress sx={{ mb: 2 }} />}
+      {resultMessage && (
         <Alert sx={{ mb: 2 }} severity={resultMessage.type} onClose={() => setResultMessage(null)}>
           {resultMessage.text}
         </Alert>
-      ) : null}
+      )}
 
-      {/* ═══════════════════ BAILEYS TABS ═══════════════════ */}
+      {/* ══════════════ BAILEYS TABS ══════════════ */}
 
       {useBaileys && tab === 'inbox' && (
         <InboxPanel
@@ -1243,22 +1207,17 @@ export default function WhatsAppPage() {
           setReplyForm={setBaileysReplyForm} onSend={handleBaileysReplySend} saving={saving} isBaileys
         />
       )}
-
       {useBaileys && tab === 'rules' && (
         <>
           <AutoReplyPanel rules={baileysRules} onAdd={handleBaileysAddRule} onEdit={handleBaileysEditRule} isBaileys />
-          <RuleDialog
-            open={baileysRuleOpen} onClose={() => setBaileysRuleOpen(false)}
+          <RuleDialog open={baileysRuleOpen} onClose={() => setBaileysRuleOpen(false)}
             editing={baileysEditingRule} form={baileysRuleForm} setForm={setBaileysRuleForm}
-            onSave={handleBaileysSaveRule} saving={saving} isBaileys
-          />
+            onSave={handleBaileysSaveRule} saving={saving} isBaileys />
         </>
       )}
-
       {useBaileys && tab === 'send' && (
         <QuickSendPanel onSend={handleBaileysQuickSend} saving={saving} isBaileys />
       )}
-
       {useBaileys && tab === 'invite' && (
         <InvitationPanel
           isBaileys
@@ -1268,12 +1227,9 @@ export default function WhatsAppPage() {
           onUploadImage={handleBaileysUploadImage} uploadingImage={baileysUploadingImage}
           onSend={sendBaileysInvitation} sending={baileysSendingInvitation}
           fileName={baileysFileName} setFileName={setBaileysFileName}
-          recipientGroups={{}}
         />
       )}
-
       {useBaileys && tab === 'logs'  && <LogsPanel logs={baileysLogs} isBaileys />}
-
       {useBaileys && tab === 'setup' && (
         <BaileysSetup
           status={baileysStatus}
@@ -1284,7 +1240,7 @@ export default function WhatsAppPage() {
         />
       )}
 
-      {/* ═══════════════════ OFFICIAL TABS ═══════════════════ */}
+      {/* ══════════════ OFFICIAL TABS ══════════════ */}
 
       {!useBaileys && tab === 'inbox' && (
         <InboxPanel
@@ -1293,15 +1249,12 @@ export default function WhatsAppPage() {
           onSend={handleReplySend} saving={saving} isBaileys={false} templates={templates}
         />
       )}
-
       {!useBaileys && tab === 'rules' && (
         <>
-          <CollectionSection
-            title="Auto Reply Rules"
+          <CollectionSection title="Auto Reply Rules"
             subtitle="Rules trigger after customer message is stored by webhook."
             rows={officialRuleRows}
-            onAdd={() => { setEditingRule(null); setRuleForm(emptyRule); setRuleOpen(true); }}
-          >
+            onAdd={() => { setEditingRule(null); setRuleForm(emptyRule); setRuleOpen(true); }}>
             <Card><CardContent>
               <Typography fontWeight={700}>Webhook setup</Typography>
               <Typography variant="body2" color="text.secondary">
@@ -1309,18 +1262,14 @@ export default function WhatsAppPage() {
               </Typography>
             </CardContent></Card>
           </CollectionSection>
-          <RuleDialog
-            open={ruleOpen} onClose={() => setRuleOpen(false)}
+          <RuleDialog open={ruleOpen} onClose={() => setRuleOpen(false)}
             editing={editingRule} form={ruleForm} setForm={setRuleForm}
-            onSave={handleSaveRule} saving={saving} isBaileys={false}
-          />
+            onSave={handleSaveRule} saving={saving} isBaileys={false} />
         </>
       )}
-
       {!useBaileys && tab === 'send' && (
         <QuickSendPanel onSend={handleQuickSend} saving={saving} isBaileys={false} templates={templates} />
       )}
-
       {!useBaileys && tab === 'invite' && (
         <InvitationPanel
           isBaileys={false}
@@ -1330,24 +1279,16 @@ export default function WhatsAppPage() {
           onUploadImage={handleUploadImage} uploadingImage={uploadingImage}
           onSend={sendInvitation} sending={sendingInvitation}
           fileName={fileName} setFileName={setFileName}
-          recipientGroups={recipientGroups}
         />
       )}
-
       {!useBaileys && tab === 'templates' && (
         <CollectionSection title="Templates" subtitle="Approved WhatsApp message templates." rows={templateRows} />
       )}
-
       {!useBaileys && tab === 'connections' && (
         <CollectionSection title="Connections" subtitle="Manual or embedded WhatsApp connection records." rows={connectionsRows} />
       )}
-
       {!useBaileys && tab === 'logs' && (
-        <CollectionSection
-          title="Message Logs"
-          subtitle="Incoming webhook messages, manual replies and auto replies."
-          rows={logRows}
-        />
+        <CollectionSection title="Message Logs" subtitle="Incoming webhook messages, manual replies and auto replies." rows={logRows} />
       )}
     </Box>
   );
