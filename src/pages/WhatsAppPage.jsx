@@ -175,7 +175,10 @@ function BaileysInbox({ inbox, selectedKey, onSelect, conversationMessages, repl
   );
 }
 
-function BaileysSetup({ status, onConnect, onDisconnect, connecting }) {
+function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }) {
+  const isConnected    = status?.status === 'CONNECTED';
+  const isQrPending    = status?.status === 'QR_PENDING';
+  const isDisconnected = !isConnected && !isQrPending;
   return (
     <PageSurface>
       <Card><CardContent>
@@ -188,49 +191,60 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting }) {
             </Box>
           </Stack>
           <Alert severity="warning">
-            <strong>Unofficial API Warning:</strong> Baileys uses the WhatsApp Web protocol. Using it may violate WhatsApp Terms of Service. Use at your own risk for testing or internal tools only.
+            <strong>Unofficial API:</strong> Baileys uses the WhatsApp Web protocol. Use for internal/testing purposes only.
           </Alert>
-          <Stack direction="row" spacing={2} alignItems="center">
+          <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
             <Chip label={`Status: ${status?.status||'UNKNOWN'}`}
-              color={status?.status==='CONNECTED'?'success':status?.status==='QR_PENDING'?'warning':'default'} />
-            {status?.phone && <Chip label={`Phone: +${status.phone}`} variant="outlined" />}
+              color={isConnected?'success':isQrPending?'warning':'default'} />
+            {status?.phone && <Chip label={`Phone: +${status.phone}`} variant="outlined" color="success" />}
+            <Button size="small" variant="outlined" onClick={onRefresh}>Refresh Status</Button>
           </Stack>
-          {status?.status==='QR_PENDING' && status?.qr ? (
+          {isQrPending && status?.qr ? (
             <Box>
-              <Typography fontWeight={700} sx={{mb:1}}>Scan this QR code with WhatsApp:</Typography>
+              <Alert severity="info" sx={{mb:2}}>
+                <strong>How to scan:</strong> Open WhatsApp → tap ⋮ menu or Settings → <strong>Linked Devices</strong> → <strong>Link a Device</strong> → point camera at the QR below.
+              </Alert>
               <Box component="img" src={status.qr} alt="Baileys QR Code"
-                sx={{width:240,height:240,border:'4px solid',borderColor:'warning.main',borderRadius:2}} />
-              <Typography variant="body2" color="text.secondary" sx={{mt:1}}>
-                Open WhatsApp → Linked Devices → Link a Device → Scan this QR
+                sx={{display:"block",width:256,height:256,border:"4px solid",borderColor:"warning.main",borderRadius:2,mb:1}} />
+              <Typography variant="body2" color="text.secondary">
+                QR expires in ~20 seconds. If it expires, click <strong>Get New QR</strong> to refresh.
               </Typography>
             </Box>
           ) : null}
-          <Stack direction="row" spacing={2}>
+          {connecting && !isQrPending ? (
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <CircularProgress size={20} color="warning" />
+              <Typography variant="body2" color="text.secondary">Starting Baileys, waiting for QR code… (auto-refreshes every second)</Typography>
+            </Stack>
+          ) : null}
+          {isConnected ? (
+            <Alert severity="success">✅ Connected as +{status.phone}. You can now send and receive messages via Baileys.</Alert>
+          ) : null}
+          <Stack direction="row" spacing={2} flexWrap="wrap">
             <Button variant="contained" color="warning"
               startIcon={connecting ? <CircularProgress size={16} color="inherit"/> : <LinkIcon/>}
-              onClick={onConnect} disabled={connecting||status?.status==='CONNECTED'}>
-              {status?.status==='QR_PENDING' ? 'Reconnect / Refresh QR' : 'Connect'}
+              onClick={onConnect} disabled={connecting||isConnected}>
+              {isQrPending ? 'Get New QR' : 'Connect'}
             </Button>
             <Button variant="outlined" color="error" startIcon={<LinkOffIcon/>}
-              onClick={onDisconnect} disabled={status?.status==='DISCONNECTED'}>
-              Disconnect
+              onClick={onDisconnect} disabled={isDisconnected&&!connecting}>
+              Disconnect &amp; Reset
             </Button>
           </Stack>
           <Divider/>
           <Box>
-            <Typography fontWeight={700} sx={{mb:1}}>Backend Setup</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Install in backend: <code>npm install @whiskeysockets/baileys qrcode pino</code>
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{mt:0.5}}>
-              Auth credentials are stored in <strong>MongoDB</strong> (collection: <code>baileysauthstates</code>) — safe on Render, Railway, and any ephemeral host. Click <strong>Disconnect</strong> to wipe credentials and start fresh with a new QR.
-            </Typography>
+            <Typography fontWeight={700} sx={{mb:1}}>Setup Notes</Typography>
+            <Typography variant="body2" color="text.secondary">• Backend install: <code>npm install @whiskeysockets/baileys qrcode pino</code></Typography>
+            <Typography variant="body2" color="text.secondary" sx={{mt:0.5}}>• Auth credentials stored in <strong>MongoDB</strong> (<code>baileysauthstates</code>) — survives Render redeploys.</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{mt:0.5}}>• <strong>Disconnect &amp; Reset</strong> wipes credentials. Next Connect will show a fresh QR.</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{mt:0.5}}>• If QR appears but scan keeps failing: click <strong>Disconnect &amp; Reset</strong>, wait 5s, then <strong>Connect</strong> again.</Typography>
           </Box>
         </Stack>
       </CardContent></Card>
     </PageSurface>
   );
 }
+
 
 function BaileysQuickSend({ onSend, saving }) {
   const [form, setForm] = useState({to:'',contactName:'',text:''});
@@ -451,18 +465,45 @@ export default function WhatsAppPage() {
   };
 
   // Baileys handlers
+  // Poll backend for QR / CONNECTED status after hitting Connect
+  const baileysPollerRef = useRef(null);
+  const stopBaileysPoller = () => {
+    if (baileysPollerRef.current) { clearInterval(baileysPollerRef.current); baileysPollerRef.current = null; }
+  };
+  const startBaileysPoller = () => {
+    stopBaileysPoller();
+    let attempts = 0;
+    baileysPollerRef.current = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await whatsappService.baileysGetStatus();
+        const s = res.data || {};
+        setBaileysStatus(s);
+        if (s.status === 'CONNECTED' || attempts >= 60) { // stop after 60s
+          stopBaileysPoller();
+          setBaileysConnecting(false);
+        }
+      } catch(_) {}
+    }, 1000);
+  };
+
   const handleBaileysConnect = async () => {
     setBaileysConnecting(true);
+    setBaileysStatus({status:'DISCONNECTED',qr:null,phone:''});
     try {
       await whatsappService.baileysConnect();
-      setTimeout(async()=>{
-        try{const res=await whatsappService.baileysGetStatus();setBaileysStatus(res.data||{});}catch(_){}
-        setBaileysConnecting(false);
-      },2500);
+      startBaileysPoller(); // poll every 1s until QR appears or connected
     } catch(e){
       setBaileysConnecting(false);
       setResultMessage({type:'error',text:e?.response?.data?.message||'Failed to start Baileys'});
     }
+  };
+
+  const handleBaileysRefreshStatus = async () => {
+    try {
+      const res = await whatsappService.baileysGetStatus();
+      setBaileysStatus(res.data||{status:'DISCONNECTED'});
+    } catch(_){}
   };
 
   const handleBaileysDisconnect = async () => {
@@ -553,7 +594,8 @@ export default function WhatsAppPage() {
       {useBaileys && tab==='send' && <BaileysQuickSend onSend={handleBaileysQuickSend} saving={saving} />}
       {useBaileys && tab==='setup' && (
         <BaileysSetup status={baileysStatus} onConnect={handleBaileysConnect}
-          onDisconnect={handleBaileysDisconnect} connecting={baileysConnecting} />
+          onDisconnect={handleBaileysDisconnect} connecting={baileysConnecting}
+          onRefresh={handleBaileysRefreshStatus} />
       )}
 
       {/* ── OFFICIAL TABS ── */}
