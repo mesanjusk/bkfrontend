@@ -1759,7 +1759,7 @@ export default function WhatsAppPage() {
       )}
       {!useBaileys && tab === 'rules' && (
         <>
-          <CollectionSection title="Auto Reply Rules"
+          <CollectionSection title="Auto Reply Rules."
             subtitle="Rules trigger after customer message is stored by webhook."
             rows={officialRuleRows}
             onAdd={() => { setEditingRule(null); setRuleForm(emptyRule); setRuleOpen(true); }}>
