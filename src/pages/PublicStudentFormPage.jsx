@@ -138,10 +138,6 @@ function SubmissionSuccess({
             </Button>
           )}
 
-          {!editMode && (
-            
-          )}
-
           {editMode && (
             <Button
               fullWidth
