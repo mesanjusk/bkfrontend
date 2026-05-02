@@ -52,15 +52,17 @@ const emptyInvitationForm = {
   imageUrl: '', eventName: '', date: '', time: '', venue: '',
 };
 
-// Default font style — replaces the old simple 'bottom' string
+// Default font style
+// x, y are fractions 0–1 of canvas size so position is resolution-independent
 const emptyFontStyle = {
-  verticalPos: 'bottom',   // 'top' | 'middle' | 'bottom'
-  fontFamily:  'serif',
-  fontSize:    48,
-  color:       '#ffffff',
-  fontWeight:  'bold',     // 'bold' | 'normal'
-  textAlign:   'center',   // 'left' | 'center' | 'right'
-  shadow:      true,
+  x:          0.5,         // horizontal fraction (0=left edge, 1=right edge)
+  y:          0.88,        // vertical fraction (0=top, 1=bottom)
+  fontFamily: 'serif',
+  fontSize:   48,
+  color:      '#ffffff',
+  fontWeight: 'bold',      // 'bold' | 'normal'
+  textAlign:  'center',    // 'left' | 'center' | 'right'
+  shadow:     true,
 };
 
 const recipientModeOptions = [
@@ -127,6 +129,7 @@ function fmtSecs(s) {
 }
 
 // ── Canvas drawing helper ─────────────────────────────────────────────────────
+// x, y are fractions 0-1 of canvas dimensions
 
 function drawNameOnCanvas(canvas, imageEl, name, fontStyle) {
   if (!canvas || !imageEl) return;
@@ -140,21 +143,21 @@ function drawNameOnCanvas(canvas, imageEl, name, fontStyle) {
   if (!name) return;
 
   const {
-    verticalPos = 'bottom',
-    fontFamily  = 'serif',
-    fontSize    = 48,
-    color       = '#ffffff',
-    fontWeight  = 'bold',
-    textAlign   = 'center',
-    shadow      = true,
+    x          = 0.5,
+    y          = 0.88,
+    fontFamily = 'serif',
+    fontSize   = 48,
+    color      = '#ffffff',
+    fontWeight = 'bold',
+    textAlign  = 'center',
+    shadow     = true,
   } = fontStyle;
 
-  // Scale font size relative to canvas width (canvas is 600px wide by design)
   const scaledSize = Math.round(fontSize * (W / 600));
 
-  ctx.font       = `${fontWeight} ${scaledSize}px ${fontFamily}`;
-  ctx.fillStyle  = color;
-  ctx.textAlign  = textAlign;
+  ctx.font         = `${fontWeight} ${scaledSize}px ${fontFamily}`;
+  ctx.fillStyle    = color;
+  ctx.textAlign    = textAlign;
   ctx.textBaseline = 'middle';
 
   if (shadow) {
@@ -167,17 +170,7 @@ function drawNameOnCanvas(canvas, imageEl, name, fontStyle) {
     ctx.shadowBlur  = 0;
   }
 
-  // Determine X based on textAlign
-  const x = textAlign === 'left' ? 24
-           : textAlign === 'right' ? W - 24
-           : W / 2;
-
-  // Determine Y based on verticalPos
-  const y = verticalPos === 'top'    ? scaledSize + 16
-           : verticalPos === 'middle' ? H / 2
-           : H - scaledSize - 16;
-
-  ctx.fillText(name, x, y);
+  ctx.fillText(name, x * W, y * H);
 }
 
 // ── Shared sub-components ─────────────────────────────────────────────────────
@@ -501,50 +494,82 @@ function InvitationPanel({
   isBaileys,
   invitationForm, setInvitationForm,
   selectedRecipients, setSelectedRecipients,
-  fontStyle, setFontStyle,           // renamed from textPosition
+  fontStyle, setFontStyle,
   onUploadImage, uploadingImage,
-  sendServiceFn,                     // the actual service call: whatsappService.sendInvitation or baileysSendInvitation
+  sendServiceFn,
   fileName, setFileName,
 }) {
-  // ── Canvas preview state ────────────────────────────────────────────────────
-  const canvasRef     = useRef(null);
-  const imageElRef    = useRef(null);  // holds the loaded Image object
-  const [previewIdx,  setPreviewIdx]  = useState(0);
-  const [imageLoaded, setImageLoaded] = useState(false);
+  // ── Canvas / drag state ─────────────────────────────────────────────────────
+  const canvasRef      = useRef(null);
+  const imageElRef     = useRef(null);
+  const isDraggingRef  = useRef(false);
+  const [previewIdx,   setPreviewIdx]   = useState(0);
+  const [imageLoaded,  setImageLoaded]  = useState(false);
 
   // ── Queue state ─────────────────────────────────────────────────────────────
-  // Each queue item: { name, mobile, source, status: 'pending'|'sending'|'delivered'|'failed', error }
-  const [queue,       setQueue]       = useState([]);   // [] = not started
+  const [queue,       setQueue]       = useState([]);
   const [queueActive, setQueueActive] = useState(false);
   const [queuePaused, setQueuePaused] = useState(false);
   const [queueDone,   setQueueDone]   = useState(false);
-  const [queueIdx,    setQueueIdx]    = useState(0);    // current sending index
-  const pauseRef    = useRef(false);
-  const cancelRef   = useRef(false);
+  const [queueIdx,    setQueueIdx]    = useState(0);
+  const pauseRef  = useRef(false);
+  const cancelRef = useRef(false);
 
-  // ── Load image into hidden Image element whenever URL changes ───────────────
+  // ── Load image ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const url = invitationForm.imageUrl;
     if (!url) { setImageLoaded(false); imageElRef.current = null; return; }
     setImageLoaded(false);
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    img.onload = () => { imageElRef.current = img; setImageLoaded(true); };
+    img.onload  = () => { imageElRef.current = img; setImageLoaded(true); };
     img.onerror = () => { imageElRef.current = null; setImageLoaded(false); };
     img.src = url;
   }, [invitationForm.imageUrl]);
 
-  // ── Redraw canvas whenever image, previewIdx, or fontStyle changes ──────────
-  useEffect(() => {
+  // ── Redraw canvas ───────────────────────────────────────────────────────────
+  const redraw = useCallback((overrideName) => {
     if (!imageLoaded || !canvasRef.current || !imageElRef.current) return;
-    const recipients = getCheckedRecipients();
-    const name = invitationForm.recipientMode === 'single'
-      ? invitationForm.singleName || 'Guest'
-      : recipients[previewIdx]?.name || '';
+    const checked = getCheckedRecipients();
+    const name = overrideName !== undefined ? overrideName
+      : invitationForm.recipientMode === 'single'
+        ? invitationForm.singleName || 'Guest'
+        : checked[previewIdx]?.name || '';
     drawNameOnCanvas(canvasRef.current, imageElRef.current, name, fontStyle);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageLoaded, previewIdx, fontStyle, invitationForm.singleName,
       invitationForm.recipientMode, selectedRecipients]);
+
+  useEffect(() => { redraw(); }, [redraw]);
+
+  // ── Drag handlers — mouse + touch ───────────────────────────────────────────
+  const getCanvasFraction = (e) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect    = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    // clamp 0–1
+    const x = Math.min(1, Math.max(0, (clientX - rect.left)  / rect.width));
+    const y = Math.min(1, Math.max(0, (clientY - rect.top)   / rect.height));
+    return { x, y };
+  };
+
+  const onDragStart = (e) => {
+    e.preventDefault();
+    isDraggingRef.current = true;
+    const pos = getCanvasFraction(e);
+    if (pos) setFontStyle(p => ({ ...p, x: pos.x, y: pos.y }));
+  };
+
+  const onDragMove = (e) => {
+    if (!isDraggingRef.current) return;
+    e.preventDefault();
+    const pos = getCanvasFraction(e);
+    if (pos) setFontStyle(p => ({ ...p, x: pos.x, y: pos.y }));
+  };
+
+  const onDragEnd = () => { isDraggingRef.current = false; };
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const getCheckedRecipients = () =>
@@ -571,11 +596,36 @@ function InvitationPanel({
     link.click();
   };
 
+  // ── Generate personalised image for one recipient & upload it ───────────────
+  // Returns a public URL with the name baked into the image.
+  const buildPersonalisedImageUrl = (recipientName) => new Promise((resolve, reject) => {
+    if (!imageElRef.current) { resolve(invitationForm.imageUrl); return; }
+    // Draw onto a fresh off-screen canvas so we don't disturb the preview
+    const off = document.createElement('canvas');
+    off.width  = 1200;   // higher resolution for actual send
+    off.height = Math.round(1200 * (imageElRef.current.naturalHeight / imageElRef.current.naturalWidth)) || 800;
+    drawNameOnCanvas(off, imageElRef.current, recipientName, fontStyle);
+    off.toBlob(async (blob) => {
+      if (!blob) { resolve(invitationForm.imageUrl); return; }
+      try {
+        const { default: api } = await import('../api');
+        const fd = new FormData();
+        fd.append('file', blob, `invite_${Date.now()}.png`);
+        fd.append('folder', 'bk_award_invites');
+        const res = await api.post('/uploads/public', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        resolve(res?.data?.url || invitationForm.imageUrl);
+      } catch (err) {
+        // Fall back to original image if upload fails
+        resolve(invitationForm.imageUrl);
+      }
+    }, 'image/png');
+  });
+
   const checkedRecipients = getCheckedRecipients();
   const totalCount        = checkedRecipients.length;
   const overLimit         = totalCount > MAX_RECIPIENTS;
 
-  // ── Queue logic ─────────────────────────────────────────────────────────────
+  // ── Queue ───────────────────────────────────────────────────────────────────
   const startQueue = () => {
     const recipients = getCheckedRecipients().slice(0, MAX_RECIPIENTS);
     if (!recipients.length) return;
@@ -591,14 +641,18 @@ function InvitationPanel({
   const pauseQueue  = () => { pauseRef.current = true;  setQueuePaused(true);  };
   const resumeQueue = () => { pauseRef.current = false; setQueuePaused(false); };
   const cancelQueue = () => { cancelRef.current = true; pauseRef.current = false; };
-
   const resetQueue  = () => {
     setQueue([]); setQueueActive(false); setQueuePaused(false);
     setQueueDone(false); setQueueIdx(0);
     pauseRef.current = false; cancelRef.current = false;
   };
 
-  // ── The sending loop — runs as a useEffect watching queueActive/queueIdx ───
+  // Capture stable refs so the async loop sees latest invitationForm / fontStyle
+  const invFormRef   = useRef(invitationForm);
+  const fontStyleRef = useRef(fontStyle);
+  useEffect(() => { invFormRef.current   = invitationForm; }, [invitationForm]);
+  useEffect(() => { fontStyleRef.current = fontStyle;      }, [fontStyle]);
+
   useEffect(() => {
     if (!queueActive || queueDone) return;
 
@@ -607,47 +661,33 @@ function InvitationPanel({
       let i = queueIdx;
 
       while (i < recipients.length) {
-        // Cancelled
-        if (cancelRef.current) {
-          setQueueActive(false);
-          setQueueDone(true);
-          return;
-        }
-        // Paused — wait until resumed
+        if (cancelRef.current) { setQueueActive(false); setQueueDone(true); return; }
         while (pauseRef.current) {
           await sleep(500);
-          if (cancelRef.current) {
-            setQueueActive(false);
-            setQueueDone(true);
-            return;
-          }
+          if (cancelRef.current) { setQueueActive(false); setQueueDone(true); return; }
         }
 
-        // Mark as sending
-        setQueue(prev => prev.map((item, idx) =>
-          idx === i ? { ...item, status: 'sending' } : item));
+        setQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'sending' } : item));
         setQueueIdx(i);
 
         try {
+          // Build a personalised image with this recipient's name baked in
+          const personalisedUrl = await buildPersonalisedImageUrl(recipients[i].name);
+
           await sendServiceFn({
-            ...invitationForm,
-            recipients: [{ name: recipients[i].name, mobile: recipients[i].mobile, source: recipients[i].source }],
-            textPosition: fontStyle,   // send full fontStyle as textPosition for backend
+            ...invFormRef.current,
+            imageUrl:     personalisedUrl,   // ← name is printed ON the image
+            recipients:   [{ name: recipients[i].name, mobile: recipients[i].mobile, source: recipients[i].source }],
+            textPosition: fontStyleRef.current,
           });
-          setQueue(prev => prev.map((item, idx) =>
-            idx === i ? { ...item, status: 'delivered' } : item));
+          setQueue(prev => prev.map((item, idx) => idx === i ? { ...item, status: 'delivered' } : item));
         } catch (err) {
           setQueue(prev => prev.map((item, idx) =>
             idx === i ? { ...item, status: 'failed', error: err?.response?.data?.message || 'Failed' } : item));
         }
 
         i++;
-
-        // Delay between messages (skip delay after last one)
-        if (i < recipients.length && !cancelRef.current) {
-          const delay = randDelay();
-          await sleep(delay);
-        }
+        if (i < recipients.length && !cancelRef.current) await sleep(randDelay());
       }
 
       setQueueActive(false);
@@ -655,17 +695,15 @@ function InvitationPanel({
     };
 
     run();
-  // We intentionally run this only when queueActive flips to true
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [queueActive]);
 
-  // ── Queue stats ──────────────────────────────────────────────────────────────
-  const delivered   = queue.filter(r => r.status === 'delivered').length;
-  const failed      = queue.filter(r => r.status === 'failed').length;
-  const pending     = queue.filter(r => r.status === 'pending').length;
-  const progress    = queue.length ? Math.round(((delivered + failed) / queue.length) * 100) : 0;
-  const avgDelay    = (DELAY_MIN_S + DELAY_MAX_S) / 2;
-  const etaSecs     = Math.round(pending * avgDelay);
+  // ── Stats ───────────────────────────────────────────────────────────────────
+  const delivered = queue.filter(r => r.status === 'delivered').length;
+  const failed    = queue.filter(r => r.status === 'failed').length;
+  const pending   = queue.filter(r => r.status === 'pending').length;
+  const progress  = queue.length ? Math.round(((delivered + failed) / queue.length) * 100) : 0;
+  const etaSecs   = Math.round(pending * ((DELAY_MIN_S + DELAY_MAX_S) / 2));
 
   const accentColor = isBaileys ? 'warning' : 'primary';
 
@@ -674,13 +712,14 @@ function InvitationPanel({
     <PageSurface>
       <Stack spacing={2}>
 
-        {/* ── Header card ── */}
+        {/* ── Header ── */}
         <Card><CardContent>
           <Typography variant="h6" fontWeight={800}>
             {isBaileys ? '🐝 Baileys Invitation Blast' : '📨 Invitation Blast'}
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Sends one message at a time with a {DELAY_MIN_S}–{DELAY_MAX_S}s random delay to protect your number. Max {MAX_RECIPIENTS} recipients per blast.
+            Each recipient gets a personalised image with their name printed on it.
+            Sends one message at a time with a {DELAY_MIN_S}–{DELAY_MAX_S}s random delay. Max {MAX_RECIPIENTS} per blast.
           </Typography>
         </CardContent></Card>
 
@@ -709,7 +748,7 @@ function InvitationPanel({
           </Grid>
         </CardContent></Card>
 
-        {/* ── Image + Canvas Preview ── */}
+        {/* ── Image + Draggable Canvas Preview ── */}
         <Card><CardContent>
           <Typography fontWeight={700} sx={{ mb: 2 }}>Invitation Image & Preview</Typography>
           <Grid container spacing={2}>
@@ -727,10 +766,30 @@ function InvitationPanel({
               </Button>
             </Grid>
 
-            {/* Canvas preview */}
             {invitationForm.imageUrl && (
               <Grid size={{ xs: 12 }}>
-                <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: '#111', display: 'inline-block', maxWidth: '100%' }}>
+                {/* Drag hint */}
+                <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                  ✋ Drag or tap anywhere on the image to reposition the name text
+                </Typography>
+
+                {/* Canvas — drag/touch enabled */}
+                <Box
+                  sx={{
+                    border: '2px solid', borderColor: 'divider', borderRadius: 2,
+                    overflow: 'hidden', bgcolor: '#111',
+                    display: 'inline-block', maxWidth: '100%',
+                    cursor: 'crosshair', userSelect: 'none',
+                    touchAction: 'none',
+                  }}
+                  onMouseDown={onDragStart}
+                  onMouseMove={onDragMove}
+                  onMouseUp={onDragEnd}
+                  onMouseLeave={onDragEnd}
+                  onTouchStart={onDragStart}
+                  onTouchMove={onDragMove}
+                  onTouchEnd={onDragEnd}
+                >
                   <canvas
                     ref={canvasRef}
                     width={600}
@@ -739,16 +798,21 @@ function InvitationPanel({
                   />
                 </Box>
 
+                {/* Position readout */}
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                  Position: {Math.round(fontStyle.x * 100)}% left · {Math.round(fontStyle.y * 100)}% top
+                </Typography>
+
                 {/* Preview nav */}
                 {invitationForm.recipientMode !== 'single' && checkedRecipients.length > 0 && (
-                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
+                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }} flexWrap="wrap">
                     <Button size="small" variant="outlined" startIcon={<NavigateBeforeIcon />}
                       disabled={previewIdx === 0}
                       onClick={() => setPreviewIdx(i => Math.max(0, i - 1))}>
                       Prev
                     </Button>
                     <Typography variant="body2" color="text.secondary">
-                      Preview {previewIdx + 1} of {checkedRecipients.length} — <strong>{checkedRecipients[previewIdx]?.name}</strong>
+                      {previewIdx + 1} / {checkedRecipients.length} — <strong>{checkedRecipients[previewIdx]?.name}</strong>
                     </Typography>
                     <Button size="small" variant="outlined" endIcon={<NavigateNextIcon />}
                       disabled={previewIdx >= checkedRecipients.length - 1}
@@ -771,7 +835,7 @@ function InvitationPanel({
                 )}
                 {!imageLoaded && invitationForm.imageUrl && (
                   <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
-                    ⚠️ Image could not be loaded. Make sure the URL is publicly accessible.
+                    ⚠️ Image could not be loaded. Make sure the URL is publicly accessible (CORS-friendly).
                   </Typography>
                 )}
               </Grid>
@@ -779,7 +843,7 @@ function InvitationPanel({
           </Grid>
         </CardContent></Card>
 
-        {/* ── Font / Text Style Controls ── */}
+        {/* ── Font / Text Style Controls (no verticalPos dropdown — drag instead) ── */}
         <Card><CardContent>
           <Typography fontWeight={700} sx={{ mb: 2 }}>Text Style on Image</Typography>
           <Grid container spacing={2} alignItems="center">
@@ -808,23 +872,14 @@ function InvitationPanel({
                 </Box>
               </Box>
             </Grid>
-            <Grid size={{ xs: 12, md: 2 }}>
-              <TextField fullWidth select label="Vertical Position" value={fontStyle.verticalPos}
-                onChange={e => setFontStyle(p => ({ ...p, verticalPos: e.target.value }))}>
-                {['top', 'middle', 'bottom'].map(v =>
-                  <MenuItem key={v} value={v}>{v.charAt(0).toUpperCase() + v.slice(1)}</MenuItem>)}
-              </TextField>
-            </Grid>
-            <Grid size={{ xs: 12, md: 3 }}>
+            <Grid size={{ xs: 12, md: 5 }}>
               <Stack direction="row" spacing={1} flexWrap="wrap">
-                {/* Font Weight */}
                 <Button size="small"
                   variant={fontStyle.fontWeight === 'bold' ? 'contained' : 'outlined'}
                   color={accentColor}
                   onClick={() => setFontStyle(p => ({ ...p, fontWeight: p.fontWeight === 'bold' ? 'normal' : 'bold' }))}>
                   <strong>B</strong>
                 </Button>
-                {/* Text Align */}
                 {['left', 'center', 'right'].map(a => (
                   <Button key={a} size="small"
                     variant={fontStyle.textAlign === a ? 'contained' : 'outlined'}
@@ -833,13 +888,18 @@ function InvitationPanel({
                     {a === 'left' ? '⬅' : a === 'center' ? '↔' : '➡'}
                   </Button>
                 ))}
-                {/* Shadow toggle */}
-                <Tooltip title="Text shadow (improves readability on busy backgrounds)">
+                <Tooltip title="Text shadow — improves readability on busy backgrounds">
                   <Button size="small"
                     variant={fontStyle.shadow ? 'contained' : 'outlined'}
                     color={accentColor}
                     onClick={() => setFontStyle(p => ({ ...p, shadow: !p.shadow }))}>
                     Shadow
+                  </Button>
+                </Tooltip>
+                <Tooltip title="Reset text position to default (bottom-centre)">
+                  <Button size="small" variant="outlined"
+                    onClick={() => setFontStyle(p => ({ ...p, x: 0.5, y: 0.88 }))}>
+                    Reset Pos
                   </Button>
                 </Tooltip>
               </Stack>
@@ -1759,7 +1819,7 @@ export default function WhatsAppPage() {
       )}
       {!useBaileys && tab === 'rules' && (
         <>
-          <CollectionSection title="Auto Reply Rules."
+          <CollectionSection title="Auto Reply Rules"
             subtitle="Rules trigger after customer message is stored by webhook."
             rows={officialRuleRows}
             onAdd={() => { setEditingRule(null); setRuleForm(emptyRule); setRuleOpen(true); }}>
