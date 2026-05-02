@@ -22,7 +22,7 @@ import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import Groups3Icon from '@mui/icons-material/Groups3';
 import AddIcon from '@mui/icons-material/Add';
-import TuneIcon from '@mui/icons-material/Tune';                          // ← NEW
+import TuneIcon from '@mui/icons-material/Tune';
 import { useAuth } from '../context/AuthContext';
 import { useLive } from '../context/LiveContext';
 import useOnlineStatus from '../hooks/useOnlineStatus';
@@ -42,7 +42,7 @@ const navIcons = {
   '/notifications':        <NotificationsIcon />,
   '/admin':                <AdminPanelSettingsIcon />,
   '/whatsapp':             <ChatIcon />,
-  '/super-admin/settings': <TuneIcon />,                                 // ← NEW
+  '/super-admin/settings': <TuneIcon />,
 };
 
 const liveModePaths = ['/stage', '/notifications', '/whatsapp'];
@@ -134,7 +134,7 @@ export default function AppShell({ children }) {
             <MenuItem component={RouterLink} to="/notifications" onClick={() => setMenuAnchor(null)}>Notifications</MenuItem>
             {canAccess(user, 'whatsapp:send') ? <MenuItem component={RouterLink} to="/whatsapp" onClick={() => setMenuAnchor(null)}>WhatsApp</MenuItem> : null}
             {canAccess(user, 'users:manage') ? <MenuItem component={RouterLink} to="/admin" onClick={() => setMenuAnchor(null)}>Admin</MenuItem> : null}
-            {canAccess(user, '*') ? <MenuItem component={RouterLink} to="/super-admin/settings" onClick={() => setMenuAnchor(null)}>System Settings</MenuItem> : null}  {/* ← NEW */}
+            {canAccess(user, '*') ? <MenuItem component={RouterLink} to="/super-admin/settings" onClick={() => setMenuAnchor(null)}>System Settings</MenuItem> : null}
           </Menu>
         </Toolbar>
       </AppBar>
