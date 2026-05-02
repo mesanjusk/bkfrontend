@@ -130,6 +130,8 @@ function PhotoUploadBadge({ previewUrl }) {
 }
 
 
+/**
+ * ConfirmationCard — shown after successful registration.
  * Shows a visual "Registration Proof" card that the student can screenshot and share.
  * Also has a WhatsApp share button that opens WhatsApp with a pre-filled message to
  * the org's number, so they have proof on their own phone too.
