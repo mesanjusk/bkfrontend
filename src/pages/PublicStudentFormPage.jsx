@@ -80,7 +80,7 @@ function SubmissionSuccess({
   editMode,
   onBackToForm,
   onGoList,
-  whatsappLink = 'https://wa.me/919370195000'
+  whatsappLink = 'https://wa.me/917020955501'
 }) {
   return (
     <Box
@@ -244,7 +244,7 @@ export default function PublicStudentFormPage() {
   const [submitted, setSubmitted] = useState(false);
   const [tab, setTab] = useState(0);
 
-  const whatsappLink = 'https://wa.me/919370195000';
+  const whatsappLink = 'https://wa.me/917020955501';
 
   useEffect(() => {
     api.get('/students/public-categories').then((r) => setCategories(r.data || []));
