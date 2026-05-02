@@ -139,19 +139,7 @@ function SubmissionSuccess({
           )}
 
           {!editMode && (
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={onBackToForm}
-              sx={{
-                py: 1.1,
-                borderRadius: 2,
-                textTransform: 'none',
-                fontWeight: 700
-              }}
-            >
-              Add Another Registration
-            </Button>
+            
           )}
 
           {editMode && (
