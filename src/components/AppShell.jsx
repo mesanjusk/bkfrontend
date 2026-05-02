@@ -28,7 +28,7 @@ import { useLive } from '../context/LiveContext';
 import useOnlineStatus from '../hooks/useOnlineStatus';
 import OnlineStatusBanner from './pwa/OnlineStatusBanner';
 import PwaInstallPrompt from './pwa/PwaInstallPrompt';
-import { APP_ROUTES, canAccess } from '../utils/accessControl';
+import { APP_ROUTES, canAccess, isSuperAdmin } from '../utils/accessControl';
 
 const drawerWidth = 292;
 
@@ -59,6 +59,7 @@ export default function AppShell({ children }) {
   const isOnline = useOnlineStatus();
   const isLiveMode = liveModePaths.some((path) => pathname.startsWith(path));
   const navItems = useMemo(() => APP_ROUTES.filter((item) => canAccess(user, item.permission)), [user]);
+  const superAdmin = useMemo(() => isSuperAdmin(user), [user]);
 
   const quickActions = [
     { icon: <PersonAddAlt1Icon />, name: 'Add Student',     onClick: () => navigate('/students?action=add') },
@@ -132,9 +133,9 @@ export default function AppShell({ children }) {
           <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} size={mobile ? 'small' : 'medium'}><MoreVertIcon /></IconButton>
           <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
             <MenuItem component={RouterLink} to="/notifications" onClick={() => setMenuAnchor(null)}>Notifications</MenuItem>
-            {canAccess(user, 'whatsapp:send') ? <MenuItem component={RouterLink} to="/whatsapp" onClick={() => setMenuAnchor(null)}>WhatsApp</MenuItem> : null}
-            {canAccess(user, 'users:manage') ? <MenuItem component={RouterLink} to="/admin" onClick={() => setMenuAnchor(null)}>Admin</MenuItem> : null}
-            {canAccess(user, '*') ? <MenuItem component={RouterLink} to="/super-admin/settings" onClick={() => setMenuAnchor(null)}>System Settings</MenuItem> : null}
+            {canAccess(user, 'whatsapp:send') && <MenuItem component={RouterLink} to="/whatsapp" onClick={() => setMenuAnchor(null)}>WhatsApp</MenuItem>}
+            {canAccess(user, 'users:manage') && <MenuItem component={RouterLink} to="/admin" onClick={() => setMenuAnchor(null)}>Admin</MenuItem>}
+            {superAdmin && <MenuItem component={RouterLink} to="/super-admin/settings" onClick={() => setMenuAnchor(null)}>System Settings</MenuItem>}
           </Menu>
         </Toolbar>
       </AppBar>

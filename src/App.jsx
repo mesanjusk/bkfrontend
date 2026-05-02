@@ -27,16 +27,16 @@ function Layout({ children }) {
 }
 
 const protectedPages = [
-  ['/',                     <DashboardPage />,           MODULE_PERMISSIONS.dashboard],
-  ['/students',             <StudentsPage />,             MODULE_PERMISSIONS.students],
-  ['/categories',           <CategoriesPage />,           MODULE_PERMISSIONS.categories],
-  ['/stage',                <StagePage />,                MODULE_PERMISSIONS.stage],
-  ['/budget',               <BudgetPage />,               MODULE_PERMISSIONS.budget],
-  ['/responsibilities',     <ResponsibilitiesPage />,     MODULE_PERMISSIONS.responsibilities],
-  ['/notifications',        <NotificationsPage />,        MODULE_PERMISSIONS.notifications],
-  ['/admin',                <AdminPage />,                MODULE_PERMISSIONS.admin],
-  ['/whatsapp',             <WhatsAppPage />,             MODULE_PERMISSIONS.whatsapp],
-  ['/super-admin/settings', <SuperAdminSettingsPage />,   MODULE_PERMISSIONS.superAdminSettings],
+  ['/',                     <DashboardPage />,         MODULE_PERMISSIONS.dashboard],
+  ['/students',             <StudentsPage />,           MODULE_PERMISSIONS.students],
+  ['/categories',           <CategoriesPage />,         MODULE_PERMISSIONS.categories],
+  ['/stage',                <StagePage />,              MODULE_PERMISSIONS.stage],
+  ['/budget',               <BudgetPage />,             MODULE_PERMISSIONS.budget],
+  ['/responsibilities',     <ResponsibilitiesPage />,   MODULE_PERMISSIONS.responsibilities],
+  ['/notifications',        <NotificationsPage />,      MODULE_PERMISSIONS.notifications],
+  ['/admin',                <AdminPage />,              MODULE_PERMISSIONS.admin],
+  ['/whatsapp',             <WhatsAppPage />,           MODULE_PERMISSIONS.whatsapp],
+  ['/super-admin/settings', <SuperAdminSettingsPage />, MODULE_PERMISSIONS.superAdminSettings],
 ];
 
 export default function App() {

@@ -8,7 +8,7 @@ export const MODULE_PERMISSIONS = {
   notifications:      'notifications:view',
   admin:              'users:manage',
   whatsapp:           'whatsapp:send',
-  superAdminSettings: '*',
+  superAdminSettings: 'super_admin:settings',
 };
 
 export const APP_ROUTES = [
@@ -34,4 +34,9 @@ export function canAccess(user, permission) {
   if (!permissions.length) return true;
   if (permissions.includes('*')) return true;
   return permissions.includes(permission);
+}
+
+export function isSuperAdmin(user) {
+  const permissions = getPermissions(user);
+  return permissions.includes('*');
 }

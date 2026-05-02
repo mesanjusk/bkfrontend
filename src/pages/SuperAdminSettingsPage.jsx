@@ -1,29 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  Box, Card, CardContent, Typography, Stack, Chip, Alert,
-  CircularProgress, Divider, ToggleButton, ToggleButtonGroup,
-  Tooltip, Snackbar,
+  Alert, Box, Card, CardContent, Chip, CircularProgress,
+  Divider, Snackbar, Stack, Typography,
 } from '@mui/material';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
-import SettingsIcon from '@mui/icons-material/Settings';
+import TuneIcon from '@mui/icons-material/Tune';
 import PageHeader from '../components/PageHeader';
 import api from '../api';
 
-// ─── helper ──────────────────────────────────────────────────────────────────
+// ── data hook ────────────────────────────────────────────────────────────────
 function useSystemSettings() {
-  const [settings, setSettings] = useState({});
+  const [map, setMap]       = useState({});
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
+  const [saving, setSaving]   = useState(false);
+  const [toast, setToast]     = useState(null);
 
   const load = async () => {
     setLoading(true);
     try {
       const res = await api.get('/system-settings');
-      setSettings(res.data?.map || {});
-    } catch (e) {
+      setMap(res.data?.map || {});
+    } catch {
       setToast({ type: 'error', msg: 'Failed to load settings' });
     } finally {
       setLoading(false);
@@ -36,156 +35,178 @@ function useSystemSettings() {
     setSaving(true);
     try {
       await api.put(`/system-settings/${key}`, { value });
-      setSettings(prev => ({ ...prev, [key]: value }));
-      setToast({ type: 'success', msg: 'Setting saved ✅' });
+      setMap(prev => ({ ...prev, [key]: value }));
+      setToast({ type: 'success', msg: 'Saved successfully ✅' });
     } catch (e) {
-      setToast({ type: 'error', msg: e?.response?.data?.message || 'Failed to save' });
+      setToast({ type: 'error', msg: e?.response?.data?.message || 'Save failed' });
     } finally {
       setSaving(false);
     }
   };
 
-  return { settings, loading, saving, save, toast, setToast };
+  return { map, loading, saving, save, toast, setToast };
 }
 
-// ─── Provider Card ────────────────────────────────────────────────────────────
-function ProviderCard({ current, saving, onChange }) {
-  const isOfficial = current === 'official';
-  const isBaileys = current === 'baileys';
-
+// ── provider option button ────────────────────────────────────────────────────
+function ProviderOption({ value, current, saving, onSelect, icon, label, tag, tagColor, description, alertMsg, alertSeverity }) {
+  const selected = current === value;
   return (
-    <Card variant="outlined" sx={{ borderRadius: 3 }}>
-      <CardContent>
-        <Stack spacing={2}>
-          <Stack direction="row" alignItems="center" spacing={1.5}>
-            <WhatsAppIcon sx={{ color: '#25D366', fontSize: 28 }} />
-            <Box>
-              <Typography variant="h6" fontWeight={700}>
-                Registration WhatsApp Provider
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Controls which service sends the auto-confirmation message when a student registers via the public form.
-              </Typography>
-            </Box>
-          </Stack>
-
-          <Divider />
-
-          <ToggleButtonGroup
-            value={current}
-            exclusive
-            onChange={(_, val) => { if (val && val !== current) onChange('registration_whatsapp_provider', val); }}
-            disabled={saving}
-            sx={{ flexWrap: 'wrap', gap: 1 }}
-          >
-            {/* Official */}
-            <ToggleButton
-              value="official"
-              sx={{
-                flex: 1, minWidth: 200, borderRadius: '12px !important',
-                border: '2px solid !important',
-                borderColor: isOfficial ? 'success.main !important' : 'divider !important',
-                bgcolor: isOfficial ? 'success.50' : 'background.paper',
-                py: 2, px: 3,
-                '&.Mui-selected': { bgcolor: '#e8f5e9', color: 'success.dark' },
-              }}
-            >
-              <Stack spacing={0.5} alignItems="flex-start" width="100%">
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <CheckCircleIcon sx={{ color: isOfficial ? 'success.main' : 'action.disabled', fontSize: 20 }} />
-                  <Typography fontWeight={700} fontSize={15}>Official API</Typography>
-                  {isOfficial && <Chip label="ACTIVE" color="success" size="small" sx={{ ml: 'auto', height: 20 }} />}
-                </Stack>
-                <Typography variant="caption" color="text.secondary" textAlign="left">
-                  Meta WhatsApp Cloud API — sends the <strong>bk_award</strong> template with edit link.
-                </Typography>
-                <Chip label="Template message" size="small" variant="outlined" color="success" sx={{ mt: 0.5 }} />
-              </Stack>
-            </ToggleButton>
-
-            {/* Baileys */}
-            <ToggleButton
-              value="baileys"
-              sx={{
-                flex: 1, minWidth: 200, borderRadius: '12px !important',
-                border: '2px solid !important',
-                borderColor: isBaileys ? 'warning.main !important' : 'divider !important',
-                bgcolor: isBaileys ? '#fff8e1' : 'background.paper',
-                py: 2, px: 3,
-                '&.Mui-selected': { bgcolor: '#fff8e1', color: 'warning.dark' },
-              }}
-            >
-              <Stack spacing={0.5} alignItems="flex-start" width="100%">
-                <Stack direction="row" alignItems="center" spacing={1}>
-                  <PhoneAndroidIcon sx={{ color: isBaileys ? 'warning.main' : 'action.disabled', fontSize: 20 }} />
-                  <Typography fontWeight={700} fontSize={15}>Baileys</Typography>
-                  {isBaileys && <Chip label="ACTIVE" color="warning" size="small" sx={{ ml: 'auto', height: 20 }} />}
-                </Stack>
-                <Typography variant="caption" color="text.secondary" textAlign="left">
-                  Baileys (WhatsApp Web) — sends a plain text confirmation. Must be connected first.
-                </Typography>
-                <Chip label="Plain text message" size="small" variant="outlined" color="warning" sx={{ mt: 0.5 }} />
-              </Stack>
-            </ToggleButton>
-          </ToggleButtonGroup>
-
-          {saving && (
-            <Stack direction="row" spacing={1} alignItems="center">
-              <CircularProgress size={16} />
-              <Typography variant="body2" color="text.secondary">Saving…</Typography>
-            </Stack>
+    <Box
+      onClick={() => !saving && !selected && onSelect(value)}
+      sx={{
+        flex: 1,
+        minWidth: { xs: '100%', sm: 220 },
+        border: '2px solid',
+        borderColor: selected ? (value === 'baileys' ? 'warning.main' : 'success.main') : 'divider',
+        borderRadius: 3,
+        p: 2.5,
+        cursor: saving || selected ? 'default' : 'pointer',
+        bgcolor: selected
+          ? value === 'baileys' ? '#fff8e1' : '#e8f5e9'
+          : 'background.paper',
+        transition: 'all 0.2s',
+        '&:hover': !selected && !saving ? {
+          borderColor: value === 'baileys' ? 'warning.light' : 'success.light',
+          bgcolor: value === 'baileys' ? '#fffde7' : '#f1f8e9',
+        } : {},
+      }}
+    >
+      <Stack spacing={1.5}>
+        <Stack direction="row" alignItems="center" spacing={1.2}>
+          {icon}
+          <Typography fontWeight={700} fontSize={15}>{label}</Typography>
+          {selected && (
+            <Chip
+              label="ACTIVE"
+              size="small"
+              color={value === 'baileys' ? 'warning' : 'success'}
+              sx={{ ml: 'auto', height: 20, fontSize: 10, fontWeight: 700 }}
+            />
           )}
-
-          {isBaileys && (
-            <Alert severity="warning" sx={{ mt: 1 }}>
-              <strong>Baileys must be connected</strong> before registrations arrive — go to the WhatsApp page and ensure the QR is scanned and status shows <strong>CONNECTED</strong>.
-            </Alert>
-          )}
-
-          {isOfficial && (
-            <Alert severity="info" sx={{ mt: 1 }}>
-              Official API will send the <strong>bk_award</strong> template with a personalised edit link button. Ensure the template is approved in Meta Business Manager.
-            </Alert>
+          {!selected && (
+            <Chip
+              label={tag}
+              size="small"
+              color={tagColor}
+              variant="outlined"
+              sx={{ ml: 'auto', height: 20, fontSize: 10 }}
+            />
           )}
         </Stack>
-      </CardContent>
-    </Card>
+        <Typography variant="body2" color="text.secondary" fontSize={13}>
+          {description}
+        </Typography>
+        {selected && alertMsg && (
+          <Alert severity={alertSeverity || 'info'} sx={{ py: 0.5, fontSize: 12 }}>
+            {alertMsg}
+          </Alert>
+        )}
+      </Stack>
+    </Box>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ── main page ─────────────────────────────────────────────────────────────────
 export default function SuperAdminSettingsPage() {
-  const { settings, loading, saving, save, toast, setToast } = useSystemSettings();
+  const { map, loading, saving, save, toast, setToast } = useSystemSettings();
+
+  // default to 'baileys' if not set yet
+  const provider = map['registration_whatsapp_provider'] || 'baileys';
+
+  const handleProviderChange = (val) => {
+    save('registration_whatsapp_provider', val);
+  };
 
   return (
     <Box sx={{ pb: 4 }}>
       <PageHeader
         eyebrow="Super Admin"
         title="System Settings"
-        subtitle="Global configuration options visible only to super admins."
+        subtitle="Global configuration options. Changes take effect immediately."
         chips={[{ label: '🔒 Super Admin Only', color: 'error' }]}
       />
 
       {loading ? (
-        <Stack alignItems="center" sx={{ mt: 6 }}>
+        <Stack alignItems="center" sx={{ mt: 8 }}>
           <CircularProgress />
           <Typography color="text.secondary" sx={{ mt: 2 }}>Loading settings…</Typography>
         </Stack>
       ) : (
-        <Stack spacing={3} sx={{ maxWidth: 760 }}>
-          {/* WhatsApp Provider */}
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: -1 }}>
-            <SettingsIcon color="action" fontSize="small" />
+        <Stack spacing={3} sx={{ maxWidth: 780 }}>
+
+          {/* Section header */}
+          <Stack direction="row" alignItems="center" spacing={1}>
+            <WhatsAppIcon sx={{ color: '#25D366', fontSize: 22 }} />
             <Typography variant="subtitle1" fontWeight={700} color="text.secondary">
-              WhatsApp Configuration
+              WhatsApp — Registration Message Provider
             </Typography>
           </Stack>
 
-          <ProviderCard
-            current={settings['registration_whatsapp_provider'] || 'official'}
-            saving={saving}
-            onChange={save}
-          />
+          <Card variant="outlined" sx={{ borderRadius: 3 }}>
+            <CardContent>
+              <Stack spacing={2.5}>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    When a student registers via the public form, this controls which WhatsApp
+                    service sends the auto-confirmation message. Click a provider to switch.
+                  </Typography>
+                </Box>
+
+                <Divider />
+
+                {saving && (
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <CircularProgress size={16} color="warning" />
+                    <Typography variant="body2" color="text.secondary">Saving…</Typography>
+                  </Stack>
+                )}
+
+                {/* Provider cards */}
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <ProviderOption
+                    value="baileys"
+                    current={provider}
+                    saving={saving}
+                    onSelect={handleProviderChange}
+                    icon={<PhoneAndroidIcon sx={{ color: provider === 'baileys' ? 'warning.main' : 'action.disabled', fontSize: 22 }} />}
+                    label="Baileys"
+                    tag="Default"
+                    tagColor="warning"
+                    description="Sends a plain text confirmation via Baileys (WhatsApp Web). Must be connected via QR before registrations arrive."
+                    alertMsg="Baileys is active. Ensure it is connected — go to WhatsApp page and confirm status shows CONNECTED."
+                    alertSeverity="warning"
+                  />
+                  <ProviderOption
+                    value="official"
+                    current={provider}
+                    saving={saving}
+                    onSelect={handleProviderChange}
+                    icon={<CheckCircleIcon sx={{ color: provider === 'official' ? 'success.main' : 'action.disabled', fontSize: 22 }} />}
+                    label="Official API"
+                    tag="Meta"
+                    tagColor="success"
+                    description="Sends the bk_award approved template with personalised edit link via Meta WhatsApp Cloud API."
+                    alertMsg="Official API is active. Ensure the bk_award template is approved in Meta Business Manager."
+                    alertSeverity="info"
+                  />
+                </Stack>
+
+                <Divider />
+
+                {/* Current status summary */}
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <TuneIcon fontSize="small" color="action" />
+                  <Typography variant="body2" color="text.secondary">
+                    Current provider:{' '}
+                    <strong style={{ color: provider === 'baileys' ? '#b45309' : '#166534' }}>
+                      {provider === 'baileys' ? 'Baileys (WhatsApp Web)' : 'Official Meta Cloud API'}
+                    </strong>
+                  </Typography>
+                </Stack>
+              </Stack>
+            </CardContent>
+          </Card>
+
         </Stack>
       )}
 
@@ -195,11 +216,7 @@ export default function SuperAdminSettingsPage() {
         onClose={() => setToast(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert
-          severity={toast?.type || 'info'}
-          onClose={() => setToast(null)}
-          sx={{ width: '100%' }}
-        >
+        <Alert severity={toast?.type || 'info'} onClose={() => setToast(null)} sx={{ width: '100%' }}>
           {toast?.msg}
         </Alert>
       </Snackbar>
