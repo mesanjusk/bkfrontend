@@ -22,6 +22,7 @@ import VolunteerActivismIcon from '@mui/icons-material/VolunteerActivism';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import Groups3Icon from '@mui/icons-material/Groups3';
 import AddIcon from '@mui/icons-material/Add';
+import TuneIcon from '@mui/icons-material/Tune';                          // ← NEW
 import { useAuth } from '../context/AuthContext';
 import { useLive } from '../context/LiveContext';
 import useOnlineStatus from '../hooks/useOnlineStatus';
@@ -30,17 +31,20 @@ import PwaInstallPrompt from './pwa/PwaInstallPrompt';
 import { APP_ROUTES, canAccess } from '../utils/accessControl';
 
 const drawerWidth = 292;
+
 const navIcons = {
-  '/': <DashboardIcon />,
-  '/students': <GroupsIcon />,
-  '/categories': <CategoryIcon />,
-  '/stage': <EventSeatIcon />,
-  '/budget': <AccountBalanceWalletIcon />,
-  '/responsibilities': <AssignmentTurnedInIcon />,
-  '/notifications': <NotificationsIcon />,
-  '/admin': <AdminPanelSettingsIcon />,
-  '/whatsapp': <ChatIcon />,
+  '/':                     <DashboardIcon />,
+  '/students':             <GroupsIcon />,
+  '/categories':           <CategoryIcon />,
+  '/stage':                <EventSeatIcon />,
+  '/budget':               <AccountBalanceWalletIcon />,
+  '/responsibilities':     <AssignmentTurnedInIcon />,
+  '/notifications':        <NotificationsIcon />,
+  '/admin':                <AdminPanelSettingsIcon />,
+  '/whatsapp':             <ChatIcon />,
+  '/super-admin/settings': <TuneIcon />,                                 // ← NEW
 };
+
 const liveModePaths = ['/stage', '/notifications', '/whatsapp'];
 
 export default function AppShell({ children }) {
@@ -57,10 +61,10 @@ export default function AppShell({ children }) {
   const navItems = useMemo(() => APP_ROUTES.filter((item) => canAccess(user, item.permission)), [user]);
 
   const quickActions = [
-    { icon: <PersonAddAlt1Icon />, name: 'Add Student', onClick: () => navigate('/students?action=add') },
+    { icon: <PersonAddAlt1Icon />, name: 'Add Student',     onClick: () => navigate('/students?action=add') },
     { icon: <VolunteerActivismIcon />, name: 'Add Volunteer', onClick: () => navigate('/admin?tab=volunteers&action=add') },
-    { icon: <EmojiEventsIcon />, name: 'Add Guest', onClick: () => navigate('/admin?tab=guests&action=add') },
-    { icon: <Groups3Icon />, name: 'Add Team Member', onClick: () => navigate('/admin?tab=team&action=add') },
+    { icon: <EmojiEventsIcon />,   name: 'Add Guest',       onClick: () => navigate('/admin?tab=guests&action=add') },
+    { icon: <Groups3Icon />,       name: 'Add Team Member', onClick: () => navigate('/admin?tab=team&action=add') },
   ];
 
   const drawer = (
@@ -76,7 +80,7 @@ export default function AppShell({ children }) {
             key={item.to}
             component={RouterLink}
             to={item.to}
-            selected={pathname === item.to}
+            selected={pathname === item.to || pathname.startsWith(item.to + '/')}
             onClick={() => setOpen(false)}
             sx={{
               borderRadius: 4,
@@ -130,11 +134,28 @@ export default function AppShell({ children }) {
             <MenuItem component={RouterLink} to="/notifications" onClick={() => setMenuAnchor(null)}>Notifications</MenuItem>
             {canAccess(user, 'whatsapp:send') ? <MenuItem component={RouterLink} to="/whatsapp" onClick={() => setMenuAnchor(null)}>WhatsApp</MenuItem> : null}
             {canAccess(user, 'users:manage') ? <MenuItem component={RouterLink} to="/admin" onClick={() => setMenuAnchor(null)}>Admin</MenuItem> : null}
+            {canAccess(user, '*') ? <MenuItem component={RouterLink} to="/super-admin/settings" onClick={() => setMenuAnchor(null)}>System Settings</MenuItem> : null}  {/* ← NEW */}
           </Menu>
         </Toolbar>
       </AppBar>
-      {mobile ? <Drawer open={open} onClose={() => setOpen(false)} PaperProps={{ sx: { width: drawerWidth } }}>{drawer}</Drawer> : <Drawer variant="permanent" open PaperProps={{ sx: { width: drawerWidth, boxSizing: 'border-box', borderRight: '1px solid', borderColor: 'divider' } }}>{drawer}</Drawer>}
-      <Box component="main" sx={{ flexGrow: 1, p: { xs: 1.25, sm: 2, md: 2.5 }, pt: { xs: 9.5, sm: 10.5, md: 11 }, ml: { md: `${drawerWidth}px` }, width: { md: `calc(100% - ${drawerWidth}px)` }, maxWidth: '100vw', overflowX: 'hidden' }}>
+
+      {mobile
+        ? <Drawer open={open} onClose={() => setOpen(false)} PaperProps={{ sx: { width: drawerWidth } }}>{drawer}</Drawer>
+        : <Drawer variant="permanent" open PaperProps={{ sx: { width: drawerWidth, boxSizing: 'border-box', borderRight: '1px solid', borderColor: 'divider' } }}>{drawer}</Drawer>
+      }
+
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: { xs: 1.25, sm: 2, md: 2.5 },
+          pt: { xs: 9.5, sm: 10.5, md: 11 },
+          ml: { md: `${drawerWidth}px` },
+          width: { md: `calc(100% - ${drawerWidth}px)` },
+          maxWidth: '100vw',
+          overflowX: 'hidden',
+        }}
+      >
         <Stack spacing={1} sx={{ mb: 1.75 }}>
           <PwaInstallPrompt />
           <OnlineStatusBanner isOnline={isOnline} isLiveMode={isLiveMode} />
@@ -145,6 +166,7 @@ export default function AppShell({ children }) {
         </Stack>
         {children}
       </Box>
+
       {pathname === '/' ? (
         <SpeedDial ariaLabel="Quick add" sx={{ position: 'fixed', bottom: { xs: 16, sm: 24 }, right: { xs: 16, sm: 24 } }} icon={<AddIcon />} FabProps={{ color: 'primary' }}>
           {quickActions.map((action) => <SpeedDialAction key={action.name} icon={action.icon} tooltipTitle={action.name} onClick={action.onClick} />)}
