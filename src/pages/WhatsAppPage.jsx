@@ -571,11 +571,13 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }
   const isQrPending    = status?.status === 'QR_PENDING';
   const isDisconnected = !isConnected && !isQrPending;
 
-  // FIX 3a: Poll every 2s with stable onRefresh callback — never recreates interval
+  // Stable onRefresh (useCallback with []) means this effect runs exactly once.
+  // Without this, every setBaileysStatus re-render would recreate the function,
+  // fire the effect again, and stack infinite intervals — causing QR to never appear.
   useEffect(() => {
     const id = setInterval(onRefresh, 2000);
     return () => clearInterval(id);
-  }, [onRefresh]); // onRefresh is useCallback([]) — stable forever, effect runs once
+  }, [onRefresh]);
 
   // QR age countdown — resets whenever a new QR data-URL arrives
   const [qrAge,  setQrAge]  = useState(0);
@@ -628,7 +630,7 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }
             <Chip size="small" label="● LIVE" color="info" variant="outlined" />
           </Stack>
 
-          {/* FIX 3b: Show QR whenever status has it — not gated on connecting flag */}
+          {/* Show QR whenever status has it — not gated on connecting flag */}
           {isQrPending && status?.qr && (
             <Box>
               <Alert severity={qrExpired ? 'error' : 'info'} sx={{ mb: 2 }}>
@@ -663,16 +665,7 @@ function BaileysSetup({ status, onConnect, onDisconnect, connecting, onRefresh }
             </Box>
           )}
 
-          {/* FIX 3c: Only show spinner when truly connecting AND no QR yet */}
-          {(connecting || (!isConnected && !isQrPending && !isDisconnected)) && !isQrPending && (
-            <Stack direction="row" spacing={1.5} alignItems="center">
-              <CircularProgress size={22} color="warning" />
-              <Typography variant="body2" color="text.secondary">
-                Connecting to WhatsApp — QR will appear here automatically…
-              </Typography>
-            </Stack>
-          )}
-
+          {/* Spinner: only when truly connecting AND no QR yet */}
           {connecting && !isQrPending && (
             <Stack direction="row" spacing={1.5} alignItems="center">
               <CircularProgress size={22} color="warning" />
@@ -829,10 +822,6 @@ function RuleDialog({ open, onClose, editing, form, setForm, onSave, saving, isB
 
 export default function WhatsAppPage() {
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIX 1: Default to Baileys (true). Toggle click switches to Official (false).
-  // localStorage persists the choice: 'official' means Official, anything else = Baileys.
-  // ─────────────────────────────────────────────────────────────────────────
   const [useBaileys, setUseBaileys] = useState(
     () => localStorage.getItem('wa_provider') !== 'official'
   );
@@ -928,7 +917,9 @@ export default function WhatsAppPage() {
       setBaileysLogs(Array.isArray(logsRes.data)   ? logsRes.data  : []);
       if (!baileysSelectedKey && rows[0]?.conversationKey)
         setBaileysSelectedKey(rows[0].conversationKey);
-    } catch (_) {}
+    } catch (e) {
+      console.error('loadBaileys error:', e);
+    }
     finally { setLoading(false); }
   };
 
@@ -943,18 +934,12 @@ export default function WhatsAppPage() {
   useEffect(() => { if (!useBaileys) loadOfficialConversation(selectedConversationKey); }, [selectedConversationKey]);
   useEffect(() => { if (useBaileys)  loadBaileysConversation(baileysSelectedKey);       }, [baileysSelectedKey]);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIX 2: Toggle — clicking always switches mode and persists correctly.
-  // Baileys is default so we only write 'official' when switching to it.
-  // ─────────────────────────────────────────────────────────────────────────
   const handleToggle = () => {
     setUseBaileys(v => {
       const next = !v;
       if (next) {
-        // switching TO Baileys — remove the 'official' marker so default takes over
         localStorage.removeItem('wa_provider');
       } else {
-        // switching TO Official — store it explicitly
         localStorage.setItem('wa_provider', 'official');
       }
       return next;
@@ -963,23 +948,15 @@ export default function WhatsAppPage() {
     setResultMessage(null);
   };
 
-  // ── Baileys status refresh (stable callback — used by BaileysSetup poll) ──
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIX 3: useCallback with [] means this function reference NEVER changes.
-  // BaileysSetup's useEffect([onRefresh]) therefore runs exactly once and
-  // creates exactly one interval. Without this, every parent re-render
-  // (e.g. from setBaileysStatus) would recreate the function, which would
-  // fire the effect again, creating an ever-growing pile of intervals — which
-  // is why the QR never visibly appeared (state updates were thrashing).
-  // ─────────────────────────────────────────────────────────────────────────
+  // ── Baileys status refresh — stable callback so BaileysSetup interval runs once ──
   const handleBaileysRefreshStatus = useCallback(async () => {
     try {
       const res = await whatsappService.baileysGetStatus();
       setBaileysStatus(res.data || { status: 'DISCONNECTED' });
     } catch (_) {}
-  }, []); // empty deps = stable forever
+  }, []); // empty deps = stable forever — critical for preventing interval stacking
 
-  // Connect poller — only runs during the connect flow, stops on QR or CONNECTED
+  // Connect poller — polls every 1s after Connect is clicked
   const connectPollerRef = useRef(null);
   const stopConnectPoller = () => {
     if (connectPollerRef.current) { clearInterval(connectPollerRef.current); connectPollerRef.current = null; }
@@ -998,14 +975,14 @@ export default function WhatsAppPage() {
           const res = await whatsappService.baileysGetStatus();
           const s   = res.data || {};
           setBaileysStatus(s);
-          // FIX 3d: Stop the connect-spinner as soon as QR arrives OR connected.
-          // Previously only CONNECTED stopped it — meaning the spinner blocked
-          // the QR image from being visible (spinner was rendered instead).
+          // Stop spinner as soon as QR arrives OR connected — don't block QR display
           if (s.status === 'QR_PENDING' || s.status === 'CONNECTED') {
             setBaileysConnecting(false);
           }
+          // Stop polling once connected or after 90s timeout
           if (s.status === 'CONNECTED' || attempts >= 90) {
             stopConnectPoller();
+            setBaileysConnecting(false);
           }
         } catch (_) {}
       }, 1000);
