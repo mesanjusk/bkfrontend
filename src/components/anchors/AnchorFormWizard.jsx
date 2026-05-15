@@ -28,7 +28,7 @@ const steps = ['Profile', 'Instructions'];
 const LANGUAGES = ['Sindhi', 'Hindi', 'English'];
 
 const INSTRUCTIONS = [
-  'I confirm that I am available on 14th June (Event Day) and have no other prior commitments on that date.',
+  'I confirm that I am available on 14th June 2026 (Event Day) and have no other prior commitments on that date.',
   'I am willing to dedicate daily practice time from now until the event day and will attend all required rehearsals.',
   'I understand that punctuality is mandatory for all practice sessions and the event. Repeated absence may result in disqualification.',
   'I will maintain a respectful and disciplined attitude towards coordinators, judges, and fellow participants throughout the programme.',
@@ -217,7 +217,7 @@ function AnchorStepInstructions({ checked, onToggle }) {
         severity="info"
         sx={{ borderRadius: 2, fontSize: '0.85rem', border: `1px solid ${ANCHOR_COLOR}30`, bgcolor: '#f5f3ff' }}
       >
-        Please read and accept each term to proceed. Each acceptance unlocks the next.
+        Please read and accept each term to proceed. 
       </Alert>
 
       {INSTRUCTIONS.map((instruction, index) => {
@@ -341,7 +341,7 @@ export default function AnchorFormWizard({ form, setForm, saving, onSubmit }) {
               fontSize: { xs: '1rem', sm: '1.12rem' }
             }}
           >
-            Anchor Registration Form
+            Anchor Audition Form
           </Typography>
           <Typography color="text.secondary" variant="body2" sx={{ textAlign: 'center' }}>
             Fill all details carefully
