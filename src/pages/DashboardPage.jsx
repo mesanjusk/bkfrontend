@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Box, Card, CardContent, Grid, List, ListItem, ListItemText, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, CardContent, Grid, List, ListItem, ListItemText, Stack, Typography } from '@mui/material';
+import { Mic, OpenInNew, School } from '@mui/icons-material';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useLive } from '../context/LiveContext';
@@ -18,6 +19,7 @@ export default function DashboardPage() {
 
   const cards = useMemo(() => [
     ['Students', summary.students || 0, 'Registered'],
+    ['Anchors', summary.anchors || 0, 'Registered'],
     ['Eligible', summary.eligibleStudents || 0, 'Ready for review'],
     ['WhatsApp', summary.whatsappMessages || 0, connected ? 'Live sync active' : 'Waiting for sync'],
     ['Events', summary.events || 0, 'Configured'],
@@ -38,11 +40,57 @@ export default function DashboardPage() {
       <PageSurface sx={{ mb: 2 }}>
         <Grid container spacing={2}>
           {cards.map(([title, value, subtitle]) => (
-            <Grid key={title} size={{ xs: 6, lg: 3 }}>
+            <Grid key={title} size={{ xs: 6, sm: 4, lg: 'grow' }}>
               <StatCard title={title} value={value} subtitle={subtitle} />
             </Grid>
           ))}
         </Grid>
+      </PageSurface>
+
+      <PageSurface sx={{ mb: 2 }}>
+        <Card>
+          <CardContent>
+            <Typography variant="h6" fontWeight={800} sx={{ mb: 1.5 }}>
+              Registration Links
+            </Typography>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+              <Button
+                variant="contained"
+                startIcon={<School />}
+                endIcon={<OpenInNew fontSize="small" />}
+                href="/student-register"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  bgcolor: '#2497d3',
+                  '&:hover': { bgcolor: '#1e88c0' }
+                }}
+              >
+                Student Registration
+              </Button>
+              <Button
+                variant="contained"
+                startIcon={<Mic />}
+                endIcon={<OpenInNew fontSize="small" />}
+                href="/anchor-register"
+                target="_blank"
+                rel="noopener noreferrer"
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  bgcolor: '#7c3aed',
+                  '&:hover': { bgcolor: '#6d28d9' }
+                }}
+              >
+                Anchor Registration
+              </Button>
+            </Stack>
+          </CardContent>
+        </Card>
       </PageSurface>
 
       <Grid container spacing={2}>
