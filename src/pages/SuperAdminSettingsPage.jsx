@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
 import {
-  Alert, Box, Card, CardContent, Chip, CircularProgress,
-  Divider, Snackbar, Stack, Typography,
+  Alert, Box, Button, Card, CardContent, Chip, CircularProgress,
+  Divider, MenuItem, Select, Snackbar, Stack, Typography,
 } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PhoneAndroidIcon from '@mui/icons-material/PhoneAndroid';
 import TuneIcon from '@mui/icons-material/Tune';
+import GroupsIcon from '@mui/icons-material/Groups';
+import MicIcon from '@mui/icons-material/Mic';
+import SchoolIcon from '@mui/icons-material/School';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import PageHeader from '../components/PageHeader';
 import api from '../api';
 
@@ -103,6 +107,179 @@ function ProviderOption({ value, current, saving, onSelect, icon, label, tag, ta
         )}
       </Stack>
     </Box>
+  );
+}
+
+// ── registration groups section ───────────────────────────────────────────────
+function RegistrationGroupsSection({ map, saving, save }) {
+  const [groups, setGroups]       = useState([]);
+  const [fetching, setFetching]   = useState(false);
+  const [fetchError, setFetchError] = useState('');
+  const [anchorJid, setAnchorJid]   = useState('');
+  const [studentJid, setStudentJid] = useState('');
+
+  useEffect(() => {
+    setAnchorJid(map['anchor_registration_group_jid'] || '');
+    setStudentJid(map['student_registration_group_jid'] || '');
+  }, [map]);
+
+  const fetchGroups = async () => {
+    setFetching(true);
+    setFetchError('');
+    try {
+      const res = await api.get('/whatsapp/groups');
+      setGroups(Array.isArray(res.data) ? res.data : []);
+      if (!res.data?.length) setFetchError('No groups found. Make sure the bot is connected and is a member of the groups.');
+    } catch {
+      setFetchError('Failed to fetch groups. Ensure WhatsApp bot is connected.');
+    } finally {
+      setFetching(false);
+    }
+  };
+
+  const GroupRow = ({ icon, label, color, value, onChange, settingKey }) => (
+    <Stack spacing={1}>
+      <Stack direction="row" spacing={1} alignItems="center">
+        {icon}
+        <Typography fontWeight={700} fontSize={14}>{label}</Typography>
+        {map[settingKey] && (
+          <Chip label="Configured" size="small" color="success" sx={{ height: 20, fontSize: 10 }} />
+        )}
+      </Stack>
+      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+        <Select
+          size="small"
+          displayEmpty
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          sx={{ flex: 1, borderRadius: 1.5, bgcolor: '#fff', fontSize: 14 }}
+        >
+          <MenuItem value=""><em>— Select a group —</em></MenuItem>
+          {groups.map((g) => (
+            <MenuItem key={g.id} value={g.id}>{g.name || g.id}</MenuItem>
+          ))}
+        </Select>
+        <Button
+          variant="contained"
+          disabled={saving || !value}
+          onClick={() => save(settingKey, value)}
+          sx={{
+            textTransform: 'none',
+            fontWeight: 700,
+            borderRadius: 1.5,
+            bgcolor: color,
+            '&:hover': { filter: 'brightness(0.9)', bgcolor: color },
+            whiteSpace: 'nowrap'
+          }}
+        >
+          Save Group
+        </Button>
+      </Stack>
+      {map[settingKey] && (
+        <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+          Saved JID: {map[settingKey]}
+        </Typography>
+      )}
+    </Stack>
+  );
+
+  return (
+    <Stack spacing={3}>
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <GroupsIcon sx={{ color: '#7c3aed', fontSize: 22 }} />
+        <Typography variant="subtitle1" fontWeight={700} color="text.secondary">
+          WhatsApp — Registration Group Notifications
+        </Typography>
+      </Stack>
+
+      <Card variant="outlined" sx={{ borderRadius: 3 }}>
+        <CardContent>
+          <Stack spacing={2.5}>
+            <Typography variant="body2" color="text.secondary">
+              When a student or anchor registers, the system automatically sends a notification
+              to the configured WhatsApp group. First fetch your available groups, then assign
+              one to each registration type and save.
+            </Typography>
+
+            <Alert severity="info" sx={{ fontSize: 13, borderRadius: 2 }}>
+              <strong>Setup:</strong> Create 2 WhatsApp groups on your phone → add the bot's number to both →
+              click <strong>Fetch Groups</strong> below → select and save each group.
+            </Alert>
+
+            <Divider />
+
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              <Button
+                variant="outlined"
+                startIcon={fetching ? <CircularProgress size={14} /> : <RefreshIcon />}
+                onClick={fetchGroups}
+                disabled={fetching}
+                sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 1.5 }}
+              >
+                {fetching ? 'Fetching...' : 'Fetch Groups'}
+              </Button>
+              {groups.length > 0 && (
+                <Chip label={`${groups.length} groups found`} size="small" color="success" />
+              )}
+            </Stack>
+
+            {fetchError && (
+              <Alert severity="warning" sx={{ borderRadius: 2, fontSize: 13 }}>{fetchError}</Alert>
+            )}
+
+            {groups.length > 0 && (
+              <>
+                <Divider />
+                <Stack spacing={2.5}>
+                  <GroupRow
+                    icon={<MicIcon sx={{ color: '#7c3aed', fontSize: 18 }} />}
+                    label="Anchor Registration Group"
+                    color="#7c3aed"
+                    value={anchorJid}
+                    onChange={setAnchorJid}
+                    settingKey="anchor_registration_group_jid"
+                  />
+                  <Divider />
+                  <GroupRow
+                    icon={<SchoolIcon sx={{ color: '#2497d3', fontSize: 18 }} />}
+                    label="Student Registration Group"
+                    color="#2497d3"
+                    value={studentJid}
+                    onChange={setStudentJid}
+                    settingKey="student_registration_group_jid"
+                  />
+                </Stack>
+              </>
+            )}
+
+            {(map['anchor_registration_group_jid'] || map['student_registration_group_jid']) && groups.length === 0 && (
+              <>
+                <Divider />
+                <Stack spacing={1.5}>
+                  {map['anchor_registration_group_jid'] && (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <MicIcon sx={{ color: '#7c3aed', fontSize: 16 }} />
+                      <Typography variant="body2" fontWeight={700}>Anchor Group:</Typography>
+                      <Chip label="Configured" size="small" color="success" sx={{ height: 20, fontSize: 10 }} />
+                    </Stack>
+                  )}
+                  {map['student_registration_group_jid'] && (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <SchoolIcon sx={{ color: '#2497d3', fontSize: 16 }} />
+                      <Typography variant="body2" fontWeight={700}>Student Group:</Typography>
+                      <Chip label="Configured" size="small" color="success" sx={{ height: 20, fontSize: 10 }} />
+                    </Stack>
+                  )}
+                  <Typography variant="caption" color="text.secondary">
+                    Groups are already configured. Click Fetch Groups to change them.
+                  </Typography>
+                </Stack>
+              </>
+            )}
+          </Stack>
+        </CardContent>
+      </Card>
+    </Stack>
   );
 }
 
@@ -206,6 +383,8 @@ export default function SuperAdminSettingsPage() {
               </Stack>
             </CardContent>
           </Card>
+
+          <RegistrationGroupsSection map={map} saving={saving} save={save} />
 
         </Stack>
       )}
