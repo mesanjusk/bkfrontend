@@ -65,7 +65,7 @@ function HeroCard({ editMode }) {
         variant="body2"
         sx={{ mt: 1, opacity: 0.95, fontSize: { xs: '0.82rem', sm: '0.92rem', md: '1rem' } }}
       >
-        {editMode ? 'Update your anchor details' : 'Anchor Registration — Scholar Awards 2026'}
+        {editMode ? 'Update your anchor details' : '— Scholar Awards 2026'}
       </Typography>
     </Box>
   );
@@ -371,7 +371,7 @@ export default function PublicAnchorFormPage() {
                   color: '#111827'
                 }}
               >
-                Register as an Anchor for Badte Kadam Scholar Awards 2026. Fill all details carefully.
+                Badte Kadam Scholar Awards 2026. Anchor Audition.
               </Alert>
             ) : null}
 
