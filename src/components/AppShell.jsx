@@ -15,6 +15,7 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import ChatIcon from '@mui/icons-material/Chat';
+import MicIcon from '@mui/icons-material/Mic';
 import LogoutIcon from '@mui/icons-material/Logout';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
@@ -35,6 +36,7 @@ const drawerWidth = 292;
 const navIcons = {
   '/':                     <DashboardIcon />,
   '/students':             <GroupsIcon />,
+  '/anchors':              <MicIcon />,
   '/categories':           <CategoryIcon />,
   '/stage':                <EventSeatIcon />,
   '/budget':               <AccountBalanceWalletIcon />,
