@@ -1,6 +1,7 @@
 export const MODULE_PERMISSIONS = {
   dashboard:          'dashboard:view',
   students:           'students:manage',
+  anchors:            'anchors:manage',
   categories:         'categories:manage',
   stage:              'stage:manage',
   budget:             'budget:manage',
@@ -14,6 +15,7 @@ export const MODULE_PERMISSIONS = {
 export const APP_ROUTES = [
   { label: 'Dashboard',       to: '/',                     permission: MODULE_PERMISSIONS.dashboard },
   { label: 'Students',        to: '/students',             permission: MODULE_PERMISSIONS.students },
+  { label: 'Anchors',         to: '/anchors',              permission: MODULE_PERMISSIONS.anchors },
   { label: 'Categories',      to: '/categories',           permission: MODULE_PERMISSIONS.categories },
   { label: 'Live Stage',      to: '/stage',                permission: MODULE_PERMISSIONS.stage },
   { label: 'Budget',          to: '/budget',               permission: MODULE_PERMISSIONS.budget },

@@ -22,6 +22,7 @@ import SuperAdminSettingsPage from './pages/SuperAdminSettingsPage';
 import PublicStudentFormPage from './pages/PublicStudentFormPage';
 import PublicVolunteerFormPage from './pages/PublicVolunteerFormPage';
 import PublicAnchorFormPage from './pages/PublicAnchorFormPage';
+import AnchorsPage from './pages/AnchorsPage';
 
 function Layout({ children }) {
   return <AppShell>{children}</AppShell>;
@@ -30,6 +31,7 @@ function Layout({ children }) {
 const protectedPages = [
   ['/',                     <DashboardPage />,         MODULE_PERMISSIONS.dashboard],
   ['/students',             <StudentsPage />,           MODULE_PERMISSIONS.students],
+  ['/anchors',              <AnchorsPage />,            MODULE_PERMISSIONS.anchors],
   ['/categories',           <CategoriesPage />,         MODULE_PERMISSIONS.categories],
   ['/stage',                <StagePage />,              MODULE_PERMISSIONS.stage],
   ['/budget',               <BudgetPage />,             MODULE_PERMISSIONS.budget],
