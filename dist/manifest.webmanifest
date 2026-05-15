@@ -1,13 +1,13 @@
 {
   "id": "/?source=pwa",
-  "name": "Scholar Awards Event App",
-  "short_name": "ScholarAwards",
-  "description": "Live event operations, student registration, and real-time coordination for Scholar Awards.",
+  "name": "BK Scholar Awards 2026",
+  "short_name": "BK Awards",
+  "description": "Mobile-first event operations, student registration, and live coordination for BK Scholar Awards 2026.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f8f9fa",
-  "theme_color": "#1a1a1a",
+  "background_color": "#f6fbff",
+  "theme_color": "#2497d3",
   "orientation": "portrait",
   "icons": [
     {
