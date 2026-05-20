@@ -22,7 +22,11 @@ import SuperAdminSettingsPage from './pages/SuperAdminSettingsPage';
 import PublicStudentFormPage from './pages/PublicStudentFormPage';
 import PublicVolunteerFormPage from './pages/PublicVolunteerFormPage';
 import PublicAnchorFormPage from './pages/PublicAnchorFormPage';
+import RegistrationClosedPage from './pages/RegistrationClosedPage';
 import AnchorsPage from './pages/AnchorsPage';
+
+// Set to true to open anchor registration, false to show the "Registration Closed" page
+const ANCHOR_REGISTRATION_OPEN = false;
 
 function Layout({ children }) {
   return <AppShell>{children}</AppShell>;
@@ -54,7 +58,7 @@ export default function App() {
               <Route path="/student-register" element={<PublicStudentFormPage />} />
               <Route path="/student-edit/:token" element={<PublicStudentFormPage />} />
               <Route path="/volunteer-register" element={<PublicVolunteerFormPage />} />
-              <Route path="/anchor-register" element={<PublicAnchorFormPage />} />
+              <Route path="/anchor-register" element={ANCHOR_REGISTRATION_OPEN ? <PublicAnchorFormPage /> : <RegistrationClosedPage />} />
               <Route path="/anchor-edit/:token" element={<PublicAnchorFormPage />} />
               {protectedPages.map(([path, page, permission]) => (
                 <Route
