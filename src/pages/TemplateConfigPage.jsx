@@ -61,8 +61,6 @@ export default function TemplateConfigPage() {
   const [error,    setError]    = useState('');
 
   const containerRef = useRef(null);
-  const circleDragRef = useRef(null);
-  const textDragRef   = useRef(null);
   const fileInputRef  = useRef(null);
 
   // ── CSS geometry ──────────────────────────────────────────────────────────
@@ -74,35 +72,46 @@ export default function TemplateConfigPage() {
   // ── Circle drag ───────────────────────────────────────────────────────────
   const handleCircleDown = (e) => {
     e.preventDefault(); e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    circleDragRef.current = { startX: e.clientX, startY: e.clientY, origCX: config.cx, origCY: config.cy };
+    const startX = e.clientX, startY = e.clientY;
+    const origCX = config.cx, origCY = config.cy, snapRatio = ratio;
+    const onMove = (ev) => {
+      ev.preventDefault();
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const dx = (ev.clientX - startX) / rect.width;
+      const dy = (ev.clientY - startY) / rect.height;
+      setConfig(p => ({
+        ...p,
+        cx: clamp(p.r + 0.01, origCX + dx, 1 - p.r - 0.01),
+        cy: clamp(p.r * snapRatio + 0.01, origCY + dy, 1 - p.r * snapRatio - 0.01),
+      }));
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove, { passive: false });
+    document.addEventListener('pointerup', onUp);
   };
-  const handleCircleMove = (e) => {
-    if (!circleDragRef.current || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const dx = (e.clientX - circleDragRef.current.startX) / rect.width;
-    const dy = (e.clientY - circleDragRef.current.startY) / rect.height;
-    setConfig(p => ({
-      ...p,
-      cx: clamp(p.r + 0.01, circleDragRef.current.origCX + dx, 1 - p.r - 0.01),
-      cy: clamp(p.r * ratio + 0.01, circleDragRef.current.origCY + dy, 1 - p.r * ratio - 0.01),
-    }));
-  };
-  const handleCircleUp = () => { circleDragRef.current = null; };
 
   // ── Text Y drag ───────────────────────────────────────────────────────────
   const handleTextDown = (e) => {
     e.preventDefault(); e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    textDragRef.current = { startY: e.clientY, origY: config.textY };
+    const startY = e.clientY, origY = config.textY;
+    const onMove = (ev) => {
+      ev.preventDefault();
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const dy = (ev.clientY - startY) / rect.height * 100;
+      setConfig(p => ({ ...p, textY: clamp(5, origY + dy, 95) }));
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove, { passive: false });
+    document.addEventListener('pointerup', onUp);
   };
-  const handleTextMove = (e) => {
-    if (!textDragRef.current || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const dy = (e.clientY - textDragRef.current.startY) / rect.height * 100;
-    setConfig(p => ({ ...p, textY: clamp(5, textDragRef.current.origY + dy, 95) }));
-  };
-  const handleTextUp = () => { textDragRef.current = null; };
 
   // ── Template upload ───────────────────────────────────────────────────────
   const handleUpload = async (e) => {
@@ -181,8 +190,6 @@ export default function TemplateConfigPage() {
             {/* Draggable circle positioning overlay */}
             <Box
               onPointerDown={handleCircleDown}
-              onPointerMove={handleCircleMove}
-              onPointerUp={handleCircleUp}
               sx={{
                 position: 'absolute',
                 left: `${boxLeft}%`, top: `${boxTop}%`,
@@ -205,8 +212,6 @@ export default function TemplateConfigPage() {
             {/* Draggable text position marker */}
             <Box
               onPointerDown={handleTextDown}
-              onPointerMove={handleTextMove}
-              onPointerUp={handleTextUp}
               sx={{
                 position: 'absolute',
                 left: '50%', top: `${config.textY}%`,
