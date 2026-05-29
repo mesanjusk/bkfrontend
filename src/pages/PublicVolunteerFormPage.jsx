@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useState } from 'react';
 import {
   Alert,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
   Container,
   Fade,
   MenuItem,
@@ -14,10 +14,14 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import { CheckCircle, Groups, PhotoCamera } from '@mui/icons-material';
+import { CheckCircle, Download, Groups, PhotoCamera } from '@mui/icons-material';
 import api from '../api';
 import ImageCropDialog from '../components/common/ImageCropDialog';
 import { uploadPublicFile } from '../services/uploadService';
+import { buildFinalCanvas, downloadPhoto } from '../utils/photoTemplate';
+import { loadTemplateConfig, TEMPLATE_DEFAULTS } from './TemplateConfigPage';
+
+const DEFAULT_TEMPLATE_SRC = '/badhte-kadam-2026.jpg';
 
 const inputSx = {
   '& .MuiFilledInput-root': {
@@ -30,8 +34,6 @@ function buildFullName(form) {
 }
 
 export default function PublicVolunteerFormPage() {
-  const navigate = useNavigate();
-
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -45,13 +47,17 @@ export default function PublicVolunteerFormPage() {
   });
   const [cropOpen, setCropOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState('');
-  const [step, setStep] = useState('form'); // 'form' | 'otp'
+  const [step, setStep] = useState('form'); // 'form' | 'otp' | 'done'
   const [otp, setOtp] = useState('');
   const [saving, setSaving] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [resending, setResending] = useState(false);
   const [formError, setFormError] = useState('');
   const [otpError, setOtpError] = useState('');
+  const [buildingPhoto, setBuildingPhoto] = useState(false);
+  const [donePreviewUrl, setDonePreviewUrl] = useState('');
+  const [downloading, setDownloading] = useState(false);
+  const doneCanvasRef = useRef(null);
 
   const updateField = (key, value) => {
     setForm((prev) => {
@@ -116,12 +122,29 @@ export default function PublicVolunteerFormPage() {
         otp
       });
 
-      const name = encodeURIComponent(buildFullName(form));
-      const photo = form.photoUrl ? `&photoUrl=${encodeURIComponent(form.photoUrl)}` : '';
-      navigate(`/photo-template?name=${name}${photo}`);
+      // Pre-render the composite photo while we switch to the done step
+      setStep('done');
+      setBuildingPhoto(true);
+      try {
+        const cfg = loadTemplateConfig();
+        const circle = { cx: cfg.cx ?? TEMPLATE_DEFAULTS.cx, cy: cfg.cy ?? TEMPLATE_DEFAULTS.cy, r: cfg.r ?? TEMPLATE_DEFAULTS.r };
+        const textPos = { x: 50, y: cfg.textY ?? TEMPLATE_DEFAULTS.textY };
+        const templateSrc = cfg.templateSrc || DEFAULT_TEMPLATE_SRC;
+        const photoSrc = form.photoPreviewUrl || form.photoUrl;
+
+        const canvas = await buildFinalCanvas(
+          templateSrc, photoSrc, { x: 0, y: 0 }, circle,
+          buildFullName(form), textPos, 'large'
+        );
+        doneCanvasRef.current = canvas;
+        setDonePreviewUrl(canvas.toDataURL('image/jpeg', 0.90));
+      } catch {
+        // leave donePreviewUrl empty to show error state
+      } finally {
+        setBuildingPhoto(false);
+      }
     } catch (error) {
       setOtpError(error?.response?.data?.message || 'Invalid OTP. Please try again.');
-    } finally {
       setVerifying(false);
     }
   };
@@ -136,6 +159,16 @@ export default function PublicVolunteerFormPage() {
       setOtpError(error?.response?.data?.message || 'Failed to resend OTP.');
     } finally {
       setResending(false);
+    }
+  };
+
+  const handleDoneDownload = async () => {
+    if (!doneCanvasRef.current) return;
+    setDownloading(true);
+    try {
+      await downloadPhoto(doneCanvasRef.current, 'bk-awards-2026.jpg');
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -271,6 +304,60 @@ export default function PublicVolunteerFormPage() {
                   <Alert severity="success" icon={<CheckCircle />} sx={{ borderRadius: 2 }}>
                     Registration submitted! Please check your WhatsApp for the OTP.
                   </Alert>
+                </>
+              )}
+
+              {step === 'done' && (
+                <>
+                  <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #d9d9d9', boxShadow: 'none' }}>
+                    <Stack direction="row" alignItems="center" spacing={1}>
+                      <CheckCircle sx={{ color: '#2497d3', fontSize: 26 }} />
+                      <Box>
+                        <Typography variant="h6" fontWeight={800} color="#2497d3">Registration Complete!</Typography>
+                        <Typography variant="body2" color="text.secondary">Your award photo is ready to download.</Typography>
+                      </Box>
+                    </Stack>
+                  </Paper>
+
+                  {buildingPhoto ? (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 5, gap: 2 }}>
+                      <CircularProgress sx={{ color: '#2497d3' }} />
+                      <Typography variant="body2" color="text.secondary">Creating your award photo…</Typography>
+                    </Box>
+                  ) : donePreviewUrl ? (
+                    <>
+                      <Box
+                        component="img"
+                        src={donePreviewUrl}
+                        alt="Your award photo"
+                        sx={{ width: '100%', borderRadius: 2, boxShadow: '0 8px 24px rgba(0,0,0,0.15)', display: 'block' }}
+                      />
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        size="large"
+                        startIcon={downloading ? <CircularProgress size={18} color="inherit" /> : <Download />}
+                        disabled={downloading}
+                        onClick={handleDoneDownload}
+                        sx={{
+                          borderRadius: 2, py: 1.5, textTransform: 'none', fontWeight: 800, fontSize: '1rem',
+                          background: 'linear-gradient(135deg, #B8860B 0%, #FFD700 50%, #B8860B 100%)',
+                          color: '#000',
+                          '&:hover': { background: 'linear-gradient(135deg, #FFD700 0%, #FFC300 50%, #FFD700 100%)' },
+                          '&:disabled': { bgcolor: '#ccc', color: '#888' },
+                        }}
+                      >
+                        {downloading ? 'Preparing…' : 'Download / Save to Photos'}
+                      </Button>
+                      <Typography variant="caption" align="center" display="block" color="text.secondary">
+                        On iPhone: tap the button and choose "Save Image" from the share menu
+                      </Typography>
+                    </>
+                  ) : (
+                    <Alert severity="error" sx={{ borderRadius: 2 }}>
+                      Could not generate photo. Please try again.
+                    </Alert>
+                  )}
                 </>
               )}
 
