@@ -112,15 +112,17 @@ function ProviderOption({ value, current, saving, onSelect, icon, label, tag, ta
 
 // ── registration groups section ───────────────────────────────────────────────
 function RegistrationGroupsSection({ map, saving, save }) {
-  const [groups, setGroups]       = useState([]);
-  const [fetching, setFetching]   = useState(false);
-  const [fetchError, setFetchError] = useState('');
-  const [anchorJid, setAnchorJid]   = useState('');
-  const [studentJid, setStudentJid] = useState('');
+  const [groups, setGroups]           = useState([]);
+  const [fetching, setFetching]       = useState(false);
+  const [fetchError, setFetchError]   = useState('');
+  const [anchorJid, setAnchorJid]     = useState('');
+  const [studentJid, setStudentJid]   = useState('');
+  const [volunteerJid, setVolunteerJid] = useState('');
 
   useEffect(() => {
     setAnchorJid(map['anchor_registration_group_jid'] || '');
     setStudentJid(map['student_registration_group_jid'] || '');
+    setVolunteerJid(map['volunteer_registration_group_jid'] || '');
   }, [map]);
 
   const fetchGroups = async () => {
@@ -196,13 +198,13 @@ function RegistrationGroupsSection({ map, saving, save }) {
         <CardContent>
           <Stack spacing={2.5}>
             <Typography variant="body2" color="text.secondary">
-              When a student or anchor registers, the system automatically sends a notification
+              When a student, anchor, or volunteer registers, the system automatically sends a notification
               to the configured WhatsApp group. First fetch your available groups, then assign
               one to each registration type and save.
             </Typography>
 
             <Alert severity="info" sx={{ fontSize: 13, borderRadius: 2 }}>
-              <strong>Setup:</strong> Create 2 WhatsApp groups on your phone → add the bot's number to both →
+              <strong>Setup:</strong> Create 3 WhatsApp groups on your phone → add the bot's number to all →
               click <strong>Fetch Groups</strong> below → select and save each group.
             </Alert>
 
@@ -248,11 +250,20 @@ function RegistrationGroupsSection({ map, saving, save }) {
                     onChange={setStudentJid}
                     settingKey="student_registration_group_jid"
                   />
+                  <Divider />
+                  <GroupRow
+                    icon={<GroupsIcon sx={{ color: '#16a34a', fontSize: 18 }} />}
+                    label="BK Award 2026 Volunteer Group"
+                    color="#16a34a"
+                    value={volunteerJid}
+                    onChange={setVolunteerJid}
+                    settingKey="volunteer_registration_group_jid"
+                  />
                 </Stack>
               </>
             )}
 
-            {(map['anchor_registration_group_jid'] || map['student_registration_group_jid']) && groups.length === 0 && (
+            {(map['anchor_registration_group_jid'] || map['student_registration_group_jid'] || map['volunteer_registration_group_jid']) && groups.length === 0 && (
               <>
                 <Divider />
                 <Stack spacing={1.5}>
@@ -267,6 +278,13 @@ function RegistrationGroupsSection({ map, saving, save }) {
                     <Stack direction="row" spacing={1} alignItems="center">
                       <SchoolIcon sx={{ color: '#2497d3', fontSize: 16 }} />
                       <Typography variant="body2" fontWeight={700}>Student Group:</Typography>
+                      <Chip label="Configured" size="small" color="success" sx={{ height: 20, fontSize: 10 }} />
+                    </Stack>
+                  )}
+                  {map['volunteer_registration_group_jid'] && (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <GroupsIcon sx={{ color: '#16a34a', fontSize: 16 }} />
+                      <Typography variant="body2" fontWeight={700}>Volunteer Group:</Typography>
                       <Chip label="Configured" size="small" color="success" sx={{ height: 20, fontSize: 10 }} />
                     </Stack>
                   )}
