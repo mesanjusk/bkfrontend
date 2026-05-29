@@ -193,7 +193,7 @@ export default function TemplateConfigPage() {
               sx={{
                 position: 'absolute',
                 left: `${boxLeft}%`, top: `${boxTop}%`,
-                width: `${boxWidth}%`, aspectRatio: '1',
+                width: `${boxWidth}%`, height: `${boxWidth * ratio}%`,
                 borderRadius: '50%',
                 border: '2.5px dashed #FFD700',
                 bgcolor: 'rgba(255,215,0,0.12)',

@@ -263,7 +263,7 @@ export default function PublicPhotoTemplatePage() {
             sx={{
               position: 'absolute',
               left: `${boxLeft}%`, top: `${boxTop}%`,
-              width: `${boxWidth}%`, aspectRatio: '1',
+              width: `${boxWidth}%`, height: `${boxWidth * ratio}%`,
               borderRadius: '50%', overflow: 'hidden',
             }}
           >
