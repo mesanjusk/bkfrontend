@@ -24,6 +24,7 @@ import PublicVolunteerFormPage from './pages/PublicVolunteerFormPage';
 import PublicAnchorFormPage from './pages/PublicAnchorFormPage';
 import RegistrationClosedPage from './pages/RegistrationClosedPage';
 import AnchorsPage from './pages/AnchorsPage';
+import PublicPhotoTemplatePage from './pages/PublicPhotoTemplatePage';
 
 // Set to true to open anchor registration, false to show the "Registration Closed" page
 const ANCHOR_REGISTRATION_OPEN = false;
@@ -60,6 +61,7 @@ export default function App() {
               <Route path="/volunteer-register" element={<PublicVolunteerFormPage />} />
               <Route path="/anchor-register" element={ANCHOR_REGISTRATION_OPEN ? <PublicAnchorFormPage /> : <RegistrationClosedPage />} />
               <Route path="/anchor-edit/:token" element={<PublicAnchorFormPage />} />
+              <Route path="/photo-template" element={<PublicPhotoTemplatePage />} />
               {protectedPages.map(([path, page, permission]) => (
                 <Route
                   key={path}
