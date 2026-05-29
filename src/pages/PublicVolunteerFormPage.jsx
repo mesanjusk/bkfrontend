@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -41,21 +41,10 @@ export default function PublicVolunteerFormPage() {
     gender: '',
     mobile: '',
     age: '',
-    teamId: '',
     photoFile: null,
     photoPreviewUrl: '',
     photoUrl: ''
   });
-  const [teamCategories, setTeamCategories] = useState([]);
-
-  useEffect(() => {
-    api.get('/categories')
-      .then(res => {
-        const cats = Array.isArray(res.data) ? res.data : [];
-        setTeamCategories(cats.filter(c => c.categoryType === 'VOLUNTEER_TEAM'));
-      })
-      .catch(() => {});
-  }, []);
   const [cropOpen, setCropOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState('');
   const [step, setStep] = useState('form'); // 'form' | 'otp' | 'done'
@@ -110,7 +99,7 @@ export default function PublicVolunteerFormPage() {
         gender: form.gender,
         mobile: form.mobile,
         age: form.age,
-        teamId: form.teamId,
+        teamId: '',
         teamOther: '',
         photoUrl
       });
@@ -226,18 +215,9 @@ export default function PublicVolunteerFormPage() {
                   <TextField fullWidth size="small" label="Age" value={form.age} onChange={(e) => updateField('age', e.target.value.replace(/\D/g, ''))} inputProps={{ inputMode: 'numeric' }} sx={inputSx} />
 
                   <TextField select fullWidth size="small" label="Gender" value={form.gender} onChange={(e) => updateField('gender', e.target.value)} sx={inputSx}>
-                    {['Male', 'Female', 'Other'].map((option) => (
+                    {['Male', 'Female'].map((option) => (
                       <MenuItem key={option} value={option}>{option}</MenuItem>
                     ))}
-                  </TextField>
-
-                  <TextField select fullWidth size="small" label="Volunteer Team / Category" value={form.teamId} onChange={(e) => updateField('teamId', e.target.value)} sx={inputSx}>
-                    {teamCategories.length === 0
-                      ? <MenuItem value="" disabled><em>Loading categories…</em></MenuItem>
-                      : teamCategories.map((cat) => (
-                          <MenuItem key={cat._id} value={cat._id}>{cat.name}</MenuItem>
-                        ))
-                    }
                   </TextField>
 
                   <Button component="label" fullWidth variant="outlined" startIcon={<PhotoCamera />}
@@ -267,7 +247,7 @@ export default function PublicVolunteerFormPage() {
                   <Button
                     variant="contained"
                     onClick={handleSubmit}
-                    disabled={saving || !form.firstName || !form.lastName || !form.mobile || !form.age || !form.teamId || !previewSrc}
+                    disabled={saving || !form.firstName || !form.lastName || !form.mobile || !form.age || !previewSrc}
                     sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700, bgcolor: '#2497d3', '&:hover': { bgcolor: '#1e88c0' } }}
                   >
                     {saving ? 'Submitting...' : 'Submit Volunteer Registration'}
