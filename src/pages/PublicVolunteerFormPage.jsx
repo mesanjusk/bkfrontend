@@ -14,8 +14,10 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import { CheckCircle, Groups } from '@mui/icons-material';
+import { CheckCircle, Groups, PhotoCamera } from '@mui/icons-material';
 import api from '../api';
+import ImageCropDialog from '../components/common/ImageCropDialog';
+import { uploadPublicFile } from '../services/uploadService';
 
 const inputSx = {
   '& .MuiFilledInput-root': {
@@ -36,8 +38,13 @@ export default function PublicVolunteerFormPage() {
     fullName: '',
     gender: '',
     mobile: '',
-    age: ''
+    age: '',
+    photoFile: null,
+    photoPreviewUrl: '',
+    photoUrl: ''
   });
+  const [cropOpen, setCropOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState('');
   const [step, setStep] = useState('form'); // 'form' | 'otp'
   const [otp, setOtp] = useState('');
   const [saving, setSaving] = useState(false);
@@ -54,18 +61,39 @@ export default function PublicVolunteerFormPage() {
     });
   };
 
+  const handlePhotoPick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setRawImageSrc(reader.result); setCropOpen(true); };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   const handleSubmit = async () => {
     setSaving(true);
     setFormError('');
 
     try {
+      let photoUrl = form.photoUrl;
+
+      if (form.photoFile) {
+        const uploaded = await uploadPublicFile(form.photoFile, 'bk_awards/volunteers', {
+          forcePng: true,
+          removeBackground: true
+        });
+        photoUrl = uploaded?.url || '';
+        setForm((prev) => ({ ...prev, photoUrl }));
+      }
+
       await api.post('/volunteers/public-register', {
         firstName: form.firstName,
         lastName: form.lastName,
         fullName: buildFullName(form),
         gender: form.gender,
         mobile: form.mobile,
-        age: form.age
+        age: form.age,
+        photoUrl
       });
 
       setStep('otp');
@@ -87,7 +115,8 @@ export default function PublicVolunteerFormPage() {
       });
 
       const name = encodeURIComponent(buildFullName(form));
-      navigate(`/photo-template?name=${name}`);
+      const photo = form.photoUrl ? `&photoUrl=${encodeURIComponent(form.photoUrl)}` : '';
+      navigate(`/photo-template?name=${name}${photo}`);
     } catch (error) {
       setOtpError(error?.response?.data?.message || 'Invalid OTP. Please try again.');
     } finally {
@@ -107,6 +136,8 @@ export default function PublicVolunteerFormPage() {
       setResending(false);
     }
   };
+
+  const previewSrc = form.photoPreviewUrl || form.photoUrl;
 
   return (
     <Box sx={{ bgcolor: '#f0f7fc', minHeight: '100vh', pb: 5 }}>
@@ -154,10 +185,33 @@ export default function PublicVolunteerFormPage() {
                     ))}
                   </TextField>
 
+                  <Button component="label" variant="outlined" startIcon={<PhotoCamera />} sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700 }}>
+                    {previewSrc ? 'Change Photo' : 'Upload Photo'}
+                    <input hidden type="file" accept="image/*" onChange={handlePhotoPick} />
+                  </Button>
+
+                  {previewSrc && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, border: '1px solid #d9d9d9', bgcolor: '#f9f9f9' }}>
+                      <Box
+                        component="img"
+                        src={previewSrc}
+                        alt="Photo preview"
+                        sx={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #2497d3', flexShrink: 0 }}
+                      />
+                      <Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <CheckCircle sx={{ color: '#2497d3', fontSize: 16 }} />
+                          <Typography fontWeight={700} color="#2497d3" fontSize="0.9rem">Photo ready</Typography>
+                        </Box>
+                        <Typography variant="caption" color="text.secondary">This photo will appear on your award image.</Typography>
+                      </Box>
+                    </Box>
+                  )}
+
                   <Button
                     variant="contained"
                     onClick={handleSubmit}
-                    disabled={saving || !form.firstName || !form.lastName || !form.mobile || !form.age}
+                    disabled={saving || !form.firstName || !form.lastName || !form.mobile || !form.age || !previewSrc}
                     sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700, bgcolor: '#2497d3', '&:hover': { bgcolor: '#1e88c0' } }}
                   >
                     {saving ? 'Submitting...' : 'Submit Volunteer Registration'}
@@ -221,6 +275,19 @@ export default function PublicVolunteerFormPage() {
           </CardContent>
         </Card>
       </Container>
+
+      <ImageCropDialog
+        open={cropOpen}
+        imageSrc={rawImageSrc}
+        title="Crop your photo"
+        cropShape="round"
+        aspect={1}
+        onClose={() => setCropOpen(false)}
+        onDone={({ file, previewUrl }) => {
+          setForm((prev) => ({ ...prev, photoFile: file, photoPreviewUrl: previewUrl, photoUrl: '' }));
+          setCropOpen(false);
+        }}
+      />
     </Box>
   );
 }

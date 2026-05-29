@@ -166,7 +166,8 @@ function CropDialog({ open, imageSrc, onClose, onDone }) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function PublicPhotoTemplatePage() {
   const [searchParams] = useSearchParams();
-  const nameFromUrl = searchParams.get('name') || '';
+  const nameFromUrl  = searchParams.get('name')     || '';
+  const photoFromUrl = searchParams.get('photoUrl') || '';
 
   const fileInputRef  = useRef(null);
   const containerRef  = useRef(null);
@@ -176,7 +177,7 @@ export default function PublicPhotoTemplatePage() {
 
   const [imgRatio,     setImgRatio]     = useState(0.80);
   const [rawSrc,       setRawSrc]       = useState(null);
-  const [photoBlobUrl, setPhotoBlobUrl] = useState(null);
+  const [photoBlobUrl, setPhotoBlobUrl] = useState(photoFromUrl || null);
   const [photoOffset,  setPhotoOffset]  = useState({ x: 0, y: 0 });
 
   // Dynamic circle geometry — user can move & resize
