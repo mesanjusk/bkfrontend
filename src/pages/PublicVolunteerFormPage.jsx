@@ -100,7 +100,7 @@ export default function PublicVolunteerFormPage() {
         mobile: form.mobile,
         age: form.age,
         teamId: '',
-        teamOther: '',
+        teamOther: 'General',
         photoUrl
       });
 
