@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Cropper from 'react-easy-crop';
 import {
   Box,
@@ -164,6 +165,9 @@ function CropDialog({ open, imageSrc, onClose, onDone }) {
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export default function PublicPhotoTemplatePage() {
+  const [searchParams] = useSearchParams();
+  const nameFromUrl = searchParams.get('name') || '';
+
   const fileInputRef  = useRef(null);
   const containerRef  = useRef(null);
   const photoDragRef  = useRef(null);
@@ -180,8 +184,8 @@ export default function PublicPhotoTemplatePage() {
   const [moveMode,  setMoveMode]  = useState(false);
 
   const [cropOpen,    setCropOpen]    = useState(false);
-  const [text,        setText]        = useState('');
-  const [showText,    setShowText]    = useState(false);
+  const [text,        setText]        = useState(nameFromUrl);
+  const [showText,    setShowText]    = useState(Boolean(nameFromUrl));
   const [textSize,    setTextSize]    = useState('medium');
   const [textPos,     setTextPos]     = useState(null);
   const [downloading, setDownloading] = useState(false);
