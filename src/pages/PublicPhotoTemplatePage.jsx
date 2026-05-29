@@ -154,12 +154,16 @@ export default function PublicPhotoTemplatePage() {
   };
 
   // ── CSS geometry ──────────────────────────────────────────────────────────
+  // All vertical positions expressed as % of container WIDTH (via margin-top),
+  // because margin percentages always reference parent width — even margin-top.
+  // This avoids Safari's unreliable top:Y% resolution when parent height is auto.
   const ratio        = imgRatio;
   const boxLeft      = (circle.cx - circle.r) * 100;
-  const boxTop       = (circle.cy - circle.r * ratio) * 100;
+  const boxMarginTop = (circle.cy / ratio - circle.r) * 100;
   const boxWidth     = circle.r * 2 * 100;
   const textX = textPos?.x ?? 50;
   const textY = textPos?.y ?? defTextY;
+  const textMarginTop = textY / ratio;
 
   // ── Photo pan drag ────────────────────────────────────────────────────────
   const handlePhotoPointerDown = (e) => {
@@ -258,11 +262,11 @@ export default function PublicPhotoTemplatePage() {
           <img src={templateSrc} alt="BK Awards template" onLoad={handleTemplateLoad}
             style={{ display: 'block', width: '100%', height: 'auto' }} draggable={false} />
 
-          {/* Circle overlay — outer div creates square via paddingBottom (always relative to parent WIDTH, works on all Safari) */}
+          {/* Circle overlay — all positioning uses margin-top (width-relative) not top (height-relative), so Safari renders identically to Chrome */}
           <Box
             sx={{
               position: 'absolute',
-              left: `${boxLeft}%`, top: `${boxTop}%`,
+              left: `${boxLeft}%`, top: 0, marginTop: `${boxMarginTop}%`,
               width: `${boxWidth}%`, paddingBottom: `${boxWidth}%`, height: 0,
             }}
           >
@@ -334,7 +338,7 @@ export default function PublicPhotoTemplatePage() {
             <Box
               onPointerDown={handleTextPointerDown}
               sx={{
-                position: 'absolute', left: `${textX}%`, top: `${textY}%`,
+                position: 'absolute', left: `${textX}%`, top: 0, marginTop: `${textMarginTop}%`,
                 transform: 'translate(-50%, -50%)',
                 cursor: 'grab', '&:active': { cursor: 'grabbing' },
                 display: 'flex', alignItems: 'center', gap: 0.4,

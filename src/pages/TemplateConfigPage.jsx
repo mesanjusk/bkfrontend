@@ -64,10 +64,14 @@ export default function TemplateConfigPage() {
   const fileInputRef  = useRef(null);
 
   // ── CSS geometry ──────────────────────────────────────────────────────────
-  const ratio   = imgRatio;
-  const boxLeft  = (config.cx - config.r) * 100;
-  const boxTop   = (config.cy - config.r * ratio) * 100;
-  const boxWidth = config.r * 2 * 100;
+  // All vertical positions expressed as % of container WIDTH (via margin-top),
+  // because margin percentages always reference parent width — even margin-top.
+  // This avoids Safari's unreliable top:Y% resolution when parent height is auto.
+  const ratio        = imgRatio;
+  const boxLeft      = (config.cx - config.r) * 100;
+  const boxMarginTop = (config.cy / ratio - config.r) * 100;
+  const boxWidth     = config.r * 2 * 100;
+  const textMarginTop = config.textY / ratio;
 
   // ── Circle drag ───────────────────────────────────────────────────────────
   const handleCircleDown = (e) => {
@@ -192,7 +196,7 @@ export default function TemplateConfigPage() {
               onPointerDown={handleCircleDown}
               sx={{
                 position: 'absolute',
-                left: `${boxLeft}%`, top: `${boxTop}%`,
+                left: `${boxLeft}%`, top: 0, marginTop: `${boxMarginTop}%`,
                 width: `${boxWidth}%`, paddingBottom: `${boxWidth}%`, height: 0,
                 touchAction: 'none', cursor: 'move',
               }}
@@ -217,7 +221,7 @@ export default function TemplateConfigPage() {
               onPointerDown={handleTextDown}
               sx={{
                 position: 'absolute',
-                left: '50%', top: `${config.textY}%`,
+                left: '50%', top: 0, marginTop: `${textMarginTop}%`,
                 transform: 'translate(-50%, -50%)',
                 cursor: 'ns-resize',
                 touchAction: 'none',
