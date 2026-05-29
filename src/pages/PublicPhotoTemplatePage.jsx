@@ -15,7 +15,6 @@ import {
   Slider,
   Stack,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material';
 import AddPhotoAlternateIcon from '@mui/icons-material/AddPhotoAlternate';
@@ -24,9 +23,6 @@ import DownloadIcon from '@mui/icons-material/Download';
 import TextFieldsIcon from '@mui/icons-material/TextFields';
 import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import OpenWithIcon from '@mui/icons-material/OpenWith';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
-import PanToolIcon from '@mui/icons-material/PanTool';
 
 import { loadTemplateConfig, TEMPLATE_DEFAULTS } from './TemplateConfigPage';
 
@@ -185,9 +181,8 @@ export default function PublicPhotoTemplatePage() {
   const [templateSrc]                   = useState(_cfg.templateSrc || DEFAULT_TEMPLATE_SRC);
   const [defTextY]                      = useState(_cfg.textY ?? DEF_TEXT_Y);
 
-  // Dynamic circle geometry — user can move & resize
-  const [circle,    setCircle]    = useState({ cx: _cfg.cx ?? DEF_CX, cy: _cfg.cy ?? DEF_CY, r: _cfg.r ?? DEF_R });
-  const [moveMode,  setMoveMode]  = useState(false);
+  // Circle geometry from saved config (admin-only via /template-config)
+  const [circle] = useState({ cx: _cfg.cx ?? DEF_CX, cy: _cfg.cy ?? DEF_CY, r: _cfg.r ?? DEF_R });
 
   const [cropOpen,    setCropOpen]    = useState(false);
   const [text,        setText]        = useState(nameFromUrl);
@@ -201,7 +196,7 @@ export default function PublicPhotoTemplatePage() {
     if (nh > 0) setImgRatio(nw / nh);
   };
 
-  const openPicker = () => { if (!moveMode) fileInputRef.current?.click(); };
+  const openPicker = () => { fileInputRef.current?.click(); };
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -219,11 +214,6 @@ export default function PublicPhotoTemplatePage() {
     setCropOpen(false); setRawSrc(null);
   };
 
-  // ── Circle size adjust ────────────────────────────────────────────────────
-  const adjustRadius = (delta) => {
-    setCircle(prev => ({ ...prev, r: clamp(0.12, prev.r + delta, 0.42) }));
-  };
-
   // ── CSS geometry ──────────────────────────────────────────────────────────
   const ratio        = imgRatio;
   const boxLeft      = (circle.cx - circle.r) * 100;
@@ -232,35 +222,8 @@ export default function PublicPhotoTemplatePage() {
   const textX = textPos?.x ?? 50;
   const textY = textPos?.y ?? defTextY;
 
-  // ── Circle move drag (on container) ──────────────────────────────────────
-  const handleContainerPointerDown = (e) => {
-    if (!moveMode) return;
-    e.preventDefault();
-    const startX = e.clientX, startY = e.clientY;
-    const origCX = circle.cx, origCY = circle.cy, snapRatio = ratio;
-    const onMove = (ev) => {
-      ev.preventDefault();
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const dx = (ev.clientX - startX) / rect.width;
-      const dy = (ev.clientY - startY) / rect.height;
-      setCircle(prev => ({
-        ...prev,
-        cx: clamp(prev.r + 0.02, origCX + dx, 1 - prev.r - 0.02),
-        cy: clamp(prev.r * snapRatio + 0.02, origCY + dy, 1 - prev.r * snapRatio - 0.02),
-      }));
-    };
-    const onUp = () => {
-      document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
-    };
-    document.addEventListener('pointermove', onMove, { passive: false });
-    document.addEventListener('pointerup', onUp);
-  };
-
   // ── Photo pan drag ────────────────────────────────────────────────────────
   const handlePhotoPointerDown = (e) => {
-    if (moveMode) return;
     e.preventDefault(); e.stopPropagation();
     const startX = e.clientX, startY = e.clientY;
     const origX = photoOffset.x, origY = photoOffset.y;
@@ -350,13 +313,10 @@ export default function PublicPhotoTemplatePage() {
         {/* Template preview */}
         <Box
           ref={containerRef}
-          onPointerDown={handleContainerPointerDown}
           sx={{
             position: 'relative', width: '100%', borderRadius: 3, overflow: 'hidden',
             boxShadow: '0 12px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,215,0,0.2)',
             userSelect: 'none',
-            cursor: moveMode ? 'move' : 'default',
-            touchAction: moveMode ? 'none' : 'auto',
           }}
         >
           <img src={templateSrc} alt="BK Awards template" onLoad={handleTemplateLoad}
@@ -369,9 +329,6 @@ export default function PublicPhotoTemplatePage() {
               left: `${boxLeft}%`, top: `${boxTop}%`,
               width: `${boxWidth}%`, aspectRatio: '1',
               borderRadius: '50%', overflow: 'hidden',
-              outline: moveMode ? '2px dashed rgba(255,215,0,0.8)' : 'none',
-              outlineOffset: '3px',
-              transition: 'outline 0.15s',
             }}
           >
             {photoBlobUrl ? (
@@ -391,9 +348,9 @@ export default function PublicPhotoTemplatePage() {
                   onPointerDown={handlePhotoPointerDown}
                   sx={{
                     position: 'absolute', inset: 0, borderRadius: '50%',
-                    cursor: moveMode ? 'move' : 'grab',
+                    cursor: 'grab',
                     touchAction: 'none',
-                    '&:hover .pan-hint': { opacity: moveMode ? 0 : 1 },
+                    '&:hover .pan-hint': { opacity: 1 },
                   }}
                 >
                   <Box className="pan-hint" sx={{
@@ -407,8 +364,7 @@ export default function PublicPhotoTemplatePage() {
                 </Box>
 
                 {/* Change photo button */}
-                {!moveMode && (
-                  <Box onClick={openPicker} sx={{
+                <Box onClick={openPicker} sx={{
                     position: 'absolute', bottom: '8%', left: '50%', transform: 'translateX(-50%)',
                     bgcolor: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,215,0,0.6)',
                     borderRadius: 5, px: 0.8, py: 0.3, cursor: 'pointer',
@@ -418,23 +374,20 @@ export default function PublicPhotoTemplatePage() {
                     <AddPhotoAlternateIcon sx={{ fontSize: '0.75rem', color: '#FFD700' }} />
                     <Typography variant="caption" sx={{ fontSize: '0.5rem', color: '#FFD700', fontWeight: 600, whiteSpace: 'nowrap' }}>Change</Typography>
                   </Box>
-                )}
               </>
             ) : (
-              !moveMode && (
-                <Box onClick={openPicker} sx={{
-                  width: '100%', height: '100%', borderRadius: '50%',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: '#fff', gap: 0.5,
-                  bgcolor: 'rgba(0,0,0,0.4)', border: '2px dashed rgba(255,215,0,0.5)',
-                  transition: 'background 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' },
-                }}>
-                  <AddPhotoAlternateIcon sx={{ fontSize: '2.2rem', color: '#FFD700', opacity: 0.9 }} />
-                  <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.55rem', color: '#FFD700', textAlign: 'center', px: 0.5, lineHeight: 1.3 }}>
-                    Tap to add photo
-                  </Typography>
-                </Box>
-              )
+              <Box onClick={openPicker} sx={{
+                width: '100%', height: '100%', borderRadius: '50%',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: '#fff', gap: 0.5,
+                bgcolor: 'rgba(0,0,0,0.4)', border: '2px dashed rgba(255,215,0,0.5)',
+                transition: 'background 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' },
+              }}>
+                <AddPhotoAlternateIcon sx={{ fontSize: '2.2rem', color: '#FFD700', opacity: 0.9 }} />
+                <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.55rem', color: '#FFD700', textAlign: 'center', px: 0.5, lineHeight: 1.3 }}>
+                  Tap to add photo
+                </Typography>
+              </Box>
             )}
           </Box>
 
@@ -461,56 +414,10 @@ export default function PublicPhotoTemplatePage() {
             </Box>
           )}
 
-          {/* Move mode badge */}
-          {moveMode && (
-            <Box sx={{
-              position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)',
-              bgcolor: 'rgba(255,215,0,0.9)', borderRadius: 5, px: 1.5, py: 0.4,
-              display: 'flex', alignItems: 'center', gap: 0.5,
-            }}>
-              <PanToolIcon sx={{ fontSize: '0.8rem', color: '#000' }} />
-              <Typography variant="caption" sx={{ fontSize: '0.65rem', color: '#000', fontWeight: 700 }}>Drag to move circle</Typography>
-            </Box>
-          )}
         </Box>
 
         {/* Controls */}
         <Box sx={{ mt: 2, p: 1.5, borderRadius: 2, bgcolor: 'rgba(255,215,0,0.05)', border: '1px solid rgba(255,215,0,0.15)' }}>
-
-          {/* Circle controls row */}
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-            <Tooltip title={moveMode ? 'Done moving' : 'Move circle'}>
-              <IconButton size="small" onClick={() => setMoveMode(v => !v)}
-                sx={{
-                  color: moveMode ? '#000' : '#888',
-                  bgcolor: moveMode ? '#FFD700' : 'transparent',
-                  border: '1px solid', borderColor: moveMode ? '#FFD700' : '#444',
-                  borderRadius: 1.5, p: 0.8, flexShrink: 0,
-                  '&:hover': { bgcolor: moveMode ? '#FFC300' : 'rgba(255,215,0,0.08)' },
-                }}>
-                <PanToolIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
-            <Typography variant="caption" sx={{ color: '#666', flex: 1, fontSize: '0.7rem' }}>
-              Circle size
-            </Typography>
-
-            <IconButton size="small" onClick={() => adjustRadius(-0.02)}
-              sx={{ color: '#FFD700', border: '1px solid #444', borderRadius: 1.5, p: 0.7 }}>
-              <RemoveCircleOutlineIcon fontSize="small" />
-            </IconButton>
-            <IconButton size="small" onClick={() => adjustRadius(0.02)}
-              sx={{ color: '#FFD700', border: '1px solid #444', borderRadius: 1.5, p: 0.7 }}>
-              <AddCircleOutlineIcon fontSize="small" />
-            </IconButton>
-
-            {/* Reset */}
-            <Button size="small" onClick={() => { setCircle({ cx: DEF_CX, cy: DEF_CY, r: DEF_R }); setMoveMode(false); }}
-              sx={{ color: '#555', fontSize: '0.65rem', minWidth: 0, px: 0.8, border: '1px solid #333', borderRadius: 1.5 }}>
-              Reset
-            </Button>
-          </Stack>
 
           {/* Text row */}
           <Stack direction="row" spacing={1} alignItems="center">
@@ -567,7 +474,7 @@ export default function PublicPhotoTemplatePage() {
           </Button>
         </Box>
 
-        {photoBlobUrl && !moveMode && (
+        {photoBlobUrl && (
           <Typography variant="caption" align="center" display="block" sx={{ mt: 1, color: '#444', letterSpacing: 0.5 }}>
             Drag inside circle to reposition photo · Drag text to move it
           </Typography>
