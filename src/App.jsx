@@ -25,6 +25,7 @@ import PublicAnchorFormPage from './pages/PublicAnchorFormPage';
 import RegistrationClosedPage from './pages/RegistrationClosedPage';
 import AnchorsPage from './pages/AnchorsPage';
 import PublicPhotoTemplatePage from './pages/PublicPhotoTemplatePage';
+import TemplateConfigPage from './pages/TemplateConfigPage';
 
 // Set to true to open anchor registration, false to show the "Registration Closed" page
 const ANCHOR_REGISTRATION_OPEN = false;
@@ -45,6 +46,7 @@ const protectedPages = [
   ['/admin',                <AdminPage />,              MODULE_PERMISSIONS.admin],
   ['/whatsapp',             <WhatsAppPage />,           MODULE_PERMISSIONS.whatsapp],
   ['/super-admin/settings', <SuperAdminSettingsPage />, MODULE_PERMISSIONS.superAdminSettings],
+  ['/template-config',      <TemplateConfigPage />,      MODULE_PERMISSIONS.templateConfig],
 ];
 
 export default function App() {

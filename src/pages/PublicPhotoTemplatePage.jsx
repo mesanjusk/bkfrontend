@@ -28,14 +28,13 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import PanToolIcon from '@mui/icons-material/PanTool';
 
-// ── Default circle geometry (fractions of image dimensions) ──────────────
-// Template: 1122×1402, circle centred horizontally, upper-middle vertically
-const DEF_CX = 0.50;   // centred horizontally
-const DEF_CY = 0.41;   // circle centre Y
-const DEF_R  = 0.26;   // inner circle radius
+import { loadTemplateConfig, TEMPLATE_DEFAULTS } from './TemplateConfigPage';
 
-// Default text Y aligns with the template's built-in gold text box
-const DEF_TEXT_Y = 73.5;
+const DEF_CX     = TEMPLATE_DEFAULTS.cx;
+const DEF_CY     = TEMPLATE_DEFAULTS.cy;
+const DEF_R      = TEMPLATE_DEFAULTS.r;
+const DEF_TEXT_Y = TEMPLATE_DEFAULTS.textY;
+const DEFAULT_TEMPLATE_SRC = '/badhte-kadam-2026.jpg';
 
 const PHOTO_SCALE = 1.35;
 const FONT_SIZE   = { small: 0.030, medium: 0.044, large: 0.062 };
@@ -179,13 +178,18 @@ export default function PublicPhotoTemplatePage() {
   const circleDragRef = useRef(null);
   const textDragRef   = useRef(null);
 
+  // Read saved config from localStorage (set by TemplateConfigPage)
+  const _cfg = loadTemplateConfig();
+
   const [imgRatio,     setImgRatio]     = useState(0.80);
   const [rawSrc,       setRawSrc]       = useState(null);
   const [photoBlobUrl, setPhotoBlobUrl] = useState(photoFromUrl || null);
   const [photoOffset,  setPhotoOffset]  = useState({ x: 0, y: 0 });
+  const [templateSrc]                   = useState(_cfg.templateSrc || DEFAULT_TEMPLATE_SRC);
+  const [defTextY]                      = useState(_cfg.textY ?? DEF_TEXT_Y);
 
   // Dynamic circle geometry — user can move & resize
-  const [circle,    setCircle]    = useState({ cx: DEF_CX, cy: DEF_CY, r: DEF_R });
+  const [circle,    setCircle]    = useState({ cx: _cfg.cx ?? DEF_CX, cy: _cfg.cy ?? DEF_CY, r: _cfg.r ?? DEF_R });
   const [moveMode,  setMoveMode]  = useState(false);
 
   const [cropOpen,    setCropOpen]    = useState(false);
@@ -229,7 +233,7 @@ export default function PublicPhotoTemplatePage() {
   const boxTop       = (circle.cy - circle.r * ratio) * 100;
   const boxWidth     = circle.r * 2 * 100;
   const textX = textPos?.x ?? 50;
-  const textY = textPos?.y ?? DEF_TEXT_Y;
+  const textY = textPos?.y ?? defTextY;
 
   // ── Circle move drag (on container) ──────────────────────────────────────
   const handleContainerPointerDown = (e) => {
@@ -294,7 +298,7 @@ export default function PublicPhotoTemplatePage() {
     setDownloading(true);
     try {
       const canvas = await buildFinalCanvas(
-        '/badhte-kadam-2026.jpg', photoBlobUrl, photoOffset, circle,
+        templateSrc, photoBlobUrl, photoOffset, circle,
         text, { x: textX, y: textY }, textSize,
       );
       const a = document.createElement('a');
@@ -342,7 +346,7 @@ export default function PublicPhotoTemplatePage() {
             touchAction: moveMode ? 'none' : 'auto',
           }}
         >
-          <img src="/badhte-kadam-2026.jpg" alt="BK Awards template" onLoad={handleTemplateLoad}
+          <img src={templateSrc} alt="BK Awards template" onLoad={handleTemplateLoad}
             style={{ display: 'block', width: '100%', height: 'auto' }} draggable={false} />
 
           {/* Circle overlay */}

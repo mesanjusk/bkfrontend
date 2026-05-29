@@ -10,6 +10,7 @@ export const MODULE_PERMISSIONS = {
   admin:              'users:manage',
   whatsapp:           'whatsapp:send',
   superAdminSettings: 'super_admin:settings',
+  templateConfig:     'super_admin:settings',
 };
 
 export const APP_ROUTES = [
@@ -24,6 +25,7 @@ export const APP_ROUTES = [
   { label: 'WhatsApp',        to: '/whatsapp',             permission: MODULE_PERMISSIONS.whatsapp },
   { label: 'Admin',           to: '/admin',                permission: MODULE_PERMISSIONS.admin },
   { label: 'System Settings', to: '/super-admin/settings', permission: MODULE_PERMISSIONS.superAdminSettings },
+  { label: 'Photo Template',  to: '/template-config',      permission: MODULE_PERMISSIONS.templateConfig },
 ];
 
 export function getPermissions(user) {
