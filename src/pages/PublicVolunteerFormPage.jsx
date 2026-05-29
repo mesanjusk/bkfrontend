@@ -32,9 +32,7 @@ export default function PublicVolunteerFormPage() {
     lastName: '',
     fullName: '',
     gender: '',
-    address: '',
-    mobile: '',
-    remarks: ''
+    mobile: ''
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
@@ -58,21 +56,17 @@ export default function PublicVolunteerFormPage() {
         lastName: form.lastName,
         fullName: buildFullName(form),
         gender: form.gender,
-        address: form.address,
-        mobile: form.mobile,
-        remarks: form.remarks
+        mobile: form.mobile
       });
 
       setSubmitted(true);
-      setMessage('Volunteer / team member registration submitted successfully.');
+      setMessage('Scholar registration submitted successfully.');
       setForm({
         firstName: '',
         lastName: '',
         fullName: '',
         gender: '',
-        address: '',
-        mobile: '',
-        remarks: ''
+        mobile: ''
       });
     } catch (error) {
       setSubmitted(false);
@@ -96,8 +90,8 @@ export default function PublicVolunteerFormPage() {
         }}
       >
         <Groups sx={{ fontSize: 40, mb: 1 }} />
-        <Typography variant="h5" fontWeight={800}>VOLUNTEER / TEAM MEMBER</Typography>
-        <Typography variant="body2" sx={{ mt: 1, opacity: 0.95 }}>Badte Kadam Awards 2026</Typography>
+        <Typography variant="h5" fontWeight={800}>Badte Kadam Scholar Awards</Typography>
+        <Typography variant="body2" sx={{ mt: 1, opacity: 0.95 }}>Sunday 14 June 2026</Typography>
       </Box>
 
       <Container maxWidth="sm" sx={{ mt: -3 }}>
@@ -127,9 +121,6 @@ export default function PublicVolunteerFormPage() {
                   <MenuItem key={option} value={option}>{option}</MenuItem>
                 ))}
               </TextField>
-
-              <TextField fullWidth size="small" label="Address" value={form.address} onChange={(e) => updateField('address', e.target.value)} multiline minRows={3} sx={inputSx} />
-              <TextField fullWidth size="small" label="Remarks" value={form.remarks} onChange={(e) => updateField('remarks', e.target.value)} multiline minRows={2} sx={inputSx} />
 
               <Button
                 variant="contained"
