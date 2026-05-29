@@ -262,7 +262,7 @@ export default function PublicPhotoTemplatePage() {
     setDownloading(true);
     try {
       const canvas = await buildFinalCanvas(
-        '/photo-template.jpg', photoBlobUrl, photoOffset,
+        '/bk-awards-2026.jpg', photoBlobUrl, photoOffset,
         text, { x: textX, y: textY }, textSize,
       );
       const a = document.createElement('a');
@@ -309,7 +309,7 @@ export default function PublicPhotoTemplatePage() {
           }}
         >
           <img
-            src="/photo-template.jpg"
+            src="/bk-awards-2026.jpg"
             alt="BK Awards template"
             onLoad={handleTemplateLoad}
             style={{ display: 'block', width: '100%', height: 'auto' }}
