@@ -93,6 +93,8 @@ export default function PublicVolunteerFormPage() {
         gender: form.gender,
         mobile: form.mobile,
         age: form.age,
+        teamId: '',
+        teamOther: '',
         photoUrl
       });
 
@@ -185,17 +187,11 @@ export default function PublicVolunteerFormPage() {
                     ))}
                   </TextField>
 
-                  <Box>
-                    <Typography variant="caption" fontWeight={700} color="error" sx={{ mb: 0.5, display: 'block' }}>
-                      * Photo Required — must be uploaded before submitting
-                    </Typography>
-                    <Button component="label" fullWidth variant={previewSrc ? 'outlined' : 'contained'} startIcon={<PhotoCamera />}
-                      color={previewSrc ? 'primary' : 'error'}
-                      sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700 }}>
-                      {previewSrc ? 'Change Photo' : 'Upload Your Photo'}
-                      <input hidden type="file" accept="image/*" onChange={handlePhotoPick} />
-                    </Button>
-                  </Box>
+                  <Button component="label" fullWidth variant="outlined" startIcon={<PhotoCamera />}
+                    sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700 }}>
+                    {previewSrc ? 'Change Photo' : 'Upload Photo'}
+                    <input hidden type="file" accept="image/*" onChange={handlePhotoPick} />
+                  </Button>
 
                   {previewSrc ? (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, border: '2px solid #2497d3', bgcolor: '#f0f7fc' }}>
@@ -213,11 +209,7 @@ export default function PublicVolunteerFormPage() {
                         <Typography variant="caption" color="text.secondary">This photo will appear on your award image.</Typography>
                       </Box>
                     </Box>
-                  ) : (
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: -1 }}>
-                      Please upload a clear face photo. You cannot submit without it.
-                    </Typography>
-                  )}
+                  ) : null}
 
                   <Button
                     variant="contained"
