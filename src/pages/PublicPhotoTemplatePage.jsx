@@ -294,7 +294,7 @@ export default function PublicPhotoTemplatePage() {
     setDownloading(true);
     try {
       const canvas = await buildFinalCanvas(
-        '/bk-awards-2026.jpg', photoBlobUrl, photoOffset, circle,
+        '/badhte-kadam-2026.jpg', photoBlobUrl, photoOffset, circle,
         text, { x: textX, y: textY }, textSize,
       );
       const a = document.createElement('a');
@@ -342,7 +342,7 @@ export default function PublicPhotoTemplatePage() {
             touchAction: moveMode ? 'none' : 'auto',
           }}
         >
-          <img src="/bk-awards-2026.jpg" alt="BK Awards template" onLoad={handleTemplateLoad}
+          <img src="/badhte-kadam-2026.jpg" alt="BK Awards template" onLoad={handleTemplateLoad}
             style={{ display: 'block', width: '100%', height: 'auto' }} draggable={false} />
 
           {/* Circle overlay */}
