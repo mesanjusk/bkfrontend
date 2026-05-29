@@ -174,9 +174,6 @@ export default function PublicPhotoTemplatePage() {
 
   const fileInputRef  = useRef(null);
   const containerRef  = useRef(null);
-  const photoDragRef  = useRef(null);
-  const circleDragRef = useRef(null);
-  const textDragRef   = useRef(null);
 
   // Read saved config from localStorage (set by TemplateConfigPage)
   const _cfg = loadTemplateConfig();
@@ -238,60 +235,78 @@ export default function PublicPhotoTemplatePage() {
   // ── Circle move drag (on container) ──────────────────────────────────────
   const handleContainerPointerDown = (e) => {
     if (!moveMode) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    circleDragRef.current = { startX: e.clientX, startY: e.clientY, origCX: circle.cx, origCY: circle.cy };
+    e.preventDefault();
+    const startX = e.clientX, startY = e.clientY;
+    const origCX = circle.cx, origCY = circle.cy, snapRatio = ratio;
+    const onMove = (ev) => {
+      ev.preventDefault();
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const dx = (ev.clientX - startX) / rect.width;
+      const dy = (ev.clientY - startY) / rect.height;
+      setCircle(prev => ({
+        ...prev,
+        cx: clamp(prev.r + 0.02, origCX + dx, 1 - prev.r - 0.02),
+        cy: clamp(prev.r * snapRatio + 0.02, origCY + dy, 1 - prev.r * snapRatio - 0.02),
+      }));
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove, { passive: false });
+    document.addEventListener('pointerup', onUp);
   };
-  const handleContainerPointerMove = (e) => {
-    if (!moveMode || !circleDragRef.current || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const dx = (e.clientX - circleDragRef.current.startX) / rect.width;
-    const dy = (e.clientY - circleDragRef.current.startY) / rect.height;
-    setCircle(prev => ({
-      ...prev,
-      cx: clamp(prev.r + 0.02, circleDragRef.current.origCX + dx, 1 - prev.r - 0.02),
-      cy: clamp(prev.r * ratio + 0.02, circleDragRef.current.origCY + dy, 1 - prev.r * ratio - 0.02),
-    }));
-  };
-  const handleContainerPointerUp = () => { circleDragRef.current = null; };
 
   // ── Photo pan drag ────────────────────────────────────────────────────────
   const handlePhotoPointerDown = (e) => {
     if (moveMode) return;
     e.preventDefault(); e.stopPropagation();
-    e.currentTarget.setPointerCapture(e.pointerId);
-    photoDragRef.current = { startX: e.clientX, startY: e.clientY, origX: photoOffset.x, origY: photoOffset.y };
+    const startX = e.clientX, startY = e.clientY;
+    const origX = photoOffset.x, origY = photoOffset.y;
+    const circleDiamPx = (containerRef.current?.offsetWidth ?? 0) * circle.r * 2;
+    if (!circleDiamPx) return;
+    const onMove = (ev) => {
+      ev.preventDefault();
+      const dx = (ev.clientX - startX) / circleDiamPx * 100;
+      const dy = (ev.clientY - startY) / circleDiamPx * 100;
+      setPhotoOffset({
+        x: clamp(-18, origX + dx, 18),
+        y: clamp(-18, origY + dy, 18),
+      });
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove, { passive: false });
+    document.addEventListener('pointerup', onUp);
   };
-  const handlePhotoPointerMove = (e) => {
-    if (moveMode || !photoDragRef.current || !containerRef.current) return;
-    const circlePx = containerRef.current.offsetWidth * circle.r * 2;
-    const dx = (e.clientX - photoDragRef.current.startX) / circlePx * 100;
-    const dy = (e.clientY - photoDragRef.current.startY) / circlePx * 100;
-    setPhotoOffset({
-      x: clamp(-18, photoDragRef.current.origX + dx, 18),
-      y: clamp(-18, photoDragRef.current.origY + dy, 18),
-    });
-  };
-  const handlePhotoPointerUp = () => { photoDragRef.current = null; };
 
   // ── Text drag ─────────────────────────────────────────────────────────────
   const handleTextPointerDown = (e) => {
-    e.preventDefault();
-    e.currentTarget.setPointerCapture(e.pointerId);
+    e.preventDefault(); e.stopPropagation();
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    textDragRef.current = { startX: e.clientX, startY: e.clientY, origX: textX, origY: textY };
+    const startX = e.clientX, startY = e.clientY;
+    const origX = textX, origY = textY;
+    const w = rect.width, h = rect.height;
+    const onMove = (ev) => {
+      ev.preventDefault();
+      const dx = (ev.clientX - startX) / w * 100;
+      const dy = (ev.clientY - startY) / h * 100;
+      setTextPos({
+        x: clamp(8, origX + dx, 92),
+        y: clamp(5, origY + dy, 95),
+      });
+    };
+    const onUp = () => {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+    document.addEventListener('pointermove', onMove, { passive: false });
+    document.addEventListener('pointerup', onUp);
   };
-  const handleTextPointerMove = (e) => {
-    if (!textDragRef.current || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const dx = (e.clientX - textDragRef.current.startX) / rect.width  * 100;
-    const dy = (e.clientY - textDragRef.current.startY) / rect.height * 100;
-    setTextPos({
-      x: clamp(8, textDragRef.current.origX + dx, 92),
-      y: clamp(5, textDragRef.current.origY + dy, 95),
-    });
-  };
-  const handleTextPointerUp = () => { textDragRef.current = null; };
 
   // ── Download ──────────────────────────────────────────────────────────────
   const handleDownload = async () => {
@@ -336,8 +351,6 @@ export default function PublicPhotoTemplatePage() {
         <Box
           ref={containerRef}
           onPointerDown={handleContainerPointerDown}
-          onPointerMove={handleContainerPointerMove}
-          onPointerUp={handleContainerPointerUp}
           sx={{
             position: 'relative', width: '100%', borderRadius: 3, overflow: 'hidden',
             boxShadow: '0 12px 40px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,215,0,0.2)',
@@ -376,8 +389,6 @@ export default function PublicPhotoTemplatePage() {
                 {/* Photo pan drag layer */}
                 <Box
                   onPointerDown={handlePhotoPointerDown}
-                  onPointerMove={handlePhotoPointerMove}
-                  onPointerUp={handlePhotoPointerUp}
                   sx={{
                     position: 'absolute', inset: 0, borderRadius: '50%',
                     cursor: moveMode ? 'move' : 'grab',
@@ -431,8 +442,6 @@ export default function PublicPhotoTemplatePage() {
           {showText && text.trim() && (
             <Box
               onPointerDown={handleTextPointerDown}
-              onPointerMove={handleTextPointerMove}
-              onPointerUp={handleTextPointerUp}
               sx={{
                 position: 'absolute', left: `${textX}%`, top: `${textY}%`,
                 transform: 'translate(-50%, -50%)',
