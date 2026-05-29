@@ -258,49 +258,50 @@ export default function PublicPhotoTemplatePage() {
           <img src={templateSrc} alt="BK Awards template" onLoad={handleTemplateLoad}
             style={{ display: 'block', width: '100%', height: 'auto' }} draggable={false} />
 
-          {/* Circle overlay */}
+          {/* Circle overlay — outer div creates square via paddingBottom (always relative to parent WIDTH, works on all Safari) */}
           <Box
             sx={{
               position: 'absolute',
               left: `${boxLeft}%`, top: `${boxTop}%`,
-              width: `${boxWidth}%`, height: `${boxWidth * ratio}%`,
-              borderRadius: '50%', overflow: 'hidden',
+              width: `${boxWidth}%`, paddingBottom: `${boxWidth}%`, height: 0,
             }}
           >
-            {photoBlobUrl ? (
-              <>
-                <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '50%' }}>
-                  <img src={photoBlobUrl} alt="your photo"
-                    style={{
-                      width: `${PHOTO_SCALE * 100}%`, height: `${PHOTO_SCALE * 100}%`,
-                      objectFit: 'cover', position: 'absolute',
-                      left: `${50 + photoOffset.x}%`, top: `${50 + photoOffset.y}%`,
-                      transform: 'translate(-50%, -50%)', pointerEvents: 'none',
-                    }} />
-                </Box>
-
-                {/* Photo pan drag layer */}
-                <Box
-                  onPointerDown={handlePhotoPointerDown}
-                  sx={{
-                    position: 'absolute', inset: 0, borderRadius: '50%',
-                    cursor: 'grab',
-                    touchAction: 'none',
-                    '&:hover .pan-hint': { opacity: 1 },
-                  }}
-                >
-                  <Box className="pan-hint" sx={{
-                    position: 'absolute', inset: 0, borderRadius: '50%',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    bgcolor: 'rgba(0,0,0,0.35)', opacity: 0, transition: 'opacity 0.2s', color: '#FFD700', gap: 0.3,
-                  }}>
-                    <OpenWithIcon sx={{ fontSize: '1.6rem' }} />
-                    <Typography variant="caption" sx={{ fontSize: '0.5rem', fontWeight: 700 }}>Drag to reposition</Typography>
+            {/* Inner div: fills the padded square and clips to circle */}
+            <Box sx={{ position: 'absolute', inset: 0, borderRadius: '50%', overflow: 'hidden' }}>
+              {photoBlobUrl ? (
+                <>
+                  <Box sx={{ position: 'absolute', inset: 0, overflow: 'hidden', borderRadius: '50%' }}>
+                    <img src={photoBlobUrl} alt="your photo"
+                      style={{
+                        width: `${PHOTO_SCALE * 100}%`, height: `${PHOTO_SCALE * 100}%`,
+                        objectFit: 'cover', position: 'absolute',
+                        left: `${50 + photoOffset.x}%`, top: `${50 + photoOffset.y}%`,
+                        transform: 'translate(-50%, -50%)', pointerEvents: 'none',
+                      }} />
                   </Box>
-                </Box>
 
-                {/* Change photo button */}
-                <Box onClick={openPicker} sx={{
+                  {/* Photo pan drag layer */}
+                  <Box
+                    onPointerDown={handlePhotoPointerDown}
+                    sx={{
+                      position: 'absolute', inset: 0, borderRadius: '50%',
+                      cursor: 'grab',
+                      touchAction: 'none',
+                      '&:hover .pan-hint': { opacity: 1 },
+                    }}
+                  >
+                    <Box className="pan-hint" sx={{
+                      position: 'absolute', inset: 0, borderRadius: '50%',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                      bgcolor: 'rgba(0,0,0,0.35)', opacity: 0, transition: 'opacity 0.2s', color: '#FFD700', gap: 0.3,
+                    }}>
+                      <OpenWithIcon sx={{ fontSize: '1.6rem' }} />
+                      <Typography variant="caption" sx={{ fontSize: '0.5rem', fontWeight: 700 }}>Drag to reposition</Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Change photo button */}
+                  <Box onClick={openPicker} sx={{
                     position: 'absolute', bottom: '8%', left: '50%', transform: 'translateX(-50%)',
                     bgcolor: 'rgba(0,0,0,0.65)', border: '1px solid rgba(255,215,0,0.6)',
                     borderRadius: 5, px: 0.8, py: 0.3, cursor: 'pointer',
@@ -310,21 +311,22 @@ export default function PublicPhotoTemplatePage() {
                     <AddPhotoAlternateIcon sx={{ fontSize: '0.75rem', color: '#FFD700' }} />
                     <Typography variant="caption" sx={{ fontSize: '0.5rem', color: '#FFD700', fontWeight: 600, whiteSpace: 'nowrap' }}>Change</Typography>
                   </Box>
-              </>
-            ) : (
-              <Box onClick={openPicker} sx={{
-                width: '100%', height: '100%', borderRadius: '50%',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: '#fff', gap: 0.5,
-                bgcolor: 'rgba(0,0,0,0.4)', border: '2px dashed rgba(255,215,0,0.5)',
-                transition: 'background 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' },
-              }}>
-                <AddPhotoAlternateIcon sx={{ fontSize: '2.2rem', color: '#FFD700', opacity: 0.9 }} />
-                <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.55rem', color: '#FFD700', textAlign: 'center', px: 0.5, lineHeight: 1.3 }}>
-                  Tap to add photo
-                </Typography>
-              </Box>
-            )}
+                </>
+              ) : (
+                <Box onClick={openPicker} sx={{
+                  position: 'absolute', inset: 0, borderRadius: '50%',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  cursor: 'pointer', color: '#fff', gap: 0.5,
+                  bgcolor: 'rgba(0,0,0,0.4)', border: '2px dashed rgba(255,215,0,0.5)',
+                  transition: 'background 0.2s', '&:hover': { bgcolor: 'rgba(0,0,0,0.6)' },
+                }}>
+                  <AddPhotoAlternateIcon sx={{ fontSize: '2.2rem', color: '#FFD700', opacity: 0.9 }} />
+                  <Typography variant="caption" sx={{ fontWeight: 700, fontSize: '0.55rem', color: '#FFD700', textAlign: 'center', px: 0.5, lineHeight: 1.3 }}>
+                    Tap to add photo
+                  </Typography>
+                </Box>
+              )}
+            </Box>
           </Box>
 
           {/* Draggable text */}
