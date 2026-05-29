@@ -193,20 +193,23 @@ export default function TemplateConfigPage() {
               sx={{
                 position: 'absolute',
                 left: `${boxLeft}%`, top: `${boxTop}%`,
-                width: `${boxWidth}%`, height: `${boxWidth * ratio}%`,
+                width: `${boxWidth}%`, paddingBottom: `${boxWidth}%`, height: 0,
+                touchAction: 'none', cursor: 'move',
+              }}
+            >
+              <Box sx={{
+                position: 'absolute', inset: 0,
                 borderRadius: '50%',
                 border: '2.5px dashed #FFD700',
                 bgcolor: 'rgba(255,215,0,0.12)',
-                cursor: 'move',
-                touchAction: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'background 0.15s',
                 '&:hover': { bgcolor: 'rgba(255,215,0,0.22)' },
-              }}
-            >
-              <Typography sx={{ color: '#FFD700', fontWeight: 700, fontSize: '0.6rem', textShadow: '0 1px 4px rgba(0,0,0,0.9)', userSelect: 'none', textAlign: 'center', px: 1 }}>
-                ⊕ drag to move
-              </Typography>
+              }}>
+                <Typography sx={{ color: '#FFD700', fontWeight: 700, fontSize: '0.6rem', textShadow: '0 1px 4px rgba(0,0,0,0.9)', userSelect: 'none', textAlign: 'center', px: 1 }}>
+                  ⊕ drag to move
+                </Typography>
+              </Box>
             </Box>
 
             {/* Draggable text position marker */}
