@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Alert,
   Box,
@@ -13,10 +13,8 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import { CheckCircle, EmojiPeople, Groups } from '@mui/icons-material';
+import { CheckCircle, Groups } from '@mui/icons-material';
 import api from '../api';
-import ImageCropDialog from '../components/common/ImageCropDialog';
-import { uploadPublicFile } from '../services/uploadService';
 
 const inputSx = {
   '& .MuiFilledInput-root': {
@@ -36,27 +34,11 @@ export default function PublicVolunteerFormPage() {
     gender: '',
     address: '',
     mobile: '',
-    teamId: '',
-    teamOther: '',
-    photoUrl: '',
-    photoPreviewUrl: '',
-    photoFile: null,
     remarks: ''
   });
-  const [teams, setTeams] = useState([]);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [cropOpen, setCropOpen] = useState(false);
-  const [rawImageSrc, setRawImageSrc] = useState('');
-
-  useEffect(() => {
-    api.get('/volunteers/public-teams')
-      .then((response) => setTeams(response.data || []))
-      .catch(() => setTeams([]));
-  }, []);
-
-  const previewSrc = useMemo(() => form.photoPreviewUrl || form.photoUrl || '', [form.photoPreviewUrl, form.photoUrl]);
 
   const updateField = (key, value) => {
     setForm((prev) => {
@@ -66,34 +48,11 @@ export default function PublicVolunteerFormPage() {
     });
   };
 
-  const handlePhotoPick = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setRawImageSrc(reader.result);
-      setCropOpen(true);
-    };
-    reader.readAsDataURL(file);
-    event.target.value = '';
-  };
-
   const handleSubmit = async () => {
     setSaving(true);
     setMessage('');
 
     try {
-      let photoUrl = form.photoUrl;
-
-      if (form.photoFile) {
-        const uploaded = await uploadPublicFile(form.photoFile, 'bk_awards/volunteers', {
-          forcePng: true,
-          removeBackground: true
-        });
-        photoUrl = uploaded?.url || '';
-      }
-
       await api.post('/volunteers/public-register', {
         firstName: form.firstName,
         lastName: form.lastName,
@@ -101,9 +60,6 @@ export default function PublicVolunteerFormPage() {
         gender: form.gender,
         address: form.address,
         mobile: form.mobile,
-        teamId: form.teamId === 'OTHER' ? '' : form.teamId,
-        teamOther: form.teamId === 'OTHER' ? form.teamOther : '',
-        photoUrl,
         remarks: form.remarks
       });
 
@@ -116,11 +72,6 @@ export default function PublicVolunteerFormPage() {
         gender: '',
         address: '',
         mobile: '',
-        teamId: '',
-        teamOther: '',
-        photoUrl: '',
-        photoPreviewUrl: '',
-        photoFile: null,
         remarks: ''
       });
     } catch (error) {
@@ -164,9 +115,6 @@ export default function PublicVolunteerFormPage() {
               <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #d9d9d9', boxShadow: 'none' }}>
                 <Stack spacing={1.5}>
                   <Typography variant="h6" fontWeight={800} color="#2497d3">Volunteer Registration Form</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Add your photo, choose volunteer team category, and submit your details.
-                  </Typography>
                 </Stack>
               </Paper>
 
@@ -180,46 +128,13 @@ export default function PublicVolunteerFormPage() {
                 ))}
               </TextField>
 
-              <TextField
-                select
-                fullWidth
-                size="small"
-                label="Volunteer Team Category"
-                value={form.teamId}
-                onChange={(e) => updateField('teamId', e.target.value)}
-                sx={inputSx}
-              >
-                {teams.map((team) => (
-                  <MenuItem key={team._id} value={team._id}>{team.name}</MenuItem>
-                ))}
-                <MenuItem value="OTHER">Other</MenuItem>
-              </TextField>
-
-              {form.teamId === 'OTHER' ? (
-                <TextField fullWidth size="small" label="Other Team Category" value={form.teamOther} onChange={(e) => updateField('teamOther', e.target.value)} sx={inputSx} />
-              ) : null}
-
               <TextField fullWidth size="small" label="Address" value={form.address} onChange={(e) => updateField('address', e.target.value)} multiline minRows={3} sx={inputSx} />
               <TextField fullWidth size="small" label="Remarks" value={form.remarks} onChange={(e) => updateField('remarks', e.target.value)} multiline minRows={2} sx={inputSx} />
-
-              <Button component="label" variant="outlined" startIcon={<EmojiPeople />} sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700 }}>
-                {previewSrc ? 'Change Photo' : 'Upload Photo'}
-                <input hidden type="file" accept="image/*" onChange={handlePhotoPick} />
-              </Button>
-
-              {previewSrc ? (
-                <Box
-                  component="img"
-                  src={previewSrc}
-                  alt="Volunteer preview"
-                  sx={{ width: 110, height: 110, borderRadius: '50%', objectFit: 'cover', border: '1px solid #d9d9d9' }}
-                />
-              ) : null}
 
               <Button
                 variant="contained"
                 onClick={handleSubmit}
-                disabled={saving || !form.firstName || !form.lastName || !form.mobile || !form.teamId || !previewSrc}
+                disabled={saving || !form.firstName || !form.lastName || !form.mobile}
                 sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700, bgcolor: '#2497d3', '&:hover': { bgcolor: '#1e88c0' } }}
               >
                 {saving ? 'Submitting...' : 'Submit Volunteer Registration'}
@@ -229,18 +144,6 @@ export default function PublicVolunteerFormPage() {
         </Card>
       </Container>
 
-      <ImageCropDialog
-        open={cropOpen}
-        imageSrc={rawImageSrc}
-        title="Crop volunteer photo"
-        cropShape="round"
-        aspect={1}
-        onClose={() => setCropOpen(false)}
-        onDone={({ file, previewUrl }) => {
-          setForm((prev) => ({ ...prev, photoFile: file, photoPreviewUrl: previewUrl, photoUrl: '' }));
-          setCropOpen(false);
-        }}
-      />
     </Box>
   );
 }
