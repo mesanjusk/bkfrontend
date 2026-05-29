@@ -29,9 +29,13 @@ import RemoveCircleOutlineIcon from '@mui/icons-material/RemoveCircleOutline';
 import PanToolIcon from '@mui/icons-material/PanTool';
 
 // ── Default circle geometry (fractions of image dimensions) ──────────────
-const DEF_CX = 0.555;
-const DEF_CY = 0.515;
-const DEF_R  = 0.255;   // slightly smaller default
+// Template: 1122×1402, circle centred horizontally, upper-middle vertically
+const DEF_CX = 0.50;   // centred horizontally
+const DEF_CY = 0.41;   // circle centre Y
+const DEF_R  = 0.26;   // inner circle radius
+
+// Default text Y aligns with the template's built-in gold text box
+const DEF_TEXT_Y = 73.5;
 
 const PHOTO_SCALE = 1.35;
 const FONT_SIZE   = { small: 0.030, medium: 0.044, large: 0.062 };
@@ -224,9 +228,8 @@ export default function PublicPhotoTemplatePage() {
   const boxLeft      = (circle.cx - circle.r) * 100;
   const boxTop       = (circle.cy - circle.r * ratio) * 100;
   const boxWidth     = circle.r * 2 * 100;
-  const defaultTextY = (circle.cy + circle.r * ratio + 0.05 * ratio) * 100;
-  const textX        = textPos?.x ?? 50;
-  const textY        = textPos?.y ?? defaultTextY;
+  const textX = textPos?.x ?? 50;
+  const textY = textPos?.y ?? DEF_TEXT_Y;
 
   // ── Circle move drag (on container) ──────────────────────────────────────
   const handleContainerPointerDown = (e) => {
