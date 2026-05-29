@@ -47,13 +47,9 @@ export default function PublicVolunteerFormPage() {
   });
   const [cropOpen, setCropOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState('');
-  const [step, setStep] = useState('form'); // 'form' | 'otp' | 'done'
-  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState('form'); // 'form' | 'done'
   const [saving, setSaving] = useState(false);
-  const [verifying, setVerifying] = useState(false);
-  const [resending, setResending] = useState(false);
   const [formError, setFormError] = useState('');
-  const [otpError, setOtpError] = useState('');
   const [buildingPhoto, setBuildingPhoto] = useState(false);
   const [donePreviewUrl, setDonePreviewUrl] = useState('');
   const [downloading, setDownloading] = useState(false);
@@ -104,25 +100,7 @@ export default function PublicVolunteerFormPage() {
         photoUrl
       });
 
-      setStep('otp');
-    } catch (error) {
-      setFormError(error?.response?.data?.message || 'Failed to submit volunteer registration.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    setVerifying(true);
-    setOtpError('');
-
-    try {
-      await api.post('/volunteers/verify-otp', {
-        mobile: form.mobile,
-        otp
-      });
-
-      // Pre-render the composite photo while we switch to the done step
+      // Go straight to done — build the composite photo immediately
       setStep('done');
       setBuildingPhoto(true);
       try {
@@ -130,7 +108,7 @@ export default function PublicVolunteerFormPage() {
         const circle = { cx: cfg.cx ?? TEMPLATE_DEFAULTS.cx, cy: cfg.cy ?? TEMPLATE_DEFAULTS.cy, r: cfg.r ?? TEMPLATE_DEFAULTS.r };
         const textPos = { x: 50, y: cfg.textY ?? TEMPLATE_DEFAULTS.textY };
         const templateSrc = cfg.templateSrc || DEFAULT_TEMPLATE_SRC;
-        const photoSrc = form.photoPreviewUrl || form.photoUrl;
+        const photoSrc = form.photoPreviewUrl || photoUrl;
 
         const canvas = await buildFinalCanvas(
           templateSrc, photoSrc, { x: 0, y: 0 }, circle,
@@ -144,21 +122,9 @@ export default function PublicVolunteerFormPage() {
         setBuildingPhoto(false);
       }
     } catch (error) {
-      setOtpError(error?.response?.data?.message || 'Invalid OTP. Please try again.');
-      setVerifying(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    setResending(true);
-    setOtpError('');
-
-    try {
-      await api.post('/volunteers/resend-otp', { mobile: form.mobile });
-    } catch (error) {
-      setOtpError(error?.response?.data?.message || 'Failed to resend OTP.');
+      setFormError(error?.response?.data?.message || 'Failed to submit volunteer registration.');
     } finally {
-      setResending(false);
+      setSaving(false);
     }
   };
 
@@ -226,7 +192,7 @@ export default function PublicVolunteerFormPage() {
                     <input hidden type="file" accept="image/*" onChange={handlePhotoPick} />
                   </Button>
 
-                  {previewSrc ? (
+                  {previewSrc && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5, borderRadius: 2, border: '2px solid #2497d3', bgcolor: '#f0f7fc' }}>
                       <Box
                         component="img"
@@ -242,7 +208,7 @@ export default function PublicVolunteerFormPage() {
                         <Typography variant="caption" color="text.secondary">This photo will appear on your award image.</Typography>
                       </Box>
                     </Box>
-                  ) : null}
+                  )}
 
                   <Button
                     variant="contained"
@@ -252,58 +218,6 @@ export default function PublicVolunteerFormPage() {
                   >
                     {saving ? 'Submitting...' : 'Submit Volunteer Registration'}
                   </Button>
-                </>
-              )}
-
-              {step === 'otp' && (
-                <>
-                  <Paper sx={{ p: 2, borderRadius: 2, border: '1px solid #d9d9d9', boxShadow: 'none' }}>
-                    <Stack spacing={0.5}>
-                      <Typography variant="h6" fontWeight={800} color="#2497d3">Verify OTP</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        A 4-digit OTP has been sent to {form.mobile} via WhatsApp.
-                      </Typography>
-                    </Stack>
-                  </Paper>
-
-                  {otpError && (
-                    <Fade in>
-                      <Alert severity="error" sx={{ borderRadius: 2 }}>{otpError}</Alert>
-                    </Fade>
-                  )}
-
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Enter 4-digit OTP"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                    inputProps={{ inputMode: 'numeric', maxLength: 4 }}
-                    sx={inputSx}
-                  />
-
-                  <Button
-                    variant="contained"
-                    onClick={handleVerifyOtp}
-                    disabled={verifying || otp.length !== 4}
-                    sx={{ borderRadius: 2, py: 1.2, textTransform: 'none', fontWeight: 700, bgcolor: '#2497d3', '&:hover': { bgcolor: '#1e88c0' } }}
-                  >
-                    {verifying ? 'Verifying...' : 'Verify & Create My Photo'}
-                  </Button>
-
-                  <Button
-                    variant="text"
-                    size="small"
-                    onClick={handleResendOtp}
-                    disabled={resending}
-                    sx={{ textTransform: 'none', color: '#2497d3' }}
-                  >
-                    {resending ? 'Resending...' : 'Resend OTP'}
-                  </Button>
-
-                  <Alert severity="success" icon={<CheckCircle />} sx={{ borderRadius: 2 }}>
-                    Registration submitted! Please check your WhatsApp for the OTP.
-                  </Alert>
                 </>
               )}
 
