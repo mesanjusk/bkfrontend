@@ -25,9 +25,9 @@ import OpenWithIcon from '@mui/icons-material/OpenWith';
 
 // ── Template circle geometry (fractions of image dimensions) ──────────────
 // Adjust if the overlay drifts on a different template.
-const CIRCLE_CX   = 0.53;   // centre X as fraction of image width
-const CIRCLE_CY   = 0.50;   // centre Y as fraction of image height
-const CIRCLE_R    = 0.27;   // radius   as fraction of image width
+const CIRCLE_CX   = 0.555;  // centre X as fraction of image width
+const CIRCLE_CY   = 0.515;  // centre Y as fraction of image height
+const CIRCLE_R    = 0.295;  // radius   as fraction of image width
 const PHOTO_SCALE = 1.35;   // photo rendered at 135% of circle — room to pan
 
 const FONT_SIZE = { small: 0.030, medium: 0.044, large: 0.062 };
