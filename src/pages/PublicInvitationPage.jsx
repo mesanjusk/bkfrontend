@@ -8,7 +8,6 @@ import {
 import DownloadIcon      from '@mui/icons-material/Download';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon  from '@mui/icons-material/NavigateNext';
-import SendIcon          from '@mui/icons-material/Send';
 import UploadFileIcon    from '@mui/icons-material/UploadFile';
 import WhatsAppIcon      from '@mui/icons-material/WhatsApp';
 
@@ -160,6 +159,18 @@ export default function PublicInvitationPage() {
   const canvasRef     = useRef(null);
   const imageElRef    = useRef(null);
   const isDraggingRef = useRef(false);
+  const objectUrlRef  = useRef(null);
+
+  // ── Image file upload (local object URL — zero backend) ────────────────────
+  const handleImageFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
+    const url = URL.createObjectURL(file);
+    objectUrlRef.current = url;
+    setForm(p => ({ ...p, imageUrl: url }));
+    e.target.value = '';
+  };
 
   // ── Load image ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -167,7 +178,8 @@ export default function PublicInvitationPage() {
     if (!url) { setImageLoaded(false); imageElRef.current = null; return; }
     setImageLoaded(false);
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    // object URLs are same-origin so crossOrigin is not needed; for remote URLs it helps
+    if (!url.startsWith('blob:')) img.crossOrigin = 'anonymous';
     img.onload  = () => { imageElRef.current = img; setImageLoaded(true); };
     img.onerror = () => { imageElRef.current = null; setImageLoaded(false); };
     img.src = url;
@@ -356,11 +368,23 @@ export default function PublicInvitationPage() {
             <CardContent>
               <Typography fontWeight={700} sx={{ mb: 2 }}>Invitation Image &amp; Preview</Typography>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12 }}>
+                <Grid size={{ xs: 12, md: 8 }}>
                   <TextField fullWidth label="Image URL"
                     value={form.imageUrl}
                     onChange={e => setForm(p => ({ ...p, imageUrl: e.target.value }))}
-                    helperText="Paste a public image URL (must allow CORS)." />
+                    helperText="Paste a public image URL, or upload a file from your device." />
+                </Grid>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <Button
+                    component="label"
+                    variant="outlined"
+                    fullWidth
+                    sx={{ height: 56 }}
+                    startIcon={<UploadFileIcon />}
+                  >
+                    Upload Image
+                    <input hidden accept="image/*" type="file" onChange={handleImageFileUpload} />
+                  </Button>
                 </Grid>
 
                 {form.imageUrl && (
