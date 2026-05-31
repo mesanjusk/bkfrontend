@@ -21,7 +21,9 @@ import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
 import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import TableRowsIcon from '@mui/icons-material/TableRows';
 import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import api from '../api';
+import { exportStudentsToPDF } from '../utils/studentsPdfExport';
 import PageHeader from '../components/PageHeader';
 import ResponsiveTable from '../components/ResponsiveTable';
 import StatusChip from '../components/StatusChip';
@@ -212,6 +214,7 @@ export default function StudentsPage() {
                 <ToggleButton value="card"><ViewModuleIcon fontSize="small" /></ToggleButton>
                 <ToggleButton value="table"><TableRowsIcon fontSize="small" /></ToggleButton>
               </ToggleButtonGroup>
+              <Button variant="outlined" startIcon={<PictureAsPdfIcon />} onClick={() => exportStudentsToPDF(students)} disabled={students.length === 0}>Download PDF</Button>
               <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>Add Student</Button>
             </Stack>
           </Stack>
