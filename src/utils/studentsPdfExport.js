@@ -23,18 +23,16 @@ export function exportStudentsToPDF(students) {
   doc.setTextColor(0);
 
   // Table
-  const head = [['#', 'Name', 'Father Name', 'Mobile', 'School', 'Class', 'Board', '%', 'Status']];
+  const head = [['#', 'Name', 'Father Name', 'Mobile', 'Title', 'Board', '%']];
 
   const body = students.map((s, i) => [
     i + 1,
     s.fullName || '-',
     s.fatherName || '-',
     s.mobile || '-',
-    s.schoolName || '-',
-    s.className || '-',
+    s.title || s.className || '-',
     s.board || '-',
-    s.percentage != null ? `${s.percentage}%` : '-',
-    s.status || 'Pending'
+    s.percentage != null ? `${s.percentage}%` : '-'
   ]);
 
   autoTable(doc, {
@@ -47,37 +45,12 @@ export function exportStudentsToPDF(students) {
     alternateRowStyles: { fillColor: [241, 245, 249] },
     columnStyles: {
       0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 32 },
-      2: { cellWidth: 28 },
-      3: { cellWidth: 22 },
-      4: { cellWidth: 35 },
-      5: { cellWidth: 14 },
-      6: { cellWidth: 20 },
-      7: { cellWidth: 12, halign: 'center' },
-      8: { cellWidth: 18, halign: 'center' }
-    },
-    didDrawCell: (data) => {
-      // Color the Status column text based on value
-      if (data.section === 'body' && data.column.index === 8) {
-        const val = String(data.cell.text[0] || '').toLowerCase();
-        if (val === 'eligible') {
-          doc.setTextColor(22, 163, 74);
-        } else if (val === 'not eligible') {
-          doc.setTextColor(220, 38, 38);
-        } else {
-          doc.setTextColor(100, 116, 139);
-        }
-        doc.setFontSize(8);
-        doc.setFont('helvetica', 'bold');
-        doc.text(
-          data.cell.text[0] || '',
-          data.cell.x + data.cell.width / 2,
-          data.cell.y + data.cell.height / 2 + 1,
-          { align: 'center' }
-        );
-        doc.setTextColor(0);
-        doc.setFont('helvetica', 'normal');
-      }
+      1: { cellWidth: 40 },
+      2: { cellWidth: 35 },
+      3: { cellWidth: 25 },
+      4: { cellWidth: 40 },
+      5: { cellWidth: 25 },
+      6: { cellWidth: 17, halign: 'center' }
     },
     // Page numbers in footer
     didDrawPage: (data) => {
