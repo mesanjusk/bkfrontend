@@ -22,15 +22,14 @@ export function exportStudentsToPDF(students) {
   doc.text(`Generated: ${dateStr}   |   Total: ${students.length}   |   Eligible: ${eligible}`, margin, 22);
   doc.setTextColor(0);
 
-  // Table
-  const head = [['#', 'Name', 'Father Name', 'Mobile', 'Title', 'Board', '%']];
+  // Table — Title uses s.board which the backend populates with the category name
+  const head = [['#', 'Name', 'Father Name', 'Mobile', 'Title', '%']];
 
   const body = students.map((s, i) => [
     i + 1,
     s.fullName || '-',
     s.fatherName || '-',
     s.mobile || '-',
-    s.title || s.className || '-',
     s.board || '-',
     s.percentage != null ? `${s.percentage}%` : '-'
   ]);
@@ -45,12 +44,11 @@ export function exportStudentsToPDF(students) {
     alternateRowStyles: { fillColor: [241, 245, 249] },
     columnStyles: {
       0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 35 },
-      3: { cellWidth: 25 },
-      4: { cellWidth: 40 },
-      5: { cellWidth: 25 },
-      6: { cellWidth: 17, halign: 'center' }
+      1: { cellWidth: 42 },
+      2: { cellWidth: 38 },
+      3: { cellWidth: 27 },
+      4: { cellWidth: 55 },
+      5: { cellWidth: 20, halign: 'center' }
     },
     // Page numbers in footer
     didDrawPage: (data) => {
