@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export function exportStudentsToPDF(students, categories = []) {
+export function exportStudentsToPDF(students) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
   const margin = 10;
@@ -22,23 +22,14 @@ export function exportStudentsToPDF(students, categories = []) {
   doc.text(`Generated: ${dateStr}   |   Total: ${students.length}   |   Eligible: ${eligible}`, margin, 22);
   doc.setTextColor(0);
 
-  const getCategoryTitle = (s) => {
-    if (s.categoryId && typeof s.categoryId === 'object') {
-      return s.categoryId.title || s.categoryId.name || '-';
-    }
-    const cat = categories.find((c) => String(c._id) === String(s.categoryId));
-    return cat?.title || cat?.name || '-';
-  };
-
-  // Table
-  const head = [['#', 'Name', 'Father Name', 'Mobile', 'Title', 'Board', '%']];
+  // Table — Title uses s.board which the backend populates with the category name
+  const head = [['#', 'Name', 'Father Name', 'Mobile', 'Title', '%']];
 
   const body = students.map((s, i) => [
     i + 1,
     s.fullName || '-',
     s.fatherName || '-',
     s.mobile || '-',
-    getCategoryTitle(s),
     s.board || '-',
     s.percentage != null ? `${s.percentage}%` : '-'
   ]);
@@ -53,12 +44,11 @@ export function exportStudentsToPDF(students, categories = []) {
     alternateRowStyles: { fillColor: [241, 245, 249] },
     columnStyles: {
       0: { cellWidth: 8, halign: 'center' },
-      1: { cellWidth: 40 },
-      2: { cellWidth: 35 },
-      3: { cellWidth: 25 },
-      4: { cellWidth: 40 },
-      5: { cellWidth: 25 },
-      6: { cellWidth: 17, halign: 'center' }
+      1: { cellWidth: 42 },
+      2: { cellWidth: 38 },
+      3: { cellWidth: 27 },
+      4: { cellWidth: 55 },
+      5: { cellWidth: 20, halign: 'center' }
     },
     // Page numbers in footer
     didDrawPage: (data) => {
