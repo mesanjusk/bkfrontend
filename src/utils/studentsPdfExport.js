@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-export function exportStudentsToPDF(students) {
+export function exportStudentsToPDF(students, categories = []) {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
   const margin = 10;
@@ -22,6 +22,14 @@ export function exportStudentsToPDF(students) {
   doc.text(`Generated: ${dateStr}   |   Total: ${students.length}   |   Eligible: ${eligible}`, margin, 22);
   doc.setTextColor(0);
 
+  const getCategoryTitle = (s) => {
+    if (s.categoryId && typeof s.categoryId === 'object') {
+      return s.categoryId.title || s.categoryId.name || '-';
+    }
+    const cat = categories.find((c) => String(c._id) === String(s.categoryId));
+    return cat?.title || cat?.name || '-';
+  };
+
   // Table
   const head = [['#', 'Name', 'Father Name', 'Mobile', 'Title', 'Board', '%']];
 
@@ -30,7 +38,7 @@ export function exportStudentsToPDF(students) {
     s.fullName || '-',
     s.fatherName || '-',
     s.mobile || '-',
-    s.title || s.className || '-',
+    getCategoryTitle(s),
     s.board || '-',
     s.percentage != null ? `${s.percentage}%` : '-'
   ]);

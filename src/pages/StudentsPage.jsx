@@ -214,7 +214,7 @@ export default function StudentsPage() {
                 <ToggleButton value="card"><ViewModuleIcon fontSize="small" /></ToggleButton>
                 <ToggleButton value="table"><TableRowsIcon fontSize="small" /></ToggleButton>
               </ToggleButtonGroup>
-              <Button variant="outlined" startIcon={<PictureAsPdfIcon />} onClick={() => exportStudentsToPDF(students)} disabled={students.length === 0}>Download PDF</Button>
+              <Button variant="outlined" startIcon={<PictureAsPdfIcon />} onClick={() => exportStudentsToPDF(students, categories)} disabled={students.length === 0}>Download PDF</Button>
               <Button variant="contained" startIcon={<AddIcon />} onClick={handleAdd}>Add Student</Button>
             </Stack>
           </Stack>
