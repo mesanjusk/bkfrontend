@@ -25,7 +25,8 @@ import PublicAnchorFormPage from './pages/PublicAnchorFormPage';
 import RegistrationClosedPage from './pages/RegistrationClosedPage';
 import AnchorsPage from './pages/AnchorsPage';
 
-// Set to true to open anchor registration, false to show the "Registration Closed" page
+// Set to true to open registrations, false to show the "Registration Closed" page
+const STUDENT_REGISTRATION_OPEN = false;
 const ANCHOR_REGISTRATION_OPEN = false;
 
 function Layout({ children }) {
@@ -55,7 +56,7 @@ export default function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
-              <Route path="/student-register" element={<PublicStudentFormPage />} />
+              <Route path="/student-register" element={STUDENT_REGISTRATION_OPEN ? <PublicStudentFormPage /> : <RegistrationClosedPage title="BK Awards – Scholar Registration" color="#2497d3" />} />
               <Route path="/student-edit/:token" element={<PublicStudentFormPage />} />
               <Route path="/volunteer-register" element={<PublicVolunteerFormPage />} />
               <Route path="/anchor-register" element={ANCHOR_REGISTRATION_OPEN ? <PublicAnchorFormPage /> : <RegistrationClosedPage />} />
