@@ -29,7 +29,7 @@ import TemplateConfigPage from './pages/TemplateConfigPage';
 import PublicInvitationPage from './pages/PublicInvitationPage';
 
 // Set to true to open registrations, false to show the "Registration Closed" page
-const STUDENT_REGISTRATION_OPEN = true;
+const STUDENT_REGISTRATION_OPEN = false;
 const ANCHOR_REGISTRATION_OPEN = false;
 
 function Layout({ children }) {
